@@ -1,35 +1,71 @@
 import React, { lazy, Suspense, useState } from 'react';
 import { MapPin, Wand2, Sun, Moon } from 'lucide-react';
-import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { ThemeProvider as CustomThemeProvider, useTheme as useCustomTheme } from './context/ThemeContext';
+import { 
+  AppBar, 
+  Toolbar, 
+  Typography, 
+  Box, 
+  Container, 
+  Grid, 
+  Paper, 
+  IconButton, 
+  Button, 
+  useMediaQuery, 
+  CircularProgress,
+  Drawer,
+  ThemeProvider as MuiThemeProvider,
+  createTheme,
+  CssBaseline
+} from '@mui/material';
 
+// Lazy loaded components
 const ParkingMap = lazy(() => import('./components/ParkingMap'));
 const AIPopup = lazy(() => import('./components/AIPopup'));
 
-interface ThemeToggleProps {
-  // No props needed, but included for TypeScript completeness
-}
+// Create responsive Material UI themes
+const lightTheme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#1976d2',
+    },
+    background: {
+      default: '#f5f5f5',
+      paper: '#ffffff',
+    },
+  },
+});
 
-const ThemeToggle: React.FC<ThemeToggleProps> = () => {
-  const { isDarkMode, toggleTheme } = useTheme();
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#90caf9',
+    },
+    background: {
+      default: '#121212',
+      paper: '#1e1e1e',
+    },
+  },
+});
+
+const ThemeToggle: React.FC = () => {
+  const { isDarkMode, toggleTheme } = useCustomTheme();
 
   return (
-    <button
+    <IconButton 
       onClick={toggleTheme}
-      className="flex items-center p-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 shadow-lg hover:shadow-xl"
+      color="inherit"
       aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
+      sx={{ ml: 1 }}
     >
       {isDarkMode ? (
-        <>
-          <Sun className="h-5 w-5 text-yellow-400" />
-          <span className="ml-3 text-sm font-medium text-white">Dark Mode</span>
-        </>
+        <Sun size={20} color="#FFD700" />
       ) : (
-        <>
-          <Moon className="h-5 w-5 text-gray-600" />
-          <span className="ml-3 text-sm font-medium text-gray-900">Light Mode</span>
-        </>
+        <Moon size={20} />
       )}
-    </button>
+    </IconButton>
   );
 };
 
@@ -38,24 +74,30 @@ interface AIButtonProps {
 }
 
 const AIButton: React.FC<AIButtonProps> = ({ onClick }) => {
+  const isMobile = useMediaQuery('(max-width:600px)');
+  
   return (
-    <button
+    <Button
       onClick={onClick}
-      className="flex items-center p-3 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-all border border-blue-400 dark:border-blue-600 shadow-lg hover:shadow-xl"
-      aria-label="Activate AI Tool"
+      variant="contained"
+      color="primary"
+      startIcon={<Wand2 size={20} />}
+      size={isMobile ? "small" : "medium"}
+      sx={{ 
+        borderRadius: '20px',
+        whiteSpace: 'nowrap',
+        ml: 2,
+      }}
     >
-      <Wand2 className="h-5 w-5" />
-      <span className="ml-3 text-sm font-medium">AI Menu</span>
-    </button>
+      {isMobile ? "AI" : "AI Menu"}
+    </Button>
   );
 };
 
-interface AppContentProps {
-  // No props needed, but included for TypeScript completeness
-}
-
-const AppContent: React.FC<AppContentProps> = () => {
+const AppContent: React.FC = () => {
   const [isAIPopupOpen, setIsAIPopupOpen] = useState<boolean>(false);
+  const { isDarkMode } = useCustomTheme();
+  const isMobile = useMediaQuery('(max-width:600px)');
 
   const handleOpenAIPopup = (): void => {
     setIsAIPopupOpen(true);
@@ -64,58 +106,133 @@ const AppContent: React.FC<AppContentProps> = () => {
   const handleCloseAIPopup = (): void => {
     setIsAIPopupOpen(false);
   };
+  
+  // Choose the appropriate MUI theme based on the custom theme state
+  const muiTheme = isDarkMode ? darkTheme : lightTheme;
 
   return (
-    <>
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-all relative">
-        <header className="bg-white dark:bg-gray-800 shadow-md fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-300 dark:border-gray-700">
-          <div className="max-w-7xl mx-auto px-6 py-4 sm:px-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <MapPin className="h-8 w-8 text-blue-500" aria-label="Parking location icon" />
-                <div className="ml-4">
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Tel Aviv Parking Map
-                  </h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Find available parking spots in the city
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <ThemeToggle />
-                <AIButton onClick={handleOpenAIPopup} />
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <main className="pt-24 sm:pt-28">
-          <Suspense fallback={<div className="text-gray-600 dark:text-gray-300">Loading map...</div>}>
-            <ParkingMap />
-          </Suspense>
-        </main>
-      </div>
-
-      {/* AI Popup Portal - Outside the main DOM hierarchy to avoid z-index stacking context issues */}
-      {isAIPopupOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="z-[10000] bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-lg w-full mx-4 p-4">
-            <Suspense fallback={<div className="p-8 text-center">Loading AI tool...</div>}>
-              <AIPopup isOpen={isAIPopupOpen} onClose={handleCloseAIPopup} />
+    <MuiThemeProvider theme={muiTheme}>
+      <CssBaseline />
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <AppBar position="fixed">
+          <Toolbar>
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="parking location"
+              sx={{ mr: 2 }}
+            >
+              <MapPin size={24} />
+            </IconButton>
+            
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" component="h1" noWrap>
+                Tel Aviv Parking Map
+              </Typography>
+              {!isMobile && (
+                <Typography variant="caption" component="p" noWrap>
+                  Find available parking spots in the city
+                </Typography>
+              )}
+            </Box>
+            
+            <ThemeToggle />
+            <AIButton onClick={handleOpenAIPopup} />
+          </Toolbar>
+        </AppBar>
+        
+        <Box component="main" sx={{ flexGrow: 1, pt: { xs: 7, sm: 8, md: 9 } }}>
+          <Container maxWidth="xl" sx={{ height: '100%' }}>
+            <Suspense 
+              fallback={
+                <Box 
+                  display="flex" 
+                  justifyContent="center" 
+                  alignItems="center" 
+                  minHeight="80vh"
+                >
+                  <CircularProgress />
+                  <Typography variant="body2" sx={{ ml: 2 }}>
+                    Loading map...
+                  </Typography>
+                </Box>
+              }
+            >
+              <ParkingMap />
             </Suspense>
-          </div>
-        </div>
+          </Container>
+        </Box>
+      </Box>
+
+      {/* AI Dialog as a drawer on mobile, modal on desktop */}
+      {isMobile ? (
+        <Drawer
+          anchor="bottom"
+          open={isAIPopupOpen}
+          onClose={handleCloseAIPopup}
+          PaperProps={{
+            sx: {
+              maxHeight: '80vh',
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              px: 2,
+              py: 3
+            }
+          }}
+        >
+          <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+            <AIPopup isOpen={isAIPopupOpen} onClose={handleCloseAIPopup} />
+          </Suspense>
+        </Drawer>
+      ) : (
+        isAIPopupOpen && (
+          <Box
+            sx={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onClick={(e) => {
+              // Close when clicking overlay but not when clicking the dialog
+              if (e.target === e.currentTarget) handleCloseAIPopup();
+            }}
+          >
+            <Paper
+              elevation={24}
+              sx={{
+                maxWidth: 500,
+                width: '100%',
+                maxHeight: '80vh',
+                overflowY: 'auto',
+                borderRadius: 2,
+                p: 3,
+                zIndex: 10000,
+                m: 2
+              }}
+            >
+              <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+                <AIPopup isOpen={isAIPopupOpen} onClose={handleCloseAIPopup} />
+              </Suspense>
+            </Paper>
+          </Box>
+        )
       )}
-    </>
+    </MuiThemeProvider>
   );
 };
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
+    <CustomThemeProvider>
       <AppContent />
-    </ThemeProvider>
+    </CustomThemeProvider>
   );
 };
 
