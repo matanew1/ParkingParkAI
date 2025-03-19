@@ -1,8 +1,9 @@
+// src/components/ParkingMap.tsx
 import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import axios from 'axios';
-import { Car, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import type {
   ParkingSpot,
   ParkingStatus,
@@ -12,7 +13,6 @@ import Sidebar from './Sidebar';
 
 import 'leaflet/dist/leaflet.css';
 
-// Custom marker icons for different statuses
 const getMarkerIcon = (status?: string) => {
   const color = status === 'מלא' ? 'red' : 'blue';
   return new Icon({
@@ -26,7 +26,6 @@ const getMarkerIcon = (status?: string) => {
   });
 };
 
-// Component to handle map center updates
 const MapController = ({ center }: { center: [number, number] }) => {
   const map = useMap();
   useEffect(() => {
@@ -40,9 +39,7 @@ const ParkingMap = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([
-    32.0853, 34.7818,
-  ]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([32.0853, 34.7818]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -52,7 +49,6 @@ const ParkingMap = () => {
         setRefreshing(true);
       }
       
-      // Add headers and configure axios for CORS
       const axiosConfig = {
         headers: {
           Accept: 'application/json',
@@ -60,7 +56,6 @@ const ParkingMap = () => {
         },
       };
 
-      // First fetch the parking spots
       let spotsResponse;
       try {
         spotsResponse = await axios.get(
@@ -68,7 +63,6 @@ const ParkingMap = () => {
           axiosConfig
         );
         
-        // Validate response
         if (!spotsResponse.data || !Array.isArray(spotsResponse.data)) {
           throw new Error('Invalid parking spots data format');
         }
@@ -76,7 +70,6 @@ const ParkingMap = () => {
         throw new Error('Unable to load parking locations. Please try again later.');
       }
 
-      // Then try to fetch the status data
       let statusResponse;
       let statusMap = new Map();
       try {
@@ -99,12 +92,10 @@ const ParkingMap = () => {
       } catch (err) {
         console.error('Error fetching status data:', err);
         setStatusError('Status information is temporarily unavailable');
-        // Continue with just the parking spots data
       }
 
       const validSpots = spotsResponse.data
         .filter((spot: ParkingSpot) => {
-          // Enhanced validation
           const lat = parseFloat(spot.GPSLattitude);
           const lng = parseFloat(spot.GPSLongitude);
           return (
@@ -113,9 +104,9 @@ const ParkingMap = () => {
             !isNaN(lat) &&
             !isNaN(lng) &&
             lat >= 31 &&
-            lat <= 33 && // Valid latitude range for Tel Aviv
+            lat <= 33 &&
             lng >= 34 &&
-            lng <= 35 // Valid longitude range for Tel Aviv
+            lng <= 35
           );
         })
         .map((spot: ParkingSpot) => ({
@@ -145,8 +136,6 @@ const ParkingMap = () => {
 
   useEffect(() => {
     fetchParkingData();
-
-    // Refresh status every 5 minutes
     const intervalId = setInterval(() => fetchParkingData(), 5 * 60 * 1000);
     return () => clearInterval(intervalId);
   }, [fetchParkingData]);
@@ -160,7 +149,7 @@ const ParkingMap = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full text-gray-600 dark:text-gray-300">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -169,16 +158,16 @@ const ParkingMap = () => {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md text-center">
-          <AlertCircle className="mx-auto mb-2 text-red-600" size={28} />
-          <p className="text-red-700 font-medium mb-2">Error Loading Data</p>
-          <p className="text-red-600 text-sm">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 max-w-md text-center">
+          <AlertCircle className="mx-auto mb-2 text-red-600 dark:text-red-400" size={28} />
+          <p className="text-red-700 dark:text-red-300 font-medium mb-2">Error Loading Data</p>
+          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
           <button
             onClick={() => {
               setLoading(true);
               fetchParkingData(true);
             }}
-            className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors flex items-center justify-center mx-auto"
+            className="mt-4 px-4 py-2 bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-200 rounded-md hover:bg-red-200 dark:hover:bg-red-700 transition-colors flex items-center justify-center mx-auto"
           >
             <RefreshCw size={16} className="mr-2" /> Try Again
           </button>
@@ -190,14 +179,14 @@ const ParkingMap = () => {
   return (
     <div className="relative h-[calc(100vh-64px)]">
       {statusError && (
-        <div className="absolute top-0 left-0 right-0 z-10 bg-yellow-50 border-b border-yellow-200 p-2 flex items-center justify-between">
+        <div className="absolute top-0 left-0 right-0 z-10 bg-yellow-50 dark:bg-yellow-900/30 border-b border-yellow-200 dark:border-yellow-800 p-2 flex items-center justify-between">
           <div className="flex items-center">
-            <AlertCircle size={16} className="text-yellow-600 mr-2" />
-            <span className="text-sm text-yellow-700">{statusError}</span>
+            <AlertCircle size={16} className="text-yellow-600 dark:text-yellow-300 mr-2" />
+            <span className="text-sm text-yellow-700 dark:text-yellow-300">{statusError}</span>
           </div>
           <button
             onClick={() => fetchParkingData(true)}
-            className="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 transition-colors flex items-center"
+            className="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-700 transition-colors flex items-center"
             disabled={refreshing}
           >
             {refreshing ? (
@@ -223,10 +212,11 @@ const ParkingMap = () => {
         center={mapCenter} 
         zoom={13} 
         className={`h-full w-full ${statusError ? 'pt-10' : ''}`}
+        zoomControl={false}
       >
         <MapController center={mapCenter} />
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {parkingSpots.map((spot) => (
@@ -239,29 +229,29 @@ const ParkingMap = () => {
             icon={getMarkerIcon(spot.status?.InformationToShow)}
           >
             <Popup className="custom-popup">
-              <div className="p-4 min-w-[300px]">
-                <h3 className="font-bold text-xl text-gray-800 mb-2">
+              <div className="p-4 min-w-[300px] bg-white dark:bg-gray-800">
+                <h3 className="font-bold text-xl text-gray-800 dark:text-white mb-2">
                   {spot.Name}
                 </h3>
-                <p className="text-gray-600 mb-4">{spot.Address}</p>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">{spot.Address}</p>
 
                 <div className="space-y-4">
                   {spot.status ? (
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <h4 className="font-semibold text-gray-700 mb-2 flex items-center">
+                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                      <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center">
                         Status
                       </h4>
                       <div className="flex items-center justify-between">
                         <span
                           className={`text-sm font-medium ${
                             spot.status.InformationToShow === 'מלא'
-                              ? 'text-red-600'
-                              : 'text-green-600'
+                              ? 'text-red-600 dark:text-red-400'
+                              : 'text-green-600 dark:text-green-400'
                           }`}
                         >
                           {spot.status.InformationToShow}
                         </span>
-                        <div className="flex items-center text-xs text-gray-500">
+                        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
                           <Clock size={14} className="mr-1" />
                           {new Date(
                             spot.status.LastUpdateFromDambach
@@ -270,22 +260,22 @@ const ParkingMap = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-yellow-50 p-3 rounded-lg">
-                      <h4 className="font-semibold text-yellow-700 mb-2 flex items-center">
+                    <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg">
+                      <h4 className="font-semibold text-yellow-700 dark:text-yellow-300 mb-2 flex items-center">
                         <AlertCircle size={16} className="mr-2" /> Status Unavailable
                       </h4>
-                      <p className="text-sm text-yellow-600">
+                      <p className="text-sm text-yellow-600 dark:text-yellow-300">
                         Real-time status information is temporarily unavailable
                       </p>
                     </div>
                   )}
 
                   {spot.DaytimeFee && (
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <h4 className="font-semibold text-gray-700 mb-2">Fees</h4>
-                      <p className="text-sm text-gray-600">{spot.DaytimeFee}</p>
+                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                      <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Fees</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{spot.DaytimeFee}</p>
                       {spot.FeeComments && (
-                        <p className="text-sm text-gray-500 mt-2 italic">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 italic">
                           {spot.FeeComments}
                         </p>
                       )}
