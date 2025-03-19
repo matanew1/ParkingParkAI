@@ -1,3 +1,4 @@
+// src/components/Sidebar.tsx
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Clock, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { SidebarProps } from '../types/parking';
@@ -32,16 +33,15 @@ const Sidebar: React.FC<SidebarProps> = ({
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`absolute top-6 ${isOpen ? 'right-10' : 'right-2'} bg-white dark:bg-gray-800 rounded-full p-1 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors z-[1001]`}
+        className="absolute -right-8 top-4 bg-white dark:bg-gray-800 rounded-full p-1 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
-        style={{ zIndex: 1001 }}
       >
         {isOpen ? <X size={20} className="text-gray-600 dark:text-gray-300" /> : <Menu size={20} className="text-gray-600 dark:text-gray-300" />}
       </button>
 
       {isOpen && (
         <div className="p-4 h-full overflow-auto text-gray-900 dark:text-gray-100">
-          <div className="relative mb-4">
+          <div className="mb-4">
             <input
               type="text"
               placeholder="Search parking spots..."
@@ -51,6 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               aria-label="Search for parking spots"
             />
           </div>
+
           <div className="mb-4">
             <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400" aria-live="polite">
               <Clock size={14} className="mr-1" />

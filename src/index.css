@@ -1,3 +1,4 @@
+/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -16,4 +17,10 @@ html {
 
 .custom-popup .leaflet-popup-tip {
   @apply bg-white dark:bg-gray-800;
+}
+
+.leaflet-control-zoom {
+  bottom: 20px;
+  right: 20px;
+  position: absolute !important;
 }

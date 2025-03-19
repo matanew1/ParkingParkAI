@@ -212,7 +212,6 @@ const ParkingMap = () => {
         center={mapCenter} 
         zoom={13} 
         className={`h-full w-full ${statusError ? 'pt-10' : ''}`}
-        zoomControl={false}
       >
         <MapController center={mapCenter} />
         <TileLayer
