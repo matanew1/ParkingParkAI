@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
-import { Menu, X, Clock, DollarSign, Car, ChevronRight } from 'lucide-react';
+import { Menu, X, Clock, DollarSign, Car, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
 import type { ParkingSpotWithStatus } from '../types/parking';
 
 interface SidebarProps {
   spots: ParkingSpotWithStatus[];
   onSpotClick: (spot: ParkingSpotWithStatus) => void;
+  statusError: string | null;
+  lastUpdated: Date | null;
+  onRefresh: () => void;
+  isRefreshing: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ spots, onSpotClick }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  spots, 
+  onSpotClick, 
+  statusError, 
+  lastUpdated, 
+  onRefresh, 
+  isRefreshing 
+}) => {
   const [isOpen, setIsOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -41,51 +52,87 @@ const Sidebar: React.FC<SidebarProps> = ({ spots, onSpotClick }) => {
             />
           </div>
 
-          <div className="space-y-2">
-            {filteredSpots.map((spot) => (
-              <div
-                key={spot.AhuzotCode}
-                className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
-                onClick={() => onSpotClick(spot)}
+          {/* Status information and refresh button */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center text-sm text-gray-600">
+                <Clock size={14} className="mr-1" />
+                <span>
+                  {lastUpdated 
+                    ? `Updated: ${lastUpdated.toLocaleTimeString()}` 
+                    : 'Loading data...'}
+                </span>
+              </div>
+              <button
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors flex items-center"
               >
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-800">{spot.Name}</h3>
-                  <ChevronRight size={16} className="text-gray-400" />
+                {isRefreshing ? (
+                  <RefreshCw size={14} className="mr-1 animate-spin" />
+                ) : (
+                  <RefreshCw size={14} className="mr-1" />
+                )}
+                Refresh
+              </button>
+            </div>
+
+            {/* Status error notification */}
+            {statusError && (
+              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-100 rounded-lg">
+                <div className="flex items-start">
+                  <AlertCircle size={16} className="text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-yellow-700">
+                    Status information is temporarily unavailable. Parking availability may not be accurate.
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{spot.Address}</p>
-                <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <div className="flex items-center">
-                      <Car size={14} className="mr-1" />
-                      <span>{spot.MaximumPublicOccupancy} spots</span>
-                    </div>
-                    {spot.DaytimeFee && (
-                      <div className="flex items-center">
-                        <DollarSign size={14} className="mr-1" />
-                        <span>Paid</span>
-                      </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            {filteredSpots.length > 0 ? (
+              filteredSpots.map((spot) => (
+                <div
+                  key={spot.AhuzotCode}
+                  className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                  onClick={() => onSpotClick(spot)}
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-800">{spot.Name}</h3>
+                    <ChevronRight size={16} className="text-gray-400" />
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">{spot.Address}</p>
+                  <div className="flex items-center justify-between mt-2">
+                    {spot.status ? (
+                      <span className={`text-xs font-medium px-2 py-1 rounded ${
+                        spot.status.InformationToShow === 'מלא'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-green-100 text-green-700'
+                      }`}>
+                        {spot.status.InformationToShow}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-medium px-2 py-1 rounded bg-yellow-50 text-yellow-700">
+                        Unknown
+                      </span>
                     )}
                   </div>
                   {spot.status && (
-                    <span className={`text-xs font-medium px-2 py-1 rounded ${
-                      spot.status.InformationToShow === 'מלא'
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-green-100 text-green-700'
-                    }`}>
-                      {spot.status.InformationToShow}
-                    </span>
+                    <div className="flex items-center mt-1 text-xs text-gray-400">
+                      <Clock size={12} className="mr-1" />
+                      <span>
+                        Updated: {new Date(spot.status.LastUpdateFromDambach).toLocaleTimeString()}
+                      </span>
+                    </div>
                   )}
                 </div>
-                {spot.status && (
-                  <div className="flex items-center mt-1 text-xs text-gray-400">
-                    <Clock size={12} className="mr-1" />
-                    <span>
-                      Updated: {new Date(spot.status.LastUpdateFromDambach).toLocaleTimeString()}
-                    </span>
-                  </div>
-                )}
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No parking spots match your search.</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}

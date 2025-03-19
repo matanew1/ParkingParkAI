@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import axios from 'axios';
-import { Car, Clock } from 'lucide-react';
+import { Car, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import type {
   ParkingSpot,
   ParkingStatus,
@@ -39,93 +39,117 @@ const ParkingMap = () => {
   const [parkingSpots, setParkingSpots] = useState<ParkingSpotWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([
     32.0853, 34.7818,
   ]);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const fetchParkingData = async () => {
+  const fetchParkingData = useCallback(async (isManualRefresh = false) => {
+    try {
+      if (isManualRefresh) {
+        setRefreshing(true);
+      }
+      
+      // Add headers and configure axios for CORS
+      const axiosConfig = {
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      };
+
+      // First fetch the parking spots
+      let spotsResponse;
       try {
-        // Add headers and configure axios for CORS
-        const axiosConfig = {
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-        };
-
-        const [spotsResponse, statusResponse] = await Promise.all([
-          axios.get(
-            'https://api.tel-aviv.gov.il/parking/stations',
-            axiosConfig
-          ),
-          axios.get(
-            'https://api.tel-aviv.gov.il/parking/StationsStatus',
-            axiosConfig
-          ),
-        ]);
-
-        // Validate responses
+        spotsResponse = await axios.get(
+          'https://api.tel-aviv.gov.il/parking/stations',
+          axiosConfig
+        );
+        
+        // Validate response
         if (!spotsResponse.data || !Array.isArray(spotsResponse.data)) {
           throw new Error('Invalid parking spots data format');
         }
-
-        if (!statusResponse.data || !Array.isArray(statusResponse.data)) {
-          throw new Error('Invalid status data format');
-        }
-
-        const statusMap = new Map(
-          statusResponse.data.map((status: ParkingStatus) => [
-            status.AhuzotCode,
-            status,
-          ])
-        );
-
-        const validSpots = spotsResponse.data
-          .filter((spot: ParkingSpot) => {
-            // Enhanced validation
-            const lat = parseFloat(spot.GPSLattitude);
-            const lng = parseFloat(spot.GPSLongitude);
-            return (
-              spot.GPSLattitude &&
-              spot.GPSLongitude &&
-              !isNaN(lat) &&
-              !isNaN(lng) &&
-              lat >= 31 &&
-              lat <= 33 && // Valid latitude range for Tel Aviv
-              lng >= 34 &&
-              lng <= 35 // Valid longitude range for Tel Aviv
-            );
-          })
-          .map((spot: ParkingSpot) => ({
-            ...spot,
-            status: statusMap.get(spot.AhuzotCode),
-          }));
-
-        if (validSpots.length === 0) {
-          throw new Error('No valid parking spots found');
-        }
-
-        setParkingSpots(validSpots);
-        setError(null);
-        setLoading(false);
       } catch (err) {
-        console.error('Error fetching parking data:', err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Failed to load parking data. Please try again later.'
-        );
-        setLoading(false);
+        throw new Error('Unable to load parking locations. Please try again later.');
       }
-    };
 
+      // Then try to fetch the status data
+      let statusResponse;
+      let statusMap = new Map();
+      try {
+        statusResponse = await axios.get(
+          'https://api.tel-aviv.gov.il/parking/StationsStatus',
+          axiosConfig
+        );
+
+        if (statusResponse.data && Array.isArray(statusResponse.data)) {
+          statusMap = new Map(
+            statusResponse.data.map((status: ParkingStatus) => [
+              status.AhuzotCode,
+              status,
+            ])
+          );
+          setStatusError(null);
+        } else {
+          setStatusError('Status information is temporarily unavailable');
+        }
+      } catch (err) {
+        console.error('Error fetching status data:', err);
+        setStatusError('Status information is temporarily unavailable');
+        // Continue with just the parking spots data
+      }
+
+      const validSpots = spotsResponse.data
+        .filter((spot: ParkingSpot) => {
+          // Enhanced validation
+          const lat = parseFloat(spot.GPSLattitude);
+          const lng = parseFloat(spot.GPSLongitude);
+          return (
+            spot.GPSLattitude &&
+            spot.GPSLongitude &&
+            !isNaN(lat) &&
+            !isNaN(lng) &&
+            lat >= 31 &&
+            lat <= 33 && // Valid latitude range for Tel Aviv
+            lng >= 34 &&
+            lng <= 35 // Valid longitude range for Tel Aviv
+          );
+        })
+        .map((spot: ParkingSpot) => ({
+          ...spot,
+          status: statusMap.get(spot.AhuzotCode),
+        }));
+
+      if (validSpots.length === 0) {
+        throw new Error('No valid parking spots found');
+      }
+
+      setParkingSpots(validSpots);
+      setError(null);
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error('Error fetching parking data:', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to load parking data. Please try again later.'
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
     fetchParkingData();
 
     // Refresh status every 5 minutes
-    const intervalId = setInterval(fetchParkingData, 5 * 60 * 1000);
+    const intervalId = setInterval(() => fetchParkingData(), 5 * 60 * 1000);
     return () => clearInterval(intervalId);
-  }, []);
+  }, [fetchParkingData]);
 
   const handleSpotClick = useCallback((spot: ParkingSpotWithStatus) => {
     setMapCenter([
@@ -146,13 +170,17 @@ const ParkingMap = () => {
     return (
       <div className="flex flex-col items-center justify-center h-full p-4">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md text-center">
+          <AlertCircle className="mx-auto mb-2 text-red-600" size={28} />
           <p className="text-red-700 font-medium mb-2">Error Loading Data</p>
           <p className="text-red-600 text-sm">{error}</p>
           <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+            onClick={() => {
+              setLoading(true);
+              fetchParkingData(true);
+            }}
+            className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors flex items-center justify-center mx-auto"
           >
-            Try Again
+            <RefreshCw size={16} className="mr-2" /> Try Again
           </button>
         </div>
       </div>
@@ -161,8 +189,41 @@ const ParkingMap = () => {
 
   return (
     <div className="relative h-[calc(100vh-64px)]">
-      <Sidebar spots={parkingSpots} onSpotClick={handleSpotClick} />
-      <MapContainer center={mapCenter} zoom={13} className="h-full w-full">
+      {statusError && (
+        <div className="absolute top-0 left-0 right-0 z-10 bg-yellow-50 border-b border-yellow-200 p-2 flex items-center justify-between">
+          <div className="flex items-center">
+            <AlertCircle size={16} className="text-yellow-600 mr-2" />
+            <span className="text-sm text-yellow-700">{statusError}</span>
+          </div>
+          <button
+            onClick={() => fetchParkingData(true)}
+            className="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 transition-colors flex items-center"
+            disabled={refreshing}
+          >
+            {refreshing ? (
+              <RefreshCw size={14} className="mr-1 animate-spin" />
+            ) : (
+              <RefreshCw size={14} className="mr-1" />
+            )}
+            Refresh
+          </button>
+        </div>
+      )}
+      
+      <Sidebar 
+        spots={parkingSpots} 
+        onSpotClick={handleSpotClick} 
+        statusError={statusError}
+        lastUpdated={lastUpdated}
+        onRefresh={() => fetchParkingData(true)}
+        isRefreshing={refreshing}
+      />
+      
+      <MapContainer 
+        center={mapCenter} 
+        zoom={13} 
+        className={`h-full w-full ${statusError ? 'pt-10' : ''}`}
+      >
         <MapController center={mapCenter} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -185,7 +246,7 @@ const ParkingMap = () => {
                 <p className="text-gray-600 mb-4">{spot.Address}</p>
 
                 <div className="space-y-4">
-                  {spot.status && (
+                  {spot.status ? (
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <h4 className="font-semibold text-gray-700 mb-2 flex items-center">
                         Status
@@ -208,27 +269,16 @@ const ParkingMap = () => {
                         </div>
                       </div>
                     </div>
-                  )}
-
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <h4 className="font-semibold text-gray-700 mb-2 flex items-center">
-                      <Car size={18} className="mr-2" /> Capacity
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="text-sm text-gray-500">Public</p>
-                        <p className="font-semibold">
-                          {spot.MaximumPublicOccupancy}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Subscriber</p>
-                        <p className="font-semibold">
-                          {spot.MaximumSubscriberOccupancy}
-                        </p>
-                      </div>
+                  ) : (
+                    <div className="bg-yellow-50 p-3 rounded-lg">
+                      <h4 className="font-semibold text-yellow-700 mb-2 flex items-center">
+                        <AlertCircle size={16} className="mr-2" /> Status Unavailable
+                      </h4>
+                      <p className="text-sm text-yellow-600">
+                        Real-time status information is temporarily unavailable
+                      </p>
                     </div>
-                  </div>
+                  )}
 
                   {spot.DaytimeFee && (
                     <div className="bg-gray-50 p-3 rounded-lg">

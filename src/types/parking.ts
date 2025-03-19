@@ -17,13 +17,6 @@ export interface ParkingSpot {
   MonthFeeForNightlySubscriberWindow: string | null;
   FeeComments: string;
   OpenWindow: string | null;
-  MaximumPublicOccupancy: string;
-  MaximumSubscriberOccupancy: string;
-  Extra01: string | null;
-  Extra02: string | null;
-  Extra03: string | null;
-  Extra04: string | null;
-  Extra05: string | null;
 }
 
 export interface ParkingStatus {
