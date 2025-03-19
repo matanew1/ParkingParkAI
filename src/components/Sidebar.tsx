@@ -1,12 +1,11 @@
-// src/components/Sidebar.tsx
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Clock, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { Menu, X, Clock, ChevronRight, RefreshCw } from 'lucide-react';
 import { SidebarProps } from '../types/parking';
+import { AxiosError } from 'axios';
 
 const Sidebar: React.FC<SidebarProps> = ({ 
   spots, 
   onSpotClick, 
-  statusError, 
   lastUpdated, 
   onRefresh, 
   isRefreshing 
@@ -14,6 +13,16 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isOpen, setIsOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [lastValidStatus, setLastValidStatus] = useState<any>(null); // Track last valid status
+  const [cachedData, setCachedData] = useState<any>(null); // Track cached data
+  
+  useEffect(() => {
+    // Try to load cached data on mount
+    const cachedStatus = localStorage.getItem('lastValidStatus');
+    if (cachedStatus) {
+      setCachedData(JSON.parse(cachedStatus));
+    }
+  }, []);
 
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearch(searchTerm), 300);
@@ -24,6 +33,47 @@ const Sidebar: React.FC<SidebarProps> = ({
     spot.Name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
     spot.Address.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
+
+  // Handle refresh error, and preserve last valid status or use cache
+  const handleRefresh = async () => {
+    try {
+      await onRefresh(); // Assuming onRefresh will handle the fetch and update status
+      setLastValidStatus(null); // Reset last valid status on refresh attempt
+    } catch (error) {
+      // Check if the error is an AxiosError
+      if (error instanceof AxiosError && error.response) {
+        if (error.response.status === 500) {
+          // Preserve last valid status if error code is 500, and try to load from cache
+          setLastValidStatus(lastValidStatus);
+          const cachedStatus = localStorage.getItem('lastValidStatus');
+          if (cachedStatus) {
+            setCachedData(JSON.parse(cachedStatus)); // Use cached data if available
+          }
+        } else {
+          setLastValidStatus(null); // Reset on other types of errors
+          setCachedData(null); // Clear cache on errors
+        }
+      } else {
+        // Handle non-AxiosError or unknown error types
+        setLastValidStatus(null);
+        setCachedData(null);
+      }
+    }
+  };
+
+  const handleSpotStatus = (spot: any) => {
+    if (spot.status && spot.status.InformationToShow !== 'Unknown') {
+      // If the spot status is not 'Unknown', return the current status
+      return spot.status.InformationToShow;
+    }
+    // If the status is "Unknown", use the last valid status from cache (if available)
+    if (cachedData) {
+      return cachedData;
+    }
+    // If there is no valid status, return the string "Status unavailable" or similar
+    return 'Status unavailable... Please refresh again'
+  };
+  
 
   return (
     <div 
@@ -61,7 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   : 'Loading data...'}
               </span>
               <button
-                onClick={onRefresh}
+                onClick={handleRefresh}
                 disabled={isRefreshing}
                 className="px-2 py-1 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors flex items-center"
               >
@@ -73,16 +123,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                 Refresh
               </button>
             </div>
-            {statusError && (
-              <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-100 dark:border-yellow-800 rounded-lg">
-                <div className="flex items-start">
-                  <AlertCircle size={16} className="text-yellow-600 dark:text-yellow-300 mr-2 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                    Status information is temporarily unavailable. Parking availability may not be accurate.
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="space-y-2">
@@ -102,19 +142,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{spot.Address}</p>
                   <div className="flex items-center justify-between mt-2">
-                    {spot.status ? (
-                      <span className={`text-xs font-medium px-2 py-1 rounded ${
-                        spot.status.InformationToShow === 'מלא'
-                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                          : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                      }`}>
-                        {spot.status.InformationToShow}
-                      </span>
-                    ) : (
-                      <span className="text-xs font-medium px-2 py-1 rounded bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">
-                        Unknown
-                      </span>
-                    )}
+                    <span className={`text-xs font-medium px-2 py-1 rounded ${
+                      handleSpotStatus(spot) === 'מלא'
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                        : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                    }`}>
+                      {handleSpotStatus(spot)}
+                    </span>
                   </div>
                   {spot.status && (
                     <div className="flex items-center mt-1 text-xs text-gray-400 dark:text-gray-500">
