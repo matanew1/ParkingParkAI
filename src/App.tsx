@@ -1,11 +1,15 @@
-import { MapPin, Wand2 } from 'lucide-react';
-import { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
+import { MapPin, Wand2, Sun, Moon } from 'lucide-react';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { Sun, Moon } from 'lucide-react';
 
 const ParkingMap = lazy(() => import('./components/ParkingMap'));
+const AIPopup = lazy(() => import('./components/AIPopup'));
 
-function ThemeToggle() {
+interface ThemeToggleProps {
+  // No props needed, but included for TypeScript completeness
+}
+
+const ThemeToggle: React.FC<ThemeToggleProps> = () => {
   const { isDarkMode, toggleTheme } = useTheme();
 
   return (
@@ -27,27 +31,40 @@ function ThemeToggle() {
       )}
     </button>
   );
+};
+
+interface AIButtonProps {
+  onClick: () => void;
 }
 
-function AIButton() {
-  const handleAIRequest = () => {
-    console.log('AI Tool Activated');
-    // Replace the console log with your AI tool's integration logic
-  };
-
+const AIButton: React.FC<AIButtonProps> = ({ onClick }) => {
   return (
     <button
-      onClick={handleAIRequest}
+      onClick={onClick}
       className="flex items-center p-3 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-all border border-blue-400 dark:border-blue-600 shadow-lg hover:shadow-xl"
       aria-label="Activate AI Tool"
     >
       <Wand2 className="h-5 w-5" />
-      <span className="ml-3 text-sm font-medium">AI Magic</span>
+      <span className="ml-3 text-sm font-medium">AI Menu</span>
     </button>
   );
+};
+
+interface AppContentProps {
+  // No props needed, but included for TypeScript completeness
 }
 
-function AppContent() {
+const AppContent: React.FC<AppContentProps> = () => {
+  const [isAIPopupOpen, setIsAIPopupOpen] = useState<boolean>(false);
+
+  const handleOpenAIPopup = (): void => {
+    setIsAIPopupOpen(true);
+  };
+
+  const handleCloseAIPopup = (): void => {
+    setIsAIPopupOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-all">
       <header className="bg-white dark:bg-gray-800 shadow-md fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-300 dark:border-gray-700">
@@ -66,7 +83,7 @@ function AppContent() {
             </div>
             <div className="flex items-center space-x-4">
               <ThemeToggle />
-              <AIButton />
+              <AIButton onClick={handleOpenAIPopup} />
             </div>
           </div>
         </div>
@@ -77,16 +94,22 @@ function AppContent() {
           <ParkingMap />
         </Suspense>
       </main>
-    </div>
-  );
-}
 
-function App() {
+      <Suspense fallback={null}>
+        <div className="absolute z-50">
+          <AIPopup isOpen={isAIPopupOpen} onClose={handleCloseAIPopup} />
+        </div>
+      </Suspense>
+    </div>
+  );~
+};
+
+const App: React.FC = () => {
   return (
     <ThemeProvider>
       <AppContent />
     </ThemeProvider>
   );
-}
+};
 
 export default App;
