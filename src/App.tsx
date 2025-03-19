@@ -21,12 +21,12 @@ const ThemeToggle: React.FC<ThemeToggleProps> = () => {
       {isDarkMode ? (
         <>
           <Sun className="h-5 w-5 text-yellow-400" />
-          <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">Light Mode</span>
+          <span className="ml-3 text-sm font-medium text-white">Dark Mode</span>
         </>
       ) : (
         <>
           <Moon className="h-5 w-5 text-gray-600" />
-          <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">Dark Mode</span>
+          <span className="ml-3 text-sm font-medium text-gray-900">Light Mode</span>
         </>
       )}
     </button>
@@ -66,42 +66,49 @@ const AppContent: React.FC<AppContentProps> = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-all">
-      <header className="bg-white dark:bg-gray-800 shadow-md fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-300 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-6 py-4 sm:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <MapPin className="h-8 w-8 text-blue-500" aria-label="Parking location icon" />
-              <div className="ml-4">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Tel Aviv Parking Map
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Find available parking spots in the city
-                </p>
+    <>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-all relative">
+        <header className="bg-white dark:bg-gray-800 shadow-md fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-300 dark:border-gray-700">
+          <div className="max-w-7xl mx-auto px-6 py-4 sm:px-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <MapPin className="h-8 w-8 text-blue-500" aria-label="Parking location icon" />
+                <div className="ml-4">
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Tel Aviv Parking Map
+                  </h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Find available parking spots in the city
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <ThemeToggle />
+                <AIButton onClick={handleOpenAIPopup} />
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <ThemeToggle />
-              <AIButton onClick={handleOpenAIPopup} />
-            </div>
+          </div>
+        </header>
+
+        <main className="pt-24 sm:pt-28">
+          <Suspense fallback={<div className="text-gray-600 dark:text-gray-300">Loading map...</div>}>
+            <ParkingMap />
+          </Suspense>
+        </main>
+      </div>
+
+      {/* AI Popup Portal - Outside the main DOM hierarchy to avoid z-index stacking context issues */}
+      {isAIPopupOpen && (
+        <div className="fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="z-[10000] bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-lg w-full mx-4 p-4">
+            <Suspense fallback={<div className="p-8 text-center">Loading AI tool...</div>}>
+              <AIPopup isOpen={isAIPopupOpen} onClose={handleCloseAIPopup} />
+            </Suspense>
           </div>
         </div>
-      </header>
-
-      <main className="pt-24 sm:pt-28">
-        <Suspense fallback={<div className="text-gray-600 dark:text-gray-300">Loading map...</div>}>
-          <ParkingMap />
-        </Suspense>
-      </main>
-
-      <Suspense fallback={null}>
-        <div className="absolute z-50">
-          <AIPopup isOpen={isAIPopupOpen} onClose={handleCloseAIPopup} />
-        </div>
-      </Suspense>
-    </div>
-  );~
+      )}
+    </>
+  );
 };
 
 const App: React.FC = () => {
