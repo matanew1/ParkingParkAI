@@ -1,9 +1,8 @@
-// src/components/ParkingMap.tsx
 import { useEffect, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import axios from 'axios';
-import { Clock, RefreshCw } from 'lucide-react';
+import { Clock, RefreshCw, Crosshair } from 'lucide-react';
 import type {
   ParkingSpot,
   ParkingStatus,
@@ -20,7 +19,9 @@ import {
   Paper,
   Chip,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Fab,
+  Tooltip
 } from '@mui/material';
 
 import 'leaflet/dist/leaflet.css';
@@ -38,12 +39,82 @@ const getMarkerIcon = (status?: string) => {
   });
 };
 
+// User location marker (green)
+const userLocationIcon = new Icon({
+  iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png`,
+  shadowUrl:
+    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
 const MapController = ({ center }: { center: [number, number] }) => {
   const map = useMap();
   useEffect(() => {
     map.setView(center, 15);
   }, [center, map]);
   return null;
+};
+
+// Component to handle location watching
+const LocationMarker = ({ setUserLocation }: { setUserLocation: (location: [number, number]) => void }) => {
+  const [position, setPosition] = useState<[number, number] | null>(null);
+  const [accuracy, setAccuracy] = useState<number>(0);
+  const map = useMap();
+
+  useEffect(() => {
+    let watchId: number;
+
+    const onLocationFound = (e: GeolocationPosition) => {
+      const { latitude, longitude, accuracy } = e.coords;
+      const newPos: [number, number] = [latitude, longitude];
+      setPosition(newPos);
+      setAccuracy(accuracy);
+      setUserLocation(newPos);
+    };
+
+    const onLocationError = (err: GeolocationPositionError) => {
+      console.error('Location error:', err.message);
+    };
+
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        onLocationFound,
+        onLocationError,
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 10000
+        }
+      );
+    }
+
+    return () => {
+      if (watchId !== undefined) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [map, setUserLocation]);
+
+  return position === null ? null : (
+    <>
+      <Marker position={position} icon={userLocationIcon}>
+        <Popup>
+          <Typography variant="body1">You are here</Typography>
+          <Typography variant="caption" color="textSecondary">
+            Accuracy: ±{Math.round(accuracy)} meters
+          </Typography>
+        </Popup>
+      </Marker>
+      <Circle 
+        center={position} 
+        radius={accuracy}
+        pathOptions={{ color: 'green', fillColor: 'green', fillOpacity: 0.1 }}
+      />
+    </>
+  );
 };
 
 const ParkingMap = () => {
@@ -57,6 +128,8 @@ const ParkingMap = () => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([32.0853, 34.7818]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [showLocationMarker, setShowLocationMarker] = useState(false);
 
   const fetchParkingData = useCallback(async (isManualRefresh = false) => {
     try {
@@ -162,6 +235,21 @@ const ParkingMap = () => {
     ]);
   }, []);
 
+  const handleEnableLocation = () => {
+    setShowLocationMarker(true);
+    if (userLocation) {
+      setMapCenter(userLocation);
+    }
+  };
+
+  // Handle updating the user location
+  const updateUserLocation = useCallback((location: [number, number]) => {
+    setUserLocation(location);
+    if (showLocationMarker) {
+      setMapCenter(location);
+    }
+  }, [showLocationMarker]);
+
   if (loading) {
     return (
       <Box 
@@ -250,6 +338,23 @@ const ParkingMap = () => {
         onRefresh={() => fetchParkingData(true)}
         isRefreshing={refreshing}
       />
+
+      {/* Location button */}
+      <Tooltip title="Show my location">
+        <Fab 
+          color="primary" 
+          size="medium"
+          onClick={handleEnableLocation}
+          sx={{ 
+            position: 'absolute', 
+            bottom: 20, 
+            right: 5, 
+            zIndex: 1000
+          }}
+        >
+          <Crosshair />
+        </Fab>
+      </Tooltip>
       
       <Box
         sx={{ 
@@ -277,6 +382,10 @@ const ParkingMap = () => {
             attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          
+          {/* User location marker */}
+          {showLocationMarker && <LocationMarker setUserLocation={updateUserLocation} />}
+          
           {parkingSpots.map((spot) => (
             <Marker
               key={spot.AhuzotCode}

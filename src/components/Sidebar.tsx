@@ -36,9 +36,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [lastValidStatus, setLastValidStatus] = useState<any>(null);
   const [cachedData, setCachedData] = useState<any>(null);
-  
+  const [selectedSpot, setSelectedSpot] = useState<string | null>(null); // Track selected spot
+
   useEffect(() => {
-    // Try to load cached data on mount
     const cachedStatus = localStorage.getItem('lastValidStatus');
     if (cachedStatus) {
       setCachedData(JSON.parse(cachedStatus));
@@ -50,7 +50,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
-  // Update isOpen state when screen size changes
   useEffect(() => {
     setIsOpen(!isMobile);
   }, [isMobile]);
@@ -60,27 +59,23 @@ const Sidebar: React.FC<SidebarProps> = ({
     spot.Address.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
 
-  // Handle refresh error, and preserve last valid status or use cache
   const handleRefresh = async () => {
     try {
-      onRefresh(); // Assuming onRefresh will handle the fetch and update status
-      setLastValidStatus(null); // Reset last valid status on refresh attempt
+      onRefresh();
+      setLastValidStatus(null);
     } catch (error) {
-      // Check if the error is an AxiosError
       if (error instanceof AxiosError && error.response) {
         if (error.response.status === 500) {
-          // Preserve last valid status if error code is 500, and try to load from cache
           setLastValidStatus(lastValidStatus);
           const cachedStatus = localStorage.getItem('lastValidStatus');
           if (cachedStatus) {
-            setCachedData(JSON.parse(cachedStatus)); // Use cached data if available
+            setCachedData(JSON.parse(cachedStatus));
           }
         } else {
-          setLastValidStatus(null); // Reset on other types of errors
-          setCachedData(null); // Clear cache on errors
+          setLastValidStatus(null);
+          setCachedData(null);
         }
       } else {
-        // Handle non-AxiosError or unknown error types
         setLastValidStatus(null);
         setCachedData(null);
       }
@@ -89,14 +84,11 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const handleSpotStatus = (spot: any) => {
     if (spot.status && spot.status.InformationToShow !== 'Unknown') {
-      // If the spot status is not 'Unknown', return the current status
       return spot.status.InformationToShow;
     }
-    // If the status is "Unknown", use the last valid status from cache (if available)
     if (cachedData) {
       return cachedData;
     }
-    // If there is no valid status, return the string "Status unavailable" or similar
     return 'Status unavailable... Please refresh again';
   };
 
@@ -212,11 +204,17 @@ const Sidebar: React.FC<SidebarProps> = ({
                     transition: 'all 0.2s',
                     '&:hover': {
                       boxShadow: 3,
-                      transform: 'translateY(-2px)'
-                    }
+                      transform: 'translateY(-2px)',
+                    },
+                    ...(selectedSpot === spot.AhuzotCode && {
+                      boxShadow: '0 0 15px 5px rgba(255, 0, 0, 0.5)', // Add glowing effect
+                    }),
                   }}
                 >
-                  <ListItemButton onClick={() => onSpotClick(spot)}>
+                  <ListItemButton onClick={() => { 
+                    setSelectedSpot(spot.AhuzotCode); 
+                    onSpotClick(spot); 
+                  }}>
                     <ListItem disablePadding>
                       <Box sx={{ width: '100%' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -265,19 +263,10 @@ const Sidebar: React.FC<SidebarProps> = ({
             position: 'fixed',
             left: 16,
             top: 80,
-            zIndex: 1001,
-            backgroundColor: theme.palette.background.paper,
-            boxShadow: 2,
-            '&:hover': {
-              backgroundColor: theme.palette.action.hover
-            },
-            transition: theme.transitions.create(['opacity', 'transform'], {
-              duration: theme.transitions.duration.standard,
-            }),
+            zIndex: 1200
           }}
-          aria-label="Open sidebar"
         >
-          <Menu size={20} />
+          <Menu size={24} />
         </IconButton>
       </Fade>
     </Box>
