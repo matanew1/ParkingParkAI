@@ -3,13 +3,25 @@ import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import axios from 'axios';
-import { Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { Clock, RefreshCw } from 'lucide-react';
 import type {
   ParkingSpot,
   ParkingStatus,
   ParkingSpotWithStatus,
 } from '../types/parking';
 import Sidebar from './Sidebar';
+import {
+  Box,
+  Typography,
+  CircularProgress,
+  Alert,
+  AlertTitle,
+  Button,
+  Paper,
+  Chip,
+  useTheme,
+  useMediaQuery
+} from '@mui/material';
 
 import 'leaflet/dist/leaflet.css';
 
@@ -35,6 +47,9 @@ const MapController = ({ center }: { center: [number, number] }) => {
 };
 
 const ParkingMap = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [parkingSpots, setParkingSpots] = useState<ParkingSpotWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,54 +164,82 @@ const ParkingMap = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-600 dark:text-gray-300">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
+      <Box 
+        display="flex" 
+        alignItems="center" 
+        justifyContent="center" 
+        height="100%" 
+        sx={{ color: theme.palette.text.secondary }}
+      >
+        <CircularProgress size={60} thickness={4} />
+        <Typography variant="body1" sx={{ ml: 2 }}>
+          Loading map...
+        </Typography>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-4">
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 max-w-md text-center">
-          <AlertCircle className="mx-auto mb-2 text-red-600 dark:text-red-400" size={28} />
-          <p className="text-red-700 dark:text-red-300 font-medium mb-2">Error Loading Data</p>
-          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
-          <button
+      <Box 
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        height="100%"
+        p={4}
+      >
+        <Paper elevation={3} sx={{ maxWidth: 500, p: 3, textAlign: 'center' }}>
+          <Typography variant="h6" color="error" gutterBottom fontWeight="medium">
+            Error Loading Data
+          </Typography>
+          <Typography variant="body2" color="error" paragraph>
+            {error}
+          </Typography>
+          <Button
+            variant="contained"
+            color="error"
             onClick={() => {
               setLoading(true);
               fetchParkingData(true);
             }}
-            className="mt-4 px-4 py-2 bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-200 rounded-md hover:bg-red-200 dark:hover:bg-red-700 transition-colors flex items-center justify-center mx-auto"
+            startIcon={<RefreshCw size={16} />}
           >
-            <RefreshCw size={16} className="mr-2" /> Try Again
-          </button>
-        </div>
-      </div>
+            Try Again
+          </Button>
+        </Paper>
+      </Box>
     );
   }
 
   return (
-    <div className="relative h-[calc(100vh-64px)]">
+    <Box position="relative" height="calc(100vh - 64px)">
       {statusError && (
-        <div className="absolute top-0 left-0 right-0 z-10 bg-yellow-50 dark:bg-yellow-900/30 border-b border-yellow-200 dark:border-yellow-800 p-2 flex items-center justify-between">
-          <div className="flex items-center">
-            <AlertCircle size={16} className="text-yellow-600 dark:text-yellow-300 mr-2" />
-            <span className="text-sm text-yellow-700 dark:text-yellow-300">{statusError}</span>
-          </div>
-          <button
-            onClick={() => fetchParkingData(true)}
-            className="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-700 transition-colors flex items-center"
-            disabled={refreshing}
-          >
-            {refreshing ? (
-              <RefreshCw size={14} className="mr-1 animate-spin" />
-            ) : (
-              <RefreshCw size={14} className="mr-1" />
-            )}
-            Refresh
-          </button>
-        </div>
+        <Alert 
+          severity="warning"
+          variant="filled"
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={() => fetchParkingData(true)}
+              disabled={refreshing}
+              startIcon={refreshing ? <RefreshCw className="animate-spin" size={14} /> : <RefreshCw size={14} />}
+            >
+              Refresh
+            </Button>
+          }
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            borderRadius: 0
+          }}
+        >
+          {statusError}
+        </Alert>
       )}
       
       <Sidebar 
@@ -208,85 +251,100 @@ const ParkingMap = () => {
         isRefreshing={refreshing}
       />
       
-      <MapContainer 
-        center={mapCenter} 
-        zoom={13} 
-        className={`h-full w-full ${statusError ? 'pt-10' : ''}`}
+      <Box
+        sx={{ 
+          height: '100%',
+          width: '100%',
+          pt: statusError ? '48px' : 0,
+          '& .leaflet-popup-content-wrapper': {
+            padding: 0,
+            overflow: 'hidden',
+            borderRadius: 1
+          },
+          '& .leaflet-popup-content': {
+            margin: 0,
+            width: isMobile ? '280px !important' : '320px !important'
+          }
+        }}
       >
-        <MapController center={mapCenter} />
-        <TileLayer
-          attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {parkingSpots.map((spot) => (
-          <Marker
-            key={spot.AhuzotCode}
-            position={[
-              parseFloat(spot.GPSLattitude),
-              parseFloat(spot.GPSLongitude),
-            ]}
-            icon={getMarkerIcon(spot.status?.InformationToShow)}
-          >
-            <Popup className="custom-popup">
-              <div className="p-4 min-w-[300px] bg-white dark:bg-gray-800">
-                <h3 className="font-bold text-xl text-gray-800 dark:text-white mb-2">
-                  {spot.Name}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">{spot.Address}</p>
+        <MapContainer 
+          center={mapCenter} 
+          zoom={13} 
+          style={{ height: '100%', width: '100%' }}
+        >
+          <MapController center={mapCenter} />
+          <TileLayer
+            attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          {parkingSpots.map((spot) => (
+            <Marker
+              key={spot.AhuzotCode}
+              position={[
+                parseFloat(spot.GPSLattitude),
+                parseFloat(spot.GPSLongitude),
+              ]}
+              icon={getMarkerIcon(spot.status?.InformationToShow)}
+            >
+              <Popup>
+                <Box sx={{ p: 0 }}>
+                  <Paper elevation={0} sx={{ p: 2 }}>
+                    <Typography variant="h6" gutterBottom fontWeight="bold">
+                      {spot.Name}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" paragraph>
+                      {spot.Address}
+                    </Typography>
 
-                <div className="space-y-4">
-                  {spot.status ? (
-                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                      <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center">
-                        Status
-                      </h4>
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={`text-sm font-medium ${
-                            spot.status.InformationToShow === 'מלא'
-                              ? 'text-red-600 dark:text-red-400'
-                              : 'text-green-600 dark:text-green-400'
-                          }`}
-                        >
-                          {spot.status.InformationToShow}
-                        </span>
-                        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                          <Clock size={14} className="mr-1" />
-                          {new Date(
-                            spot.status.LastUpdateFromDambach
-                          ).toLocaleTimeString()}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg">
-                      <h4 className="font-semibold text-yellow-700 dark:text-yellow-300 mb-2 flex items-center">
-                        <AlertCircle size={16} className="mr-2" /> Status Unavailable
-                      </h4>
-                      <p className="text-sm text-yellow-600 dark:text-yellow-300">
+                    {spot.status ? (
+                      <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Status
+                        </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Chip
+                            label={spot.status.InformationToShow}
+                            color={spot.status.InformationToShow === 'מלא' ? 'error' : 'success'}
+                            size="small"
+                          />
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Clock size={14} style={{ marginRight: 4 }} />
+                            <Typography variant="caption" color="textSecondary">
+                              {new Date(spot.status.LastUpdateFromDambach).toLocaleTimeString()}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Paper>
+                    ) : (
+                      <Alert severity="warning" sx={{ mb: 2 }}>
+                        <AlertTitle>Status Unavailable</AlertTitle>
                         Real-time status information is temporarily unavailable
-                      </p>
-                    </div>
-                  )}
+                      </Alert>
+                    )}
 
-                  {spot.DaytimeFee && (
-                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                      <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Fees</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">{spot.DaytimeFee}</p>
-                      {spot.FeeComments && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 italic">
-                          {spot.FeeComments}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-    </div>
+                    {spot.DaytimeFee && (
+                      <Paper variant="outlined" sx={{ p: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Fees
+                        </Typography>
+                        <Typography variant="body2">
+                          {spot.DaytimeFee}
+                        </Typography>
+                        {spot.FeeComments && (
+                          <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block', fontStyle: 'italic' }}>
+                            {spot.FeeComments}
+                          </Typography>
+                        )}
+                      </Paper>
+                    )}
+                  </Paper>
+                </Box>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </Box>
+    </Box>
   );
 };
 

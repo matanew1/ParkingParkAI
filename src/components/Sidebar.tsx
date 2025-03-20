@@ -2,6 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, Clock, ChevronRight, RefreshCw } from 'lucide-react';
 import { SidebarProps } from '../types/parking';
 import { AxiosError } from 'axios';
+import {
+  Box,
+  Typography,
+  TextField,
+  IconButton,
+  Button,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  Paper,
+  Chip,
+  useMediaQuery,
+  useTheme,
+  InputAdornment,
+  Divider,
+  Fade
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 
 const Sidebar: React.FC<SidebarProps> = ({ 
   spots, 
@@ -10,11 +29,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   onRefresh, 
   isRefreshing 
 }) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [isOpen, setIsOpen] = useState(!isMobile);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [lastValidStatus, setLastValidStatus] = useState<any>(null); // Track last valid status
-  const [cachedData, setCachedData] = useState<any>(null); // Track cached data
+  const [lastValidStatus, setLastValidStatus] = useState<any>(null);
+  const [cachedData, setCachedData] = useState<any>(null);
   
   useEffect(() => {
     // Try to load cached data on mount
@@ -29,6 +50,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
+  // Update isOpen state when screen size changes
+  useEffect(() => {
+    setIsOpen(!isMobile);
+  }, [isMobile]);
+
   const filteredSpots = spots.filter(spot => 
     spot.Name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
     spot.Address.toLowerCase().includes(debouncedSearch.toLowerCase())
@@ -37,7 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Handle refresh error, and preserve last valid status or use cache
   const handleRefresh = async () => {
     try {
-      await onRefresh(); // Assuming onRefresh will handle the fetch and update status
+      onRefresh(); // Assuming onRefresh will handle the fetch and update status
       setLastValidStatus(null); // Reset last valid status on refresh attempt
     } catch (error) {
       // Check if the error is an AxiosError
@@ -71,104 +97,190 @@ const Sidebar: React.FC<SidebarProps> = ({
       return cachedData;
     }
     // If there is no valid status, return the string "Status unavailable" or similar
-    return 'Status unavailable... Please refresh again'
+    return 'Status unavailable... Please refresh again';
   };
+
+  const toggleDrawer = () => {
+    setIsOpen(!isOpen);
+  };
+
+  const drawerWidth = isMobile ? '100%' : 320;
   
-
   return (
-    <div 
-      className={`fixed top-[64px] left-0 h-[calc(100vh-64px)] bg-white dark:bg-gray-800 shadow-lg transition-all duration-300 z-[1000] ${
-        isOpen ? 'w-80 sm:w-[70vw] max-w-sm' : 'w-12 sm:w-12'
-      }`}
-    >
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="absolute -right-8 top-4 bg-white dark:bg-gray-800 rounded-full p-1 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-        aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+    <Box sx={{ position: 'relative' }}>
+      <Drawer
+        variant={isMobile ? "temporary" : "persistent"}
+        anchor="left"
+        open={isOpen}
+        onClose={toggleDrawer}
+        sx={{
+          width: isOpen ? drawerWidth : 0,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+            top: '64px',
+            height: 'calc(100vh - 64px)',
+            zIndex: 1000,
+            transition: theme.transitions.create(['width', 'margin'], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
+          },
+        }}
       >
-        {isOpen ? <X size={20} className="text-gray-600 dark:text-gray-300" /> : <Menu size={20} className="text-gray-600 dark:text-gray-300" />}
-      </button>
+        <Box 
+          sx={{ 
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            p: 2,
+            borderBottom: `1px solid ${theme.palette.divider}`
+          }}
+        >
+          <Typography variant="h6">Parking Spots</Typography>
+          {isMobile && (
+            <IconButton 
+              onClick={toggleDrawer}
+              aria-label="Close sidebar"
+            >
+              <X size={20} />
+            </IconButton>
+          )}
+        </Box>
+        
+        <Box sx={{ p: 2, height: 'calc(100% - 60px)', overflow: 'auto' }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search parking spots..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            margin="normal"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              )
+            }}
+            sx={{ mb: 2 }}
+          />
 
-      {isOpen && (
-        <div className="p-4 h-full overflow-auto text-gray-900 dark:text-gray-100">
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="Search parking spots..."
-              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              aria-label="Search for parking spots"
-            />
-          </div>
-
-          <div className="mb-4">
-            <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400" aria-live="polite">
-              <Clock size={14} className="mr-1" />
-              <span>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            mb: 2 
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Clock size={16} />
+              <Typography variant="caption" sx={{ ml: 1 }}>
                 {lastUpdated 
                   ? `Updated: ${lastUpdated.toLocaleTimeString()}` 
                   : 'Loading data...'}
-              </span>
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="px-2 py-1 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors flex items-center"
-              >
-                {isRefreshing ? (
-                  <RefreshCw size={14} className="mr-1 animate-spin" />
+              </Typography>
+            </Box>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              startIcon={
+                isRefreshing ? (
+                  <RefreshCw size={14} className="animate-spin" />
                 ) : (
-                  <RefreshCw size={14} className="mr-1" />
-                )}
-                Refresh
-              </button>
-            </div>
-          </div>
+                  <RefreshCw size={14} />
+                )
+              }
+            >
+              Refresh
+            </Button>
+          </Box>
 
-          <div className="space-y-2">
+          <Divider sx={{ my: 1 }} />
+
+          <List disablePadding>
             {filteredSpots.length > 0 ? (
               filteredSpots.map((spot) => (
-                <div
+                <Paper 
                   key={spot.AhuzotCode}
-                  className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors"
-                  onClick={() => onSpotClick(spot)}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Select parking spot: ${spot.Name}`}
+                  elevation={1}
+                  sx={{ 
+                    mb: 1,
+                    overflow: 'hidden',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      boxShadow: 3,
+                      transform: 'translateY(-2px)'
+                    }
+                  }}
                 >
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-800 dark:text-white">{spot.Name}</h3>
-                    <ChevronRight size={16} className="text-gray-400 dark:text-gray-500" />
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{spot.Address}</p>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className={`text-xs font-medium px-2 py-1 rounded ${
-                      handleSpotStatus(spot) === 'מלא'
-                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                        : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                    }`}>
-                      {handleSpotStatus(spot)}
-                    </span>
-                  </div>
-                  {spot.status && (
-                    <div className="flex items-center mt-1 text-xs text-gray-400 dark:text-gray-500">
-                      <Clock size={12} className="mr-1" />
-                      <span>
-                        Updated: {new Date(spot.status.LastUpdateFromDambach).toLocaleTimeString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                  <ListItemButton onClick={() => onSpotClick(spot)}>
+                    <ListItem disablePadding>
+                      <Box sx={{ width: '100%' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography variant="subtitle1" noWrap>{spot.Name}</Typography>
+                          <ChevronRight size={16} color={theme.palette.text.secondary} />
+                        </Box>
+                        <Typography variant="body2" color="textSecondary" noWrap>
+                          {spot.Address}
+                        </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                          <Chip
+                            label={handleSpotStatus(spot)}
+                            size="small"
+                            color={handleSpotStatus(spot) === 'מלא' ? 'error' : 'success'}
+                            sx={{ height: 24 }}
+                          />
+                          {spot.status && (
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Clock size={12} />
+                              <Typography variant="caption" color="textSecondary" sx={{ ml: 0.5 }}>
+                                {new Date(spot.status.LastUpdateFromDambach).toLocaleTimeString()}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                      </Box>
+                    </ListItem>
+                  </ListItemButton>
+                </Paper>
               ))
             ) : (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                <p>No parking spots match your search.</p>
-              </div>
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography color="textSecondary">
+                  No parking spots match your search.
+                </Typography>
+              </Box>
             )}
-          </div>
-        </div>
-      )}
-    </div>
+          </List>
+        </Box>
+      </Drawer>
+
+      <Fade in={!isOpen}>
+        <IconButton
+          onClick={toggleDrawer}
+          sx={{
+            position: 'fixed',
+            left: 16,
+            top: 80,
+            zIndex: 1001,
+            backgroundColor: theme.palette.background.paper,
+            boxShadow: 2,
+            '&:hover': {
+              backgroundColor: theme.palette.action.hover
+            },
+            transition: theme.transitions.create(['opacity', 'transform'], {
+              duration: theme.transitions.duration.standard,
+            }),
+          }}
+          aria-label="Open sidebar"
+        >
+          <Menu size={20} />
+        </IconButton>
+      </Fade>
+    </Box>
   );
 };
 
