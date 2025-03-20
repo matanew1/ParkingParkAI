@@ -1,11 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet';
 import { Icon } from 'leaflet';
-import axios from 'axios';
+import { debounce } from 'lodash';
 import { Clock, RefreshCw, Crosshair } from 'lucide-react';
+import { fetchParkingSpots, fetchParkingStatus } from '../services/parkingService';
 import type {
-  ParkingSpot,
-  ParkingStatus,
   ParkingSpotWithStatus,
 } from '../types/parking';
 import Sidebar from './Sidebar';
@@ -85,8 +84,8 @@ const LocationMarker = ({ setUserLocation }: { setUserLocation: (location: [numb
         onLocationError,
         {
           enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 10000
+          timeout: 20000, // 20 seconds
+          maximumAge: 0, // No cache
         }
       );
     }
@@ -108,8 +107,8 @@ const LocationMarker = ({ setUserLocation }: { setUserLocation: (location: [numb
           </Typography>
         </Popup>
       </Marker>
-      <Circle 
-        center={position} 
+      <Circle
+        center={position}
         radius={accuracy}
         pathOptions={{ color: 'green', fillColor: 'green', fillOpacity: 0.1 }}
       />
@@ -123,7 +122,7 @@ const ParkingMap = () => {
 
   const [parkingSpots, setParkingSpots] = useState<ParkingSpotWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([32.0853, 34.7818]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -131,96 +130,41 @@ const ParkingMap = () => {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [showLocationMarker, setShowLocationMarker] = useState(false);
 
-  const fetchParkingData = useCallback(async (isManualRefresh = false) => {
-    try {
-      if (isManualRefresh) {
-        setRefreshing(true);
-      }
-      
-      const axiosConfig = {
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-      };
-
-      let spotsResponse;
+  const fetchParkingData = useCallback(
+    debounce(async (isManualRefresh = false) => {
       try {
-        spotsResponse = await axios.get(
-          'https://api.tel-aviv.gov.il/parking/stations',
-          axiosConfig
-        );
-        
-        if (!spotsResponse.data || !Array.isArray(spotsResponse.data)) {
-          throw new Error('Invalid parking spots data format');
+        if (isManualRefresh) {
+          setRefreshing(true);
         }
-      } catch (err) {
-        throw new Error('Unable to load parking locations. Please try again later.');
-      }
 
-      let statusResponse;
-      let statusMap = new Map();
-      try {
-        statusResponse = await axios.get(
-          'https://api.tel-aviv.gov.il/parking/StationsStatus',
-          axiosConfig
-        );
+        const [spots, statusMap] = await Promise.all([
+          fetchParkingSpots(),
+          fetchParkingStatus(),
+        ]);
 
-        if (statusResponse.data && Array.isArray(statusResponse.data)) {
-          statusMap = new Map(
-            statusResponse.data.map((status: ParkingStatus) => [
-              status.AhuzotCode,
-              status,
-            ])
-          );
-          setStatusError(null);
-        } else {
-          setStatusError('Status information is temporarily unavailable');
-        }
-      } catch (err) {
-        console.error('Error fetching status data:', err);
-        setStatusError('Status information is temporarily unavailable');
-      }
-
-      const validSpots = spotsResponse.data
-        .filter((spot: ParkingSpot) => {
-          const lat = parseFloat(spot.GPSLattitude);
-          const lng = parseFloat(spot.GPSLongitude);
-          return (
-            spot.GPSLattitude &&
-            spot.GPSLongitude &&
-            !isNaN(lat) &&
-            !isNaN(lng) &&
-            lat >= 31 &&
-            lat <= 33 &&
-            lng >= 34 &&
-            lng <= 35
-          );
-        })
-        .map((spot: ParkingSpot) => ({
+        const spotsWithStatus = spots.map((spot) => ({
           ...spot,
           status: statusMap.get(spot.AhuzotCode),
         }));
 
-      if (validSpots.length === 0) {
-        throw new Error('No valid parking spots found');
+        setParkingSpots(spotsWithStatus);
+        setLastUpdated(new Date());
+        setError(null);
+        setStatusError(null);
+      } catch (err) {
+        console.error('Error fetching parking data:', err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load parking data. Please try again later.'
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-
-      setParkingSpots(validSpots);
-      setError(null);
-      setLastUpdated(new Date());
-    } catch (err) {
-      console.error('Error fetching parking data:', err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to load parking data. Please try again later.'
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+    }, 300), // Debounce with a 300ms delay
+    []
+  );
 
   useEffect(() => {
     fetchParkingData();
@@ -237,8 +181,44 @@ const ParkingMap = () => {
 
   const handleEnableLocation = () => {
     setShowLocationMarker(true);
+  
     if (userLocation) {
+      // If user location is already available, center the map on it
       setMapCenter(userLocation);
+    } else {
+      // Request location permission and fetch the user's current location
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const location: [number, number] = [latitude, longitude];
+          setUserLocation(location);
+          setMapCenter(location);
+        },
+        (error) => {
+          console.error('Error fetching location:', error.message);
+  
+          // Provide user-friendly error messages
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              alert('Location access denied. Please allow location access in your browser settings.');
+              break;
+            case error.POSITION_UNAVAILABLE:
+              alert('Location information is unavailable. Please try again later.');
+              break;
+            case error.TIMEOUT:
+              alert('Location request timed out. Showing default location.');
+              setMapCenter([32.0853, 34.7818]); // Example: Tel Aviv coordinates
+              break;
+            default:
+              alert('Unable to fetch your location. Please enable location services.');
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 20000, // 20 seconds
+          maximumAge: 0, // No cache
+        }
+      );
     }
   };
 
@@ -252,11 +232,11 @@ const ParkingMap = () => {
 
   if (loading) {
     return (
-      <Box 
-        display="flex" 
-        alignItems="center" 
-        justifyContent="center" 
-        height="100%" 
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        height="100%"
         sx={{ color: theme.palette.text.secondary }}
       >
         <CircularProgress size={60} thickness={4} />
@@ -267,49 +247,16 @@ const ParkingMap = () => {
     );
   }
 
-  if (error) {
-    return (
-      <Box 
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        justifyContent="center"
-        height="100%"
-        p={4}
-      >
-        <Paper elevation={3} sx={{ maxWidth: 500, p: 3, textAlign: 'center' }}>
-          <Typography variant="h6" color="error" gutterBottom fontWeight="medium">
-            Error Loading Data
-          </Typography>
-          <Typography variant="body2" color="error" paragraph>
-            {error}
-          </Typography>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={() => {
-              setLoading(true);
-              fetchParkingData(true);
-            }}
-            startIcon={<RefreshCw size={16} />}
-          >
-            Try Again
-          </Button>
-        </Paper>
-      </Box>
-    );
-  }
-
   return (
     <Box position="relative" height="calc(100vh - 64px)">
       {statusError && (
-        <Alert 
+        <Alert
           severity="warning"
           variant="filled"
           action={
-            <Button 
-              color="inherit" 
-              size="small" 
+            <Button
+              color="inherit"
+              size="small"
               onClick={() => fetchParkingData(true)}
               disabled={refreshing}
               startIcon={refreshing ? <RefreshCw className="animate-spin" size={14} /> : <RefreshCw size={14} />}
@@ -329,10 +276,10 @@ const ParkingMap = () => {
           {statusError}
         </Alert>
       )}
-      
-      <Sidebar 
-        spots={parkingSpots} 
-        onSpotClick={handleSpotClick} 
+
+      <Sidebar
+        spots={parkingSpots}
+        onSpotClick={handleSpotClick}
         statusError={statusError}
         lastUpdated={lastUpdated}
         onRefresh={() => fetchParkingData(true)}
@@ -341,23 +288,23 @@ const ParkingMap = () => {
 
       {/* Location button */}
       <Tooltip title="Show my location">
-        <Fab 
-          color="primary" 
+        <Fab
+          color="primary"
           size="medium"
           onClick={handleEnableLocation}
-          sx={{ 
-            position: 'absolute', 
-            bottom: 20, 
-            right: 5, 
+          sx={{
+            position: 'absolute',
+            bottom: 20,
+            right: 5,
             zIndex: 1000
           }}
         >
           <Crosshair />
         </Fab>
       </Tooltip>
-      
+
       <Box
-        sx={{ 
+        sx={{
           height: '100%',
           width: '100%',
           pt: statusError ? '48px' : 0,
@@ -372,9 +319,9 @@ const ParkingMap = () => {
           }
         }}
       >
-        <MapContainer 
-          center={mapCenter} 
-          zoom={13} 
+        <MapContainer
+          center={mapCenter}
+          zoom={13}
           style={{ height: '100%', width: '100%' }}
         >
           <MapController center={mapCenter} />
@@ -382,10 +329,10 @@ const ParkingMap = () => {
             attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          
+
           {/* User location marker */}
           {showLocationMarker && <LocationMarker setUserLocation={updateUserLocation} />}
-          
+
           {parkingSpots.map((spot) => (
             <Marker
               key={spot.AhuzotCode}

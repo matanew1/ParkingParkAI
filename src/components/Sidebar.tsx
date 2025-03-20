@@ -22,12 +22,12 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 
-const Sidebar: React.FC<SidebarProps> = ({ 
-  spots, 
-  onSpotClick, 
-  lastUpdated, 
-  onRefresh, 
-  isRefreshing 
+const Sidebar: React.FC<SidebarProps> = ({
+  spots,
+  onSpotClick,
+  lastUpdated,
+  onRefresh,
+  isRefreshing
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -54,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     setIsOpen(!isMobile);
   }, [isMobile]);
 
-  const filteredSpots = spots.filter(spot => 
+  const filteredSpots = spots.filter(spot =>
     spot.Name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
     spot.Address.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
@@ -97,7 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const drawerWidth = isMobile ? '100%' : 320;
-  
+
   return (
     <Box sx={{ position: 'relative' }}>
       <Drawer
@@ -109,10 +109,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           width: isOpen ? drawerWidth : 0,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
-            width: drawerWidth,
+            width: isOpen ? drawerWidth : 0,
             boxSizing: 'border-box',
-            top: '64px',
-            height: 'calc(100vh - 64px)',
             zIndex: 1000,
             transition: theme.transitions.create(['width', 'margin'], {
               easing: theme.transitions.easing.sharp,
@@ -121,8 +119,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           },
         }}
       >
-        <Box 
-          sx={{ 
+        <Box
+          sx={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -132,7 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         >
           <Typography variant="h6">Parking Spots</Typography>
           {isMobile && (
-            <IconButton 
+            <IconButton
               onClick={toggleDrawer}
               aria-label="Close sidebar"
             >
@@ -140,7 +138,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </IconButton>
           )}
         </Box>
-        
+
         <Box sx={{ p: 2, height: 'calc(100% - 60px)', overflow: 'auto' }}>
           <TextField
             fullWidth
@@ -159,17 +157,17 @@ const Sidebar: React.FC<SidebarProps> = ({
             sx={{ mb: 2 }}
           />
 
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between', 
-            mb: 2 
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mb: 2
           }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Clock size={16} />
               <Typography variant="caption" sx={{ ml: 1 }}>
-                {lastUpdated 
-                  ? `Updated: ${lastUpdated.toLocaleTimeString()}` 
+                {lastUpdated
+                  ? `Updated: ${lastUpdated.toLocaleTimeString()}`
                   : 'Loading data...'}
               </Typography>
             </Box>
@@ -195,10 +193,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           <List disablePadding>
             {filteredSpots.length > 0 ? (
               filteredSpots.map((spot) => (
-                <Paper 
+                <Paper
                   key={spot.AhuzotCode}
                   elevation={1}
-                  sx={{ 
+                  sx={{
                     mb: 1,
                     overflow: 'hidden',
                     transition: 'all 0.2s',
@@ -211,9 +209,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                     }),
                   }}
                 >
-                  <ListItemButton onClick={() => { 
-                    setSelectedSpot(spot.AhuzotCode); 
-                    onSpotClick(spot); 
+                  <ListItemButton onClick={() => {
+                    setSelectedSpot(spot.AhuzotCode);
+                    onSpotClick(spot);
                   }}>
                     <ListItem disablePadding>
                       <Box sx={{ width: '100%' }}>
@@ -261,9 +259,15 @@ const Sidebar: React.FC<SidebarProps> = ({
           onClick={toggleDrawer}
           sx={{
             position: 'fixed',
-            left: 16,
+            left: 20,
             top: 80,
-            zIndex: 1200
+            zIndex: 1200,
+            backgroundColor: theme.palette.primary.main, // Blue background for the toggle button
+            color: theme.palette.primary.contrastText, // Contrast text color
+            boxShadow: theme.shadows[3],
+            '&:hover': {
+              backgroundColor: theme.palette.primary.dark, // Darker blue on hover
+            },
           }}
         >
           <Menu size={24} />
