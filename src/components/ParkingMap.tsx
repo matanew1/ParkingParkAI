@@ -1,13 +1,15 @@
-import { useEffect, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet';
-import { Icon } from 'leaflet';
-import { debounce } from 'lodash';
-import { Clock, RefreshCw, Crosshair } from 'lucide-react';
-import { fetchParkingSpots, fetchParkingStatus } from '../services/parkingService';
-import type {
-  ParkingSpotWithStatus,
-} from '../types/parking';
-import Sidebar from './Sidebar';
+import { useEffect, useState, useCallback } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  Circle,
+} from "react-leaflet";
+import { Icon } from "leaflet";
+import { Clock, RefreshCw, Crosshair } from "lucide-react";
+import type { ParkingSpotWithStatus } from "../types/parking";
 import {
   Box,
   Typography,
@@ -20,17 +22,28 @@ import {
   useTheme,
   useMediaQuery,
   Fab,
-  Tooltip
-} from '@mui/material';
+  Tooltip,
+} from "@mui/material";
 
-import 'leaflet/dist/leaflet.css';
+import "leaflet/dist/leaflet.css";
+
+interface ParkingMapProps {
+  parkingSpots: ParkingSpotWithStatus[];
+  loading: boolean;
+  statusError: string | null;
+  mapCenter: [number, number];
+  lastUpdated: Date | null;
+  refreshing: boolean;
+  onRefresh: () => void;
+  setMapCenter: (center: [number, number]) => void;
+}
 
 const getMarkerIcon = (status?: string) => {
-  const color = status === 'מלא' ? 'red' : 'blue';
+  const color = status === "מלא" ? "red" : "blue";
   return new Icon({
     iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
     shadowUrl:
-      'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
@@ -42,7 +55,7 @@ const getMarkerIcon = (status?: string) => {
 const userLocationIcon = new Icon({
   iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png`,
   shadowUrl:
-    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -58,7 +71,11 @@ const MapController = ({ center }: { center: [number, number] }) => {
 };
 
 // Component to handle location watching
-const LocationMarker = ({ setUserLocation }: { setUserLocation: (location: [number, number]) => void }) => {
+const LocationMarker = ({
+  setUserLocation,
+}: {
+  setUserLocation: (location: [number, number]) => void;
+}) => {
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [accuracy, setAccuracy] = useState<number>(0);
   const map = useMap();
@@ -75,7 +92,7 @@ const LocationMarker = ({ setUserLocation }: { setUserLocation: (location: [numb
     };
 
     const onLocationError = (err: GeolocationPositionError) => {
-      console.error('Location error:', err.message);
+      console.error("Location error:", err.message);
     };
 
     if (navigator.geolocation) {
@@ -110,78 +127,31 @@ const LocationMarker = ({ setUserLocation }: { setUserLocation: (location: [numb
       <Circle
         center={position}
         radius={accuracy}
-        pathOptions={{ color: 'green', fillColor: 'green', fillOpacity: 0.1 }}
+        pathOptions={{ color: "green", fillColor: "green", fillOpacity: 0.1 }}
       />
     </>
   );
 };
 
-const ParkingMap = () => {
+const ParkingMap: React.FC<ParkingMapProps> = ({
+  parkingSpots,
+  loading,
+  statusError,
+  mapCenter,
+  refreshing,
+  onRefresh,
+  setMapCenter,
+}) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const [parkingSpots, setParkingSpots] = useState<ParkingSpotWithStatus[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [, setError] = useState<string | null>(null);
-  const [statusError, setStatusError] = useState<string | null>(null);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([32.0853, 34.7818]);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [showLocationMarker, setShowLocationMarker] = useState(false);
-
-  const fetchParkingData = useCallback(
-    debounce(async (isManualRefresh = false) => {
-      try {
-        if (isManualRefresh) {
-          setRefreshing(true);
-        }
-
-        const [spots, statusMap] = await Promise.all([
-          fetchParkingSpots(),
-          fetchParkingStatus(),
-        ]);
-
-        const spotsWithStatus = spots.map((spot) => ({
-          ...spot,
-          status: statusMap.get(spot.AhuzotCode),
-        }));
-
-        setParkingSpots(spotsWithStatus);
-        setLastUpdated(new Date());
-        setError(null);
-        setStatusError(null);
-      } catch (err) {
-        console.error('Error fetching parking data:', err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Failed to load parking data. Please try again later.'
-        );
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    }, 300), // Debounce with a 300ms delay
-    []
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(
+    null
   );
-
-  useEffect(() => {
-    fetchParkingData();
-    const intervalId = setInterval(() => fetchParkingData(), 5 * 60 * 1000);
-    return () => clearInterval(intervalId);
-  }, [fetchParkingData]);
-
-  const handleSpotClick = useCallback((spot: ParkingSpotWithStatus) => {
-    setMapCenter([
-      parseFloat(spot.GPSLattitude),
-      parseFloat(spot.GPSLongitude),
-    ]);
-  }, []);
+  const [showLocationMarker, setShowLocationMarker] = useState(false);
 
   const handleEnableLocation = () => {
     setShowLocationMarker(true);
-  
+
     if (userLocation) {
       // If user location is already available, center the map on it
       setMapCenter(userLocation);
@@ -195,22 +165,28 @@ const ParkingMap = () => {
           setMapCenter(location);
         },
         (error) => {
-          console.error('Error fetching location:', error.message);
-  
+          console.error("Error fetching location:", error.message);
+
           // Provide user-friendly error messages
           switch (error.code) {
             case error.PERMISSION_DENIED:
-              alert('Location access denied. Please allow location access in your browser settings.');
+              alert(
+                "Location access denied. Please allow location access in your browser settings."
+              );
               break;
             case error.POSITION_UNAVAILABLE:
-              alert('Location information is unavailable. Please try again later.');
+              alert(
+                "Location information is unavailable. Please try again later."
+              );
               break;
             case error.TIMEOUT:
-              alert('Location request timed out. Showing default location.');
+              alert("Location request timed out. Showing default location.");
               setMapCenter([32.0853, 34.7818]); // Example: Tel Aviv coordinates
               break;
             default:
-              alert('Unable to fetch your location. Please enable location services.');
+              alert(
+                "Unable to fetch your location. Please enable location services."
+              );
           }
         },
         {
@@ -223,12 +199,15 @@ const ParkingMap = () => {
   };
 
   // Handle updating the user location
-  const updateUserLocation = useCallback((location: [number, number]) => {
-    setUserLocation(location);
-    if (showLocationMarker) {
-      setMapCenter(location);
-    }
-  }, [showLocationMarker]);
+  const updateUserLocation = useCallback(
+    (location: [number, number]) => {
+      setUserLocation(location);
+      if (showLocationMarker) {
+        setMapCenter(location);
+      }
+    },
+    [showLocationMarker, setMapCenter]
+  );
 
   if (loading) {
     return (
@@ -248,7 +227,7 @@ const ParkingMap = () => {
   }
 
   return (
-    <Box position="relative" height="calc(100vh - 64px)">
+    <Box position="relative" height="100%" width="100%">
       {statusError && (
         <Alert
           severity="warning"
@@ -257,34 +236,31 @@ const ParkingMap = () => {
             <Button
               color="inherit"
               size="small"
-              onClick={() => fetchParkingData(true)}
+              onClick={() => onRefresh()}
               disabled={refreshing}
-              startIcon={refreshing ? <RefreshCw className="animate-spin" size={14} /> : <RefreshCw size={14} />}
+              startIcon={
+                refreshing ? (
+                  <RefreshCw className="animate-spin" size={14} />
+                ) : (
+                  <RefreshCw size={14} />
+                )
+              }
             >
               Refresh
             </Button>
           }
           sx={{
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             left: 0,
             right: 0,
             zIndex: 10,
-            borderRadius: 0
+            borderRadius: 0,
           }}
         >
           {statusError}
         </Alert>
       )}
-
-      <Sidebar
-        spots={parkingSpots}
-        onSpotClick={handleSpotClick}
-        statusError={statusError}
-        lastUpdated={lastUpdated}
-        onRefresh={() => fetchParkingData(true)}
-        isRefreshing={refreshing}
-      />
 
       {/* Location button */}
       <Tooltip title="Show my location">
@@ -293,10 +269,10 @@ const ParkingMap = () => {
           size="medium"
           onClick={handleEnableLocation}
           sx={{
-            position: 'absolute',
+            position: "absolute",
             bottom: 20,
-            right: 5,
-            zIndex: 1000
+            right: 20,
+            zIndex: 1000,
           }}
         >
           <Crosshair />
@@ -305,24 +281,24 @@ const ParkingMap = () => {
 
       <Box
         sx={{
-          height: '100%',
-          width: '100%',
-          pt: statusError ? '48px' : 0,
-          '& .leaflet-popup-content-wrapper': {
+          height: "100%",
+          width: "100%",
+          pt: statusError ? "48px" : 0,
+          "& .leaflet-popup-content-wrapper": {
             padding: 0,
-            overflow: 'hidden',
-            borderRadius: 1
+            overflow: "hidden",
+            borderRadius: 1,
           },
-          '& .leaflet-popup-content': {
+          "& .leaflet-popup-content": {
             margin: 0,
-            width: isMobile ? '280px !important' : '320px !important'
-          }
+            width: isMobile ? "280px !important" : "320px !important",
+          },
         }}
       >
         <MapContainer
           center={mapCenter}
           zoom={13}
-          style={{ height: '100%', width: '100%' }}
+          style={{ height: "100%", width: "100%" }}
         >
           <MapController center={mapCenter} />
           <TileLayer
@@ -331,7 +307,9 @@ const ParkingMap = () => {
           />
 
           {/* User location marker */}
-          {showLocationMarker && <LocationMarker setUserLocation={updateUserLocation} />}
+          {showLocationMarker && (
+            <LocationMarker setUserLocation={updateUserLocation} />
+          )}
 
           {parkingSpots.map((spot) => (
             <Marker
@@ -357,16 +335,28 @@ const ParkingMap = () => {
                         <Typography variant="subtitle2" gutterBottom>
                           Status
                         </Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
                           <Chip
                             label={spot.status.InformationToShow}
-                            color={spot.status.InformationToShow === 'מלא' ? 'error' : 'success'}
+                            color={
+                              spot.status.InformationToShow === "מלא"
+                                ? "error"
+                                : "success"
+                            }
                             size="small"
                           />
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
                             <Clock size={14} style={{ marginRight: 4 }} />
                             <Typography variant="caption" color="textSecondary">
-                              {new Date(spot.status.LastUpdateFromDambach).toLocaleTimeString()}
+                              {new Date(
+                                spot.status.LastUpdateFromDambach
+                              ).toLocaleTimeString()}
                             </Typography>
                           </Box>
                         </Box>
@@ -387,7 +377,15 @@ const ParkingMap = () => {
                           {spot.DaytimeFee}
                         </Typography>
                         {spot.FeeComments && (
-                          <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block', fontStyle: 'italic' }}>
+                          <Typography
+                            variant="caption"
+                            color="textSecondary"
+                            sx={{
+                              mt: 1,
+                              display: "block",
+                              fontStyle: "italic",
+                            }}
+                          >
                             {spot.FeeComments}
                           </Typography>
                         )}
