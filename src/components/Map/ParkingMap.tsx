@@ -1,13 +1,12 @@
-import { useState, useCallback, useEffect, useContext } from "react";
+import { useState, useCallback, useContext } from "react";
 import {
   MapContainer,
   TileLayer,
   Marker,
   Popup,
-  useMap,
   Polyline,
 } from "react-leaflet";
-import { Clock, RefreshCw, Crosshair } from "lucide-react";
+import { Clock, RefreshCw, Crosshair, Trash2 } from "lucide-react";
 import type { ParkingMapProps } from "../../types/location";
 import {
   Box,
@@ -24,11 +23,15 @@ import {
   Tooltip,
 } from "@mui/material";
 import ParkingContext from "../../context/ParkingContext";
-import { getMarkerIcon, selectedMarkerIcon } from "./utils/MarkerUtils";
+import {
+  getMarkerIcon,
+  selectedMarkerIcon,
+  MapZoomController,
+  RouteZoomController,
+} from "./utils/MarkerUtils";
 import LocationMarker from "./LocationMarker";
 import MapController from "./MapController";
 import "leaflet/dist/leaflet.css";
-import L from "leaflet";
 import { Icon } from "leaflet";
 
 // Custom icons for start and end points
@@ -52,69 +55,6 @@ const endIcon = new Icon({
   shadowSize: [41, 41],
 });
 
-// MapZoomController for selected spot
-const MapZoomController: React.FC<{
-  selectedSpotId: string | null;
-  spots: ParkingSpotWithStatus[];
-}> = ({ selectedSpotId, spots }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (selectedSpotId) {
-      const selectedSpot = spots.find(
-        (spot) => spot.AhuzotCode === selectedSpotId
-      );
-      if (selectedSpot) {
-        const position: [number, number] = [
-          parseFloat(selectedSpot.GPSLattitude),
-          parseFloat(selectedSpot.GPSLongitude),
-        ];
-        map.setView(position, 16);
-      }
-    }
-  }, [selectedSpotId, spots, map]);
-
-  return null;
-};
-
-// RouteZoomController with validation
-const RouteZoomController: React.FC<{ routes: Coordinates[][] }> = ({
-  routes,
-}) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (routes.length > 0 && routes[0].length > 0) {
-      const validRoutes = routes
-        .map((route) =>
-          route.filter(
-            ([lat, lng]) =>
-              typeof lat === "number" &&
-              typeof lng === "number" &&
-              lat >= -90 &&
-              lat <= 90 &&
-              lng >= -180 &&
-              lng <= 180
-          )
-        )
-        .filter((route) => route.length > 0);
-
-      if (validRoutes.length > 0) {
-        const bounds = validRoutes[0].reduce(
-          (acc, [lat, lng]) => acc.extend([lat, lng]),
-          new L.LatLngBounds(validRoutes[0][0], validRoutes[0][0])
-        );
-        map.fitBounds(bounds, { padding: [50, 50] });
-      } else {
-        console.error("No valid route coordinates found");
-        map.setView([32.0853, 34.7818], 13);
-      }
-    }
-  }, [routes, map]);
-
-  return null;
-};
-
 const ParkingMap: React.FC<ParkingMapProps> = ({
   parkingSpots,
   loading,
@@ -124,6 +64,7 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
   onRefresh,
   setMapCenter,
   selectedSpotId,
+  onResetMap,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -131,7 +72,7 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
     null
   );
   const [showLocationMarker, setShowLocationMarker] = useState(false);
-  const { routes } = useContext(ParkingContext);
+  const { routes, selectedSpot } = useContext(ParkingContext); // Added selectedSpot and setSelectedSpot
 
   const handleEnableLocation = () => {
     setShowLocationMarker(true);
@@ -241,6 +182,7 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
         </Alert>
       )}
 
+      {/* Location Button */}
       <Tooltip title="Show my location">
         <Fab
           color="primary"
@@ -259,6 +201,29 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
           }}
         >
           <Crosshair />
+        </Fab>
+      </Tooltip>
+
+      {/* Reset Map Button */}
+      <Tooltip title="Clear routes and selected spot">
+        <Fab
+          color="secondary"
+          size="medium"
+          onClick={onResetMap}
+          disabled={routes.length === 0 && !selectedSpot} // Disable if no routes and no selected spot
+          sx={{
+            position: "absolute",
+            bottom: 90,
+            right: 20,
+            zIndex: 1000,
+            "@media (max-width: 600px)": {
+              bottom: 92,
+              right: "10%",
+              transform: "translateX(50%)",
+            },
+          }}
+        >
+          <Trash2 />
         </Fab>
       </Tooltip>
 
@@ -410,7 +375,6 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
             );
           })}
 
-          {/* Render routes with color */}
           {routes.map((route, index) => {
             const validRoute = route.filter(
               ([lat, lng]) =>
@@ -435,18 +399,16 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
                 key={`route-${index}`}
                 positions={validRoute}
                 pathOptions={{
-                  color: "black", // Single color for the route
-                  weight: 5, // Thickness of the line
-                  opacity: 0.7, // Transparency
+                  color: "black",
+                  weight: 5,
+                  opacity: 0.7,
                 }}
               />
             );
           })}
 
-          {/* Add start and end markers for the primary route */}
           {routes.length > 0 && routes[0]?.length >= 2 && (
             <>
-              {/* Start Marker */}
               <Marker position={routes[0][0]} icon={startIcon}>
                 <Popup>
                   <Typography variant="body1">Start</Typography>
@@ -463,7 +425,6 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
                 </Popup>
               </Marker>
 
-              {/* End Marker */}
               <Marker position={routes[0][routes[0].length - 1]} icon={endIcon}>
                 <Popup>
                   <Typography variant="body1">End</Typography>

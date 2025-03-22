@@ -1,5 +1,10 @@
-import { Icon } from "leaflet";
+import { Icon, divIcon } from "leaflet";
 import "./MarkerUtils.css";
+import { useMap } from "react-leaflet";
+
+import React, { useEffect } from "react";
+import type { ParkingSpotWithStatus } from "../../types/location"; // Adjust import path as needed
+import type { Coordinates } from "../../services/routeService"; // Adjust import path as needed
 
 // User location marker (green)
 export const userLocationIcon = new Icon({
@@ -30,7 +35,7 @@ export const getMarkerIcon = (status?: string) => {
   });
 };
 
-export const selectedMarkerIcon = L.divIcon({
+export const selectedMarkerIcon = divIcon({
   className: "selected-marker-icon",
   html: `
     <div style="
@@ -58,3 +63,66 @@ export const selectedMarkerIcon = L.divIcon({
   iconAnchor: [17, 55],
   popupAnchor: [1, -34],
 });
+
+// MapZoomController for selected spot
+export const MapZoomController: React.FC<{
+  selectedSpotId: string | null;
+  spots: ParkingSpotWithStatus[];
+}> = ({ selectedSpotId, spots }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (selectedSpotId) {
+      const selectedSpot = spots.find(
+        (spot) => spot.AhuzotCode === selectedSpotId
+      );
+      if (selectedSpot) {
+        const position: [number, number] = [
+          parseFloat(selectedSpot.GPSLattitude),
+          parseFloat(selectedSpot.GPSLongitude),
+        ];
+        map.setView(position, 16);
+      }
+    }
+  }, [selectedSpotId, spots, map]);
+
+  return null;
+};
+
+// RouteZoomController with validation
+export const RouteZoomController: React.FC<{ routes: Coordinates[][] }> = ({
+  routes,
+}) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (routes.length > 0 && routes[0].length > 0) {
+      const validRoutes = routes
+        .map((route) =>
+          route.filter(
+            ([lat, lng]) =>
+              typeof lat === "number" &&
+              typeof lng === "number" &&
+              lat >= -90 &&
+              lat <= 90 &&
+              lng >= -180 &&
+              lng <= 180
+          )
+        )
+        .filter((route) => route.length > 0);
+
+      if (validRoutes.length > 0) {
+        const bounds = validRoutes[0].reduce(
+          (acc, [lat, lng]) => acc.extend([lat, lng]),
+          new L.LatLngBounds(validRoutes[0][0], validRoutes[0][0])
+        );
+        map.fitBounds(bounds, { padding: [50, 50] });
+      } else {
+        console.error("No valid route coordinates found");
+        map.setView([32.0853, 34.7818], 13);
+      }
+    }
+  }, [routes, map]);
+
+  return null;
+};

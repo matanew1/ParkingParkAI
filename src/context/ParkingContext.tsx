@@ -79,6 +79,14 @@ export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, []);
 
+  const handleResetMap = useCallback(() => {
+    setMapCenter(DEFAULT_COORDINATES);
+    setUserLocation(null);
+    setShowLocationMarker(false);
+    setSelectedSpot(null);
+    setRoutes([]);
+  }, []);
+
   // Initial fetch and periodic updates
   useEffect(() => {
     fetchParkingData();
@@ -165,6 +173,7 @@ export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
       setSelectedSpot,
       routes,
       setRoutes,
+      handleResetMap,
     }),
     [
       parkingSpots,
@@ -179,6 +188,7 @@ export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
       fetchParkingData,
       selectedSpot,
       routes,
+      handleResetMap,
     ]
   );
 

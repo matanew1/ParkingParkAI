@@ -42,9 +42,14 @@ const AppContent: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null); // New state for selected spot
 
-  const { setSelectedSpot } = React.useContext(ParkingContext);
+  const { setSelectedSpot, handleResetMap } = React.useContext(ParkingContext);
 
   const drawerWidth = isMobile ? "80%" : 320;
+
+  const handleResetMapApp = (): void => {
+    setSelectedSpotId(null);
+    handleResetMap();
+  };
 
   const handleOpenOptionPopup = (): void => {
     setIsOptionPopupOpen(true);
@@ -213,6 +218,7 @@ const AppContent: React.FC = () => {
                 onRefresh={() => fetchParkingData(true)}
                 setMapCenter={setMapCenter}
                 selectedSpotId={selectedSpotId} // Pass selected spot ID
+                onResetMap={handleResetMapApp}
               />
             </Suspense>
           </Box>
