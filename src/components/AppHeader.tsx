@@ -10,10 +10,7 @@ import {
 } from "@mui/material";
 import ThemeToggle from "./Theme/ThemeToggle";
 import AIButton from "./AI/AIButton";
-
-interface AppHeaderProps {
-  onOpenAIPopup: () => void;
-}
+import { AppHeaderProps } from "../types/app";
 
 const AppHeader: React.FC<AppHeaderProps> = ({ onOpenAIPopup }) => {
   const isMobile = useMediaQuery("(max-width:600px)");

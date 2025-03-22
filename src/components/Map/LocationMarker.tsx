@@ -2,10 +2,7 @@ import { useEffect, useState } from "react";
 import { Marker, Popup, useMap, Circle } from "react-leaflet";
 import { Typography } from "@mui/material";
 import { userLocationIcon } from "./utils/MarkerUtils";
-
-interface LocationMarkerProps {
-  setUserLocation: (location: [number, number]) => void;
-}
+import type { LocationMarkerProps } from "../../types/location";
 
 /**
  * Component that tracks and displays the user's current location on the map

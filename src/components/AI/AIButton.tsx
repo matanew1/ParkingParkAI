@@ -1,10 +1,7 @@
 import React from "react";
 import { Wand2 } from "lucide-react";
 import { Button, useMediaQuery } from "@mui/material";
-
-interface AIButtonProps {
-  onClick: () => void;
-}
+import { AIButtonProps } from "../../types/app";
 
 const AIButton: React.FC<AIButtonProps> = ({ onClick }) => {
   const isMobile = useMediaQuery("(max-width:600px)");

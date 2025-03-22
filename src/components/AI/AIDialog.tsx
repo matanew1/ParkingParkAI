@@ -1,13 +1,8 @@
 import React, { Suspense } from "react";
 import { Box, CircularProgress, Drawer, useMediaQuery } from "@mui/material";
-
+import type { AIDialogProps } from "../../types/app";
 // Lazy loaded component
 const AIPopup = React.lazy(() => import("./AIPopup"));
-
-interface AIDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
 
 const AIDialog: React.FC<AIDialogProps> = ({ isOpen, onClose }) => {
   const isMobile = useMediaQuery("(max-width:600px)");

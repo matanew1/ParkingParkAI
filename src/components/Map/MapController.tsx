@@ -1,9 +1,6 @@
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
-
-interface MapControllerProps {
-  center: [number, number];
-}
+import type { MapControllerProps } from "../../types/map";
 
 /**
  * Component that controls the map's view center

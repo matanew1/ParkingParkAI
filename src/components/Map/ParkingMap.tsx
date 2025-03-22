@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Clock, RefreshCw, Crosshair } from "lucide-react";
-import type { ParkingSpotWithStatus } from "../types/parking";
+import type { ParkingMapProps } from "../../types/location";
 import {
   Box,
   Typography,
@@ -23,17 +23,6 @@ import LocationMarker from "./LocationMarker";
 import MapController from "./MapController";
 
 import "leaflet/dist/leaflet.css";
-
-interface ParkingMapProps {
-  parkingSpots: ParkingSpotWithStatus[];
-  loading: boolean;
-  statusError: string | null;
-  mapCenter: [number, number];
-  lastUpdated: Date | null;
-  refreshing: boolean;
-  onRefresh: () => void;
-  setMapCenter: (center: [number, number]) => void;
-}
 
 const ParkingMap: React.FC<ParkingMapProps> = ({
   parkingSpots,
