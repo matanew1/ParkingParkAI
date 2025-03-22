@@ -9,10 +9,10 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import ThemeToggle from "./Theme/ThemeToggle";
-import AIButton from "./AI/AIButton";
+import OptionButton from "./Options/OptionButton";
 import { AppHeaderProps } from "../types/app";
 
-const AppHeader: React.FC<AppHeaderProps> = ({ onOpenAIPopup }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup }) => {
   const isMobile = useMediaQuery("(max-width:600px)");
 
   return (
@@ -39,7 +39,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenAIPopup }) => {
         </Box>
 
         <ThemeToggle />
-        <AIButton onClick={onOpenAIPopup} />
+        <OptionButton onClick={onOpenOptionPopup} />
       </Toolbar>
     </AppBar>
   );

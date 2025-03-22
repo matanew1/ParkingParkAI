@@ -4,32 +4,19 @@ import React, {
   useEffect,
   useCallback,
   ReactNode,
+  useMemo,
 } from "react";
 import { ParkingSpotWithStatus } from "../types/parking";
 import { ParkingService } from "../services/parkingService";
 import { ParkingContextType } from "../types/location";
+import type { Coordinates } from "../services/routeService";
+
+// Default coordinates for Tel Aviv
+const DEFAULT_COORDINATES: Coordinates = [32.0853, 34.7818];
 
 const parkingService = new ParkingService();
 
-const ParkingContext = createContext<ParkingContextType>({
-  parkingSpots: [],
-  loading: true,
-  error: null,
-  statusError: null,
-  lastUpdated: null,
-  refreshing: false,
-  mapCenter: [32.0853, 34.7818],
-  userLocation: null,
-  showLocationMarker: false,
-  fetchParkingData: async () => {},
-  setMapCenter: () => {},
-  setUserLocation: () => {},
-  setShowLocationMarker: () => {},
-  selectedSpot: null,
-  setSelectedSpot: () => {},
-  routes: [],
-  setRoutes: () => {},
-});
+const ParkingContext = createContext<ParkingContextType>();
 
 export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
   children,
@@ -40,23 +27,26 @@ export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
   const [statusError, setStatusError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([
-    32.0853, 34.7818,
-  ]);
-  const [routes, setRoutes] = useState<[number, number][][]>([]);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(
-    null
-  );
+  const [mapCenter, setMapCenter] = useState<Coordinates>(DEFAULT_COORDINATES);
+  const [routes, setRoutes] = useState([] as Coordinates[][]);
+  const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [showLocationMarker, setShowLocationMarker] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
 
+  /**
+   * Fetches parking data from the API
+   * @param isManualRefresh Whether the refresh was manually triggered by the user
+   */
   const fetchParkingData = useCallback(async (isManualRefresh = false) => {
     try {
       if (isManualRefresh) {
         setRefreshing(true);
       }
 
+      // Fetch parking spots
       const spots = await parkingService.fetchParkingSpots();
+
+      // Fetch status data with error handling
       let statusMap = new Map();
       try {
         statusMap = await parkingService.fetchParkingStatus();
@@ -66,6 +56,7 @@ export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
         setStatusError("Status information is temporarily unavailable");
       }
 
+      // Combine data
       const combinedData = parkingService.combineParkingData(spots, statusMap);
 
       if (combinedData.length === 0) {
@@ -91,27 +82,29 @@ export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
   // Initial fetch and periodic updates
   useEffect(() => {
     fetchParkingData();
+
+    // Set up auto-refresh every 5 minutes
     const intervalId = setInterval(() => fetchParkingData(), 5 * 60 * 1000);
+
+    // Clean up interval on component unmount
     return () => clearInterval(intervalId);
   }, [fetchParkingData]);
 
-  // Function to fetch user location
+  // Fetch user location when needed
   const fetchUserLocation = useCallback(() => {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser");
       return;
     }
 
-    console.log("Attempting to fetch user location...");
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const newLocation: [number, number] = [
+        const newLocation: Coordinates = [
           position.coords.latitude,
           position.coords.longitude,
         ];
         setUserLocation(newLocation);
         setShowLocationMarker(true);
-        console.log("Location fetched successfully:", newLocation);
       },
       (error) => {
         console.error("Geolocation error:", error);
@@ -129,8 +122,6 @@ export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
             break;
         }
         setError(errorMessage);
-        setUserLocation(null);
-        setShowLocationMarker(false);
       },
       {
         enableHighAccuracy: true,
@@ -140,42 +131,56 @@ export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
     );
   }, []);
 
-  // Update map center when user location changes
+  // Update map center when user location changes and marker is shown
   useEffect(() => {
     if (userLocation && showLocationMarker) {
       setMapCenter(userLocation);
-      console.log("Map center updated to:", userLocation);
-      console.log("Selected spot:", selectedSpot);
-      console.log("Show routes:", routes);
     }
-  }, [userLocation, showLocationMarker, selectedSpot, routes, setMapCenter]);
+  }, [userLocation, showLocationMarker]);
 
   // Trigger location fetch when showLocationMarker is explicitly set to true
   useEffect(() => {
-    if (!userLocation) {
+    if (showLocationMarker && !userLocation) {
       fetchUserLocation();
     }
-  }, [fetchUserLocation, userLocation]);
+  }, [showLocationMarker, userLocation, fetchUserLocation]);
 
-  const value = {
-    parkingSpots,
-    loading,
-    error,
-    statusError,
-    lastUpdated,
-    refreshing,
-    mapCenter,
-    userLocation,
-    showLocationMarker,
-    fetchParkingData,
-    setMapCenter,
-    setUserLocation,
-    setShowLocationMarker,
-    selectedSpot,
-    setSelectedSpot,
-    routes,
-    setRoutes,
-  };
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(
+    () => ({
+      parkingSpots,
+      loading,
+      error,
+      statusError,
+      lastUpdated,
+      refreshing,
+      mapCenter,
+      userLocation,
+      showLocationMarker,
+      fetchParkingData,
+      setMapCenter,
+      setUserLocation,
+      setShowLocationMarker,
+      selectedSpot,
+      setSelectedSpot,
+      routes,
+      setRoutes,
+    }),
+    [
+      parkingSpots,
+      loading,
+      error,
+      statusError,
+      lastUpdated,
+      refreshing,
+      mapCenter,
+      userLocation,
+      showLocationMarker,
+      fetchParkingData,
+      selectedSpot,
+      routes,
+    ]
+  );
 
   return (
     <ParkingContext.Provider value={value}>{children}</ParkingContext.Provider>

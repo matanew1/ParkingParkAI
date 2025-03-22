@@ -1,11 +1,11 @@
 # ParkingParkAI
 
-ParkingParkAI is an intelligent parking management system designed to optimize parking space utilization using AI-driven solutions. This project aims to provide real-time parking availability, efficient space allocation, and enhanced user experience.
+ParkingPark is an intelligent parking management system designed to optimize parking space utilization using AI-driven solutions. This project aims to provide real-time parking availability, efficient space allocation, and enhanced user experience.
 
 ## Features
 
 - **Real-Time Parking Availability**: Monitor and display available parking spaces in real-time.
-- **AI-Powered Space Allocation**: Optimize parking space usage with AI algorithms.
+- **AI-Powered Space Allocation**: Optimize parking space usage with algorithms.
 - **User-Friendly Interface**: Easy-to-use interface for both administrators and users.
 - **Integration with Sensors**: Support for IoT devices to detect vehicle presence.
 - **Analytics Dashboard**: Insights into parking trends and usage patterns.

@@ -23,6 +23,7 @@ export interface ParkingContextType {
   loading: boolean;
   error: string | null;
   statusError: string | null;
+  routes: Coordinates[][]; // Ensure this is always an array
   lastUpdated: Date | null;
   refreshing: boolean;
   mapCenter: [number, number];
@@ -35,3 +36,17 @@ export interface ParkingContextType {
   selectedSpot: string | null;
   setSelectedSpot: (id: string | null) => void;
 }
+
+export interface ParkingMapProps {
+  parkingSpots: ParkingSpotWithStatus[];
+  loading: boolean;
+  statusError: string | null;
+  mapCenter: [number, number];
+  refreshing: boolean;
+  onRefresh: () => void;
+  setMapCenter: (center: [number, number]) => void;
+  selectedSpotId: string | null;
+}
+
+// types/ai.ts (if not already present)
+export type Coordinates = [number, number];

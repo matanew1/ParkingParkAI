@@ -1,8 +1,8 @@
-export interface AIButtonProps {
+export interface OptionButtonProps {
   onClick: () => void;
 }
 
-export interface AIDialogProps {
+export interface OptionDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
@@ -15,7 +15,7 @@ export interface AIOption {
   action: () => void;
 }
 
-export interface AIPopupProps {
+export interface OptionPopupProps {
   isOpen: boolean;
   onClose: () => void;
   source: string;

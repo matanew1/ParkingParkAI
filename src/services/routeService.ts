@@ -1,9 +1,15 @@
 import axios from "axios";
 
-export class RouteService {
-  private readonly BASE_URL = "http://router.project-osrm.org/route/v1";
+export type Coordinates = [number, number];
+export type Route = Array<Coordinates>;
 
-  async fetchRoute(start: string, end: string): Promise<Route> {
+export class RouteService {
+  private readonly BASE_URL = "https://valhalla1.openstreetmap.de/route";
+
+  async fetchRoute(
+    start: Coordinates | string,
+    end: Coordinates | string
+  ): Promise<Route> {
     const axiosConfig = {
       headers: {
         Accept: "application/json",
@@ -12,21 +18,31 @@ export class RouteService {
     };
 
     try {
-      const url = `${this.BASE_URL}/driving/${start};${end}?overview=full&geometries=geojson&steps=true`;
-      console.log("url:", url);
-      const response = await axios.get(url, axiosConfig);
-      console.log("response:", response.data.routes[0].geometry.coordinates);
-      if (!response.data || !response.data.routes) {
-        throw new Error("Invalid route data format");
+      // Format coordinates to string format required by OSRM API
+      const startCoords = start;
+      const endCoords = end.split(",").map((part) => parseFloat(part));
+
+      const body = {
+        locations: [
+          { lat: startCoords[0], lon: startCoords[1] },
+          { lat: endCoords[0], lon: endCoords[1] },
+        ],
+        costing: "auto",
+        directions_options: { units: "km" },
+      };
+
+      const response = await axios.post(this.BASE_URL, body, axiosConfig);
+
+      if (!response.data.trip) {
+        throw new Error("No route found.");
       }
 
-      return response.data.routes[0].geometry.coordinates;
-    } catch {
+      return response.data.trip.legs[0].shape;
+    } catch (error) {
+      console.error("Route fetch error:", error);
       throw new Error(
         "Unable to load route information. Please try again later."
       );
     }
   }
-
-  // Removed useEffect as it cannot be used inside a class. Use it in a functional component instead.
 }

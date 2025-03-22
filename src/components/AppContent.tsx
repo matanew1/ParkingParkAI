@@ -16,7 +16,7 @@ import { useTheme as useCustomTheme } from "../context/ThemeContext";
 import { lightTheme, darkTheme } from "./Theme/ThemeConfig";
 import AppHeader from "./AppHeader";
 import Sidebar from "./Sidebar";
-import AIDialog from "./AI/AIDialog";
+import OptionDialog from "./Options/OptionDialog";
 import { ParkingService } from "../services/parkingService";
 import type { ParkingSpotWithStatus } from "../types/parking";
 import ParkingContext from "../context/ParkingContext";
@@ -25,7 +25,7 @@ const ParkingMap = lazy(() => import("./Map/ParkingMap"));
 const parkingService = new ParkingService();
 
 const AppContent: React.FC = () => {
-  const [isAIPopupOpen, setIsAIPopupOpen] = useState<boolean>(false);
+  const [isOptionPopupOpen, setIsOptionPopupOpen] = useState<boolean>(false);
   const { isDarkMode } = useCustomTheme();
   const isMobile = useMediaQuery("(max-width:600px)");
   const theme = isDarkMode ? darkTheme : lightTheme;
@@ -46,12 +46,12 @@ const AppContent: React.FC = () => {
 
   const drawerWidth = isMobile ? "80%" : 320;
 
-  const handleOpenAIPopup = (): void => {
-    setIsAIPopupOpen(true);
+  const handleOpenOptionPopup = (): void => {
+    setIsOptionPopupOpen(true);
   };
 
-  const handleCloseAIPopup = (): void => {
-    setIsAIPopupOpen(false);
+  const handleCloseOptionPopup = (): void => {
+    setIsOptionPopupOpen(false);
   };
 
   const toggleSidebar = (): void => {
@@ -101,7 +101,9 @@ const AppContent: React.FC = () => {
         parseFloat(spot.GPSLongitude),
       ]);
       setSelectedSpotId(spot.AhuzotCode);
-      setSelectedSpot(String(spot.GPSLattitude) +','+ String(spot.GPSLongitude));
+      setSelectedSpot(
+        String(spot.GPSLattitude) + "," + String(spot.GPSLongitude)
+      );
     },
     [setSelectedSpot]
   );
@@ -116,7 +118,7 @@ const AppContent: React.FC = () => {
       <Box
         sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
       >
-        <AppHeader onOpenAIPopup={handleOpenAIPopup} />
+        <AppHeader onOpenOptionPopup={handleOpenOptionPopup} />
         <Box
           component="main"
           sx={{
@@ -216,7 +218,10 @@ const AppContent: React.FC = () => {
           </Box>
         </Box>
       </Box>
-      <AIDialog isOpen={isAIPopupOpen} onClose={handleCloseAIPopup} />
+      <OptionDialog
+        isOpen={isOptionPopupOpen}
+        onClose={handleCloseOptionPopup}
+      />
     </MuiThemeProvider>
   );
 };

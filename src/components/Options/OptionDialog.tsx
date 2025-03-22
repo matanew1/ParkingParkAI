@@ -1,11 +1,11 @@
 import React, { Suspense } from "react";
 import { Box, CircularProgress, Drawer, useMediaQuery } from "@mui/material";
-import type { AIDialogProps } from "../../types/app";
+import type { OptionDialogProps } from "../../types/app";
 
 // Lazy loaded component
-const AIPopup = React.lazy(() => import("./AIPopup"));
+const OptionPopup = React.lazy(() => import("./OptionPopup"));
 
-const AIDialog: React.FC<AIDialogProps> = ({ isOpen, onClose }) => {
+const OptionDialog: React.FC<OptionDialogProps> = ({ isOpen, onClose }) => {
   const isMobile = useMediaQuery("(max-width:600px)");
 
   if (isMobile) {
@@ -31,12 +31,7 @@ const AIDialog: React.FC<AIDialogProps> = ({ isOpen, onClose }) => {
             </Box>
           }
         >
-          <AIPopup
-            isOpen={isOpen}
-            onClose={onClose}
-            source={userLocation}
-            destination={selectedSpot}
-          />
+          <OptionPopup isOpen={isOpen} onClose={onClose} />
         </Suspense>
       </Drawer>
     );
@@ -68,10 +63,10 @@ const AIDialog: React.FC<AIDialogProps> = ({ isOpen, onClose }) => {
           </Box>
         }
       >
-        <AIPopup isOpen={isOpen} onClose={onClose} />
+        <OptionPopup isOpen={isOpen} onClose={onClose} />
       </Suspense>
     </Box>
   ) : null;
 };
 
-export default AIDialog;
+export default OptionDialog;

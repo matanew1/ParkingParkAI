@@ -1,9 +1,9 @@
 import React from "react";
 import { Wand2 } from "lucide-react";
 import { Button, useMediaQuery } from "@mui/material";
-import { AIButtonProps } from "../../types/app";
+import { OptionButtonProps } from "../../types/app";
 
-const AIButton: React.FC<AIButtonProps> = ({ onClick }) => {
+const OptionButton: React.FC<OptionButtonProps> = ({ onClick }) => {
   const isMobile = useMediaQuery("(max-width:600px)");
 
   return (
@@ -19,9 +19,9 @@ const AIButton: React.FC<AIButtonProps> = ({ onClick }) => {
         ml: 2,
       }}
     >
-      {isMobile ? "AI" : "AI Menu"}
+      {isMobile ? "Menu" : "Option Menu"}
     </Button>
   );
 };
 
-export default AIButton;
+export default OptionButton;
