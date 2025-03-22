@@ -15,6 +15,7 @@ export interface ParkingMapProps {
   refreshing: boolean;
   onRefresh: () => void;
   setMapCenter: (center: [number, number]) => void;
+  selectedMarkerIcon: string | null;
 }
 
 export interface ParkingContextType {

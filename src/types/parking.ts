@@ -22,8 +22,10 @@ export interface ParkingSpotWithStatus extends ParkingSpot {
 export interface SidebarProps {
   spots: ParkingSpotWithStatus[];
   onSpotClick: (spot: ParkingSpotWithStatus) => void;
-  statusError: string | null;
+  onSpotSelect: (spotId: string | null) => void; // New prop to pass selected spot
   lastUpdated: Date | null;
   onRefresh: () => void;
   isRefreshing: boolean;
+  toggleDrawer: () => void;
+  isMobile: boolean;
 }

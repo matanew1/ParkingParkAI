@@ -1,3 +1,4 @@
+// Sidebar.tsx
 import React, { useState, useEffect } from "react";
 import { X, Clock, ChevronRight, RefreshCw } from "lucide-react";
 import { SidebarProps } from "../types/parking";
@@ -22,6 +23,7 @@ import SearchIcon from "@mui/icons-material/Search";
 const Sidebar: React.FC<SidebarProps> = ({
   spots,
   onSpotClick,
+  onSpotSelect, // Add this to props
   lastUpdated,
   onRefresh,
   isRefreshing,
@@ -33,7 +35,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [lastValidStatus, setLastValidStatus] = useState(null);
   const [cachedData, setCachedData] = useState(null);
-  const [selectedSpot, setSelectedSpot] = useState<string | null>(null); // Track selected spot
 
   useEffect(() => {
     const cachedStatus = localStorage.getItem("lastValidStatus");
@@ -172,15 +173,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                     boxShadow: 3,
                     transform: "translateY(-2px)",
                   },
-                  ...(selectedSpot === spot.AhuzotCode && {
-                    boxShadow: "0 0 15px 5px rgba(255, 0, 0, 0.5)", // Add glowing effect
-                  }),
                 }}
               >
                 <ListItemButton
                   onClick={() => {
-                    setSelectedSpot(spot.AhuzotCode);
-                    onSpotClick(spot);
+                    onSpotSelect(spot.AhuzotCode); // Notify parent of selection
+                    onSpotClick(spot); // Center map
                     if (isMobile) toggleDrawer();
                   }}
                 >

@@ -1,3 +1,4 @@
+// AppContent.tsx
 import React, { lazy, Suspense, useState, useCallback, useEffect } from "react";
 import { Menu } from "lucide-react";
 import {
@@ -22,7 +23,6 @@ import {
 } from "../services/parkingService";
 import type { ParkingSpotWithStatus } from "../types/parking";
 
-// Lazy loaded component
 const ParkingMap = lazy(() => import("./Map/ParkingMap"));
 
 const AppContent: React.FC = () => {
@@ -31,7 +31,6 @@ const AppContent: React.FC = () => {
   const isMobile = useMediaQuery("(max-width:600px)");
   const theme = isDarkMode ? darkTheme : lightTheme;
 
-  // Sidebar state
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   const [parkingSpots, setParkingSpots] = useState<ParkingSpotWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +41,7 @@ const AppContent: React.FC = () => {
   ]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null); // New state for selected spot
 
   const drawerWidth = isMobile ? "80%" : 320;
 
@@ -62,17 +62,14 @@ const AppContent: React.FC = () => {
       if (isManualRefresh) {
         setRefreshing(true);
       }
-
       const [spots, statusMap] = await Promise.all([
         fetchParkingSpots(),
         fetchParkingStatus(),
       ]);
-
       const spotsWithStatus = spots.map((spot) => ({
         ...spot,
         status: statusMap.get(spot.AhuzotCode),
       }));
-
       setParkingSpots(spotsWithStatus);
       setLastUpdated(new Date());
       setError(null);
@@ -103,6 +100,10 @@ const AppContent: React.FC = () => {
     ]);
   }, []);
 
+  const handleSpotSelect = useCallback((spotId: string | null) => {
+    setSelectedSpotId(spotId);
+  }, []);
+
   return (
     <MuiThemeProvider theme={theme}>
       <CssBaseline />
@@ -110,7 +111,6 @@ const AppContent: React.FC = () => {
         sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
       >
         <AppHeader onOpenAIPopup={handleOpenAIPopup} />
-
         <Box
           component="main"
           sx={{
@@ -120,7 +120,6 @@ const AppContent: React.FC = () => {
             height: "calc(100vh - 64px)",
           }}
         >
-          {/* Sidebar Component */}
           <Drawer
             variant={isMobile ? "temporary" : "persistent"}
             anchor="left"
@@ -145,6 +144,7 @@ const AppContent: React.FC = () => {
             <Sidebar
               spots={parkingSpots}
               onSpotClick={handleSpotClick}
+              onSpotSelect={handleSpotSelect} // Pass new handler
               statusError={statusError}
               lastUpdated={lastUpdated}
               onRefresh={() => fetchParkingData(true)}
@@ -153,8 +153,6 @@ const AppContent: React.FC = () => {
               isMobile={isMobile}
             />
           </Drawer>
-
-          {/* Map Container */}
           <Box
             sx={{
               flexGrow: 1,
@@ -165,14 +163,13 @@ const AppContent: React.FC = () => {
               }),
             }}
           >
-            {/* Toggle sidebar button always under the header */}
             <Fade in={!isSidebarOpen}>
               <IconButton
                 onClick={toggleSidebar}
                 sx={{
                   position: "fixed",
                   left: 20,
-                  top: { xs: 72, sm: 80, md: 88 }, // Adjust based on header height
+                  top: { xs: 72, sm: 80, md: 88 },
                   zIndex: 1200,
                   backgroundColor: theme.palette.primary.main,
                   color: theme.palette.primary.contrastText,
@@ -185,7 +182,6 @@ const AppContent: React.FC = () => {
                 <Menu size={24} />
               </IconButton>
             </Fade>
-
             <Suspense
               fallback={
                 <Box
@@ -208,12 +204,12 @@ const AppContent: React.FC = () => {
                 refreshing={refreshing}
                 onRefresh={() => fetchParkingData(true)}
                 setMapCenter={setMapCenter}
+                selectedSpotId={selectedSpotId} // Pass selected spot ID
               />
             </Suspense>
           </Box>
         </Box>
       </Box>
-
       <AIDialog isOpen={isAIPopupOpen} onClose={handleCloseAIPopup} />
     </MuiThemeProvider>
   );

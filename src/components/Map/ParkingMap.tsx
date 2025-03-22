@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useState, useCallback, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { Clock, RefreshCw, Crosshair } from "lucide-react";
 import type { ParkingMapProps } from "../../types/location";
 import {
@@ -18,11 +18,35 @@ import {
 } from "@mui/material";
 
 // Import the extracted components and utilities
-import { getMarkerIcon } from "./utils/MarkerUtils";
+import { getMarkerIcon, selectedMarkerIcon } from "./utils/MarkerUtils";
 import LocationMarker from "./LocationMarker";
 import MapController from "./MapController";
 
 import "leaflet/dist/leaflet.css";
+
+const MapZoomController: React.FC<{
+  selectedSpotId: string | null;
+  spots: ParkingSpotWithStatus[];
+}> = ({ selectedSpotId, spots }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (selectedSpotId) {
+      const selectedSpot = spots.find(
+        (spot) => spot.AhuzotCode === selectedSpotId
+      );
+      if (selectedSpot) {
+        const position: [number, number] = [
+          parseFloat(selectedSpot.GPSLattitude),
+          parseFloat(selectedSpot.GPSLongitude),
+        ];
+        map.setView(position, 16); // Zoom to level 16
+      }
+    }
+  }, [selectedSpotId, spots, map]);
+
+  return null;
+};
 
 const ParkingMap: React.FC<ParkingMapProps> = ({
   parkingSpots,
@@ -32,6 +56,7 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
   refreshing,
   onRefresh,
   setMapCenter,
+  selectedSpotId,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -197,6 +222,10 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
           style={{ height: "100%", width: "100%" }}
         >
           <MapController center={mapCenter} />
+          <MapZoomController
+            selectedSpotId={selectedSpotId}
+            spots={parkingSpots}
+          />
           <TileLayer
             attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -214,7 +243,11 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
                 parseFloat(spot.GPSLattitude),
                 parseFloat(spot.GPSLongitude),
               ]}
-              icon={getMarkerIcon(spot.status?.InformationToShow)}
+              icon={
+                spot.AhuzotCode === selectedSpotId
+                  ? selectedMarkerIcon // Highlight selected spot
+                  : getMarkerIcon(spot.status?.InformationToShow)
+              }
             >
               <Popup>
                 <Box sx={{ p: 0 }}>
