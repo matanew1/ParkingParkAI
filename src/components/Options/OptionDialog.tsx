@@ -1,13 +1,41 @@
 import React, { Suspense } from "react";
-import { Box, CircularProgress, Drawer, useMediaQuery } from "@mui/material";
+import {
+  Box,
+  CircularProgress,
+  Drawer,
+  useMediaQuery,
+  Theme,
+} from "@mui/material";
 import type { OptionDialogProps } from "../../types/app";
 
 // Lazy loaded component
 const OptionPopup = React.lazy(() => import("./OptionPopup"));
 
 const OptionDialog: React.FC<OptionDialogProps> = ({ isOpen, onClose }) => {
-  const isMobile = useMediaQuery("(max-width:600px)");
+  // More specific breakpoints for different device sizes
+  const isMobile = useMediaQuery((theme: Theme) =>
+    theme.breakpoints.down("sm")
+  );
+  const isTablet = useMediaQuery((theme: Theme) =>
+    theme.breakpoints.between("sm", "md")
+  );
 
+  // Loading fallback component
+  const LoadingFallback = () => (
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        p: 4,
+        minHeight: isMobile ? "100px" : "150px",
+      }}
+    >
+      <CircularProgress size={isMobile ? 30 : 40} />
+    </Box>
+  );
+
+  // For mobile devices: bottom drawer
   if (isMobile) {
     return (
       <Drawer
@@ -16,27 +44,45 @@ const OptionDialog: React.FC<OptionDialogProps> = ({ isOpen, onClose }) => {
         onClose={onClose}
         PaperProps={{
           sx: {
-            maxHeight: "80vh",
+            maxHeight: "90vh", // Slightly larger to give more space on small devices
             borderTopLeftRadius: 16,
             borderTopRightRadius: 16,
-            px: 2,
-            py: 3,
+            px: { xs: 1.5, sm: 2 }, // Responsive padding
+            py: { xs: 2, sm: 3 }, // Responsive padding
+            overflow: "auto",
           },
         }}
       >
-        <Suspense
-          fallback={
-            <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-              <CircularProgress />
-            </Box>
-          }
-        >
+        <Suspense fallback={<LoadingFallback />}>
           <OptionPopup isOpen={isOpen} onClose={onClose} />
         </Suspense>
       </Drawer>
     );
   }
 
+  // For tablets: side drawer
+  if (isTablet) {
+    return (
+      <Drawer
+        anchor="right"
+        open={isOpen}
+        onClose={onClose}
+        PaperProps={{
+          sx: {
+            width: "50%", // Half width on tablets
+            px: 3,
+            py: 3,
+          },
+        }}
+      >
+        <Suspense fallback={<LoadingFallback />}>
+          <OptionPopup isOpen={isOpen} onClose={onClose} />
+        </Suspense>
+      </Drawer>
+    );
+  }
+
+  // For desktop: modal dialog with overlay
   return isOpen ? (
     <Box
       sx={{
@@ -50,21 +96,28 @@ const OptionDialog: React.FC<OptionDialogProps> = ({ isOpen, onClose }) => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        p: { md: 2, lg: 4 }, // Responsive padding
       }}
       onClick={(e) => {
         // Close when clicking overlay but not when clicking the dialog
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <Suspense
-        fallback={
-          <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-            <CircularProgress />
-          </Box>
-        }
+      <Box
+        sx={{
+          maxWidth: { md: "500px", lg: "600px", xl: "700px" }, // Responsive width
+          width: "90%",
+          maxHeight: "85vh",
+          bgcolor: "background.paper",
+          borderRadius: 2,
+          boxShadow: 24,
+          overflow: "auto",
+        }}
       >
-        <OptionPopup isOpen={isOpen} onClose={onClose} />
-      </Suspense>
+        <Suspense fallback={<LoadingFallback />}>
+          <OptionPopup isOpen={isOpen} onClose={onClose} />
+        </Suspense>
+      </Box>
     </Box>
   ) : null;
 };

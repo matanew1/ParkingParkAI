@@ -1,5 +1,4 @@
 import React from "react";
-import { Wand2 } from "lucide-react";
 import { Button, useMediaQuery } from "@mui/material";
 import { OptionButtonProps } from "../../types/app";
 
@@ -11,7 +10,6 @@ const OptionButton: React.FC<OptionButtonProps> = ({ onClick }) => {
       onClick={onClick}
       variant="contained"
       color="primary"
-      startIcon={<Wand2 size={20} />}
       size={isMobile ? "small" : "medium"}
       sx={{
         borderRadius: "20px",

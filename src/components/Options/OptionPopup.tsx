@@ -1,5 +1,17 @@
 import React, { useState, useContext, useEffect, useCallback } from "react";
-import { X, Car, Route, MapPin, Navigation } from "lucide-react";
+import {
+  X,
+  Car,
+  Route,
+  MapPin,
+  Navigation,
+  Clock,
+  Umbrella,
+  ParkingSquare,
+  BarChart4,
+  Filter,
+  HelpCircle,
+} from "lucide-react";
 import { RouteService } from "../../services/routeService";
 import ParkingContext from "../../context/ParkingContext";
 import type { OptionPopupProps, AIOption } from "../../types/ai";
@@ -14,13 +26,18 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
     distance: string;
     duration: string;
   } | null>(null);
+  const [routePreferences, setRoutePreferences] = useState({
+    avoidTolls: false,
+    avoidHighways: false,
+    shortest: false,
+  });
 
   const { userLocation, selectedSpot, setShowLocationMarker, setRoutes } =
     useContext(ParkingContext);
 
   const routeService = React.useMemo(() => new RouteService(), []);
 
-  const aiOptions: AIOption[] = [
+  const options: AIOption[] = [
     {
       id: "route",
       title: "Optimal Route",
@@ -67,15 +84,22 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
     async (source: Coordinates, destination: string) => {
       setLocationStatus("Calculating your optimal route...");
       try {
-        const response = await routeService.fetchRoute(source, destination);
+        const data = await routeService.fetchRoute(source, destination, {
+          shortest: routePreferences.shortest,
+          avoidTolls: routePreferences.avoidTolls,
+          avoidHighways: routePreferences.avoidHighways,
+        });
+        const response = data.legs[0].shape;
+        console.log("Route details:", response);
+
         let decodedRoute: Coordinates[];
         if (typeof response === "string") {
           decodedRoute = decodePolyline(response);
         } else if (response?.data?.trip?.legs?.[0]?.shape) {
           decodedRoute = decodePolyline(response.data.trip.legs[0].shape);
           setRouteDetails({
-            distance: response.data.trip.legs[0].distance || "N/A",
-            duration: response.data.trip.legs[0].duration || "N/A",
+            distance: response.data.trip.summary.length.toFixed(2) + " km",
+            duration: response.data.trip.summary.time + " min",
           });
         } else {
           throw new Error("Unsupported route response format");
@@ -83,11 +107,11 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
 
         if (decodedRoute?.length > 0) {
           setRoutes([decodedRoute]);
-          if (!routeDetails) {
-            const distance = `${Math.round(decodedRoute.length / 10)} km`;
-            const duration = `${Math.round(decodedRoute.length / 5)} min`;
-            setRouteDetails({ distance, duration });
-          }
+          setRouteDetails({
+            distance: data.summary.length.toFixed(2) + " km",
+            duration: Math.round(data.summary.time / 60) + " min",
+          });
+
           setLocationStatus("Route ready! Happy travels!");
         } else {
           throw new Error("Invalid route data");
@@ -100,17 +124,22 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
         setLoadingAction(false);
       }
     },
-    [routeService, setRoutes, routeDetails]
+    [routeService, setRoutes, routePreferences]
   );
 
   const handleAIAction = useCallback(
     (optionId: string): void => {
       setActiveOption(optionId);
       setLoadingAction(true);
+
       setLocationStatus("Locating you...");
 
       if (optionId === "route") {
-        if (!userLocation) {
+        if (!selectedSpot) {
+          setLocationStatus("Please pick a parking spot on the map");
+          setNeedsDestination(true);
+          setLoadingAction(false);
+        } else if (!userLocation && navigator.geolocation) {
           setShowLocationMarker(true);
           navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -133,10 +162,6 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
           );
-        } else if (!selectedSpot) {
-          setLocationStatus("Please pick a parking spot on the map");
-          setNeedsDestination(true);
-          setLoadingAction(false);
         } else {
           processRouteRequest(userLocation, selectedSpot);
         }
@@ -182,11 +207,88 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
           {activeOption ? (
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
-                {aiOptions.find((opt) => opt.id === activeOption)?.icon}
+                {options.find((opt) => opt.id === activeOption)?.icon}
                 <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
-                  {aiOptions.find((opt) => opt.id === activeOption)?.title}
+                  {options.find((opt) => opt.id === activeOption)?.title}
                 </h3>
               </div>
+
+              {/* Route preferences UI (only shown for route option) */}
+              {activeOption === "route" &&
+                !loadingAction &&
+                !needsDestination && (
+                  <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg mb-2">
+                    <div className="flex items-center mb-2">
+                      <Filter className="h-4 w-4 text-gray-600 dark:text-gray-300 mr-2" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Route Preferences
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={routePreferences.shortest}
+                          onChange={(e) =>
+                            setRoutePreferences({
+                              ...routePreferences,
+                              shortest: e.target.checked,
+                            })
+                          }
+                          className="rounded text-indigo-600 mr-2"
+                        />
+                        <span className="text-xs text-gray-600 dark:text-gray-300">
+                          Prefer shortest distance over fastest time
+                        </span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={routePreferences.avoidHighways}
+                          onChange={(e) =>
+                            setRoutePreferences({
+                              ...routePreferences,
+                              avoidHighways: e.target.checked,
+                            })
+                          }
+                          className="rounded text-indigo-600 mr-2"
+                        />
+                        <span className="text-xs text-gray-600 dark:text-gray-300">
+                          Avoid highways
+                        </span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={routePreferences.avoidTolls}
+                          onChange={(e) =>
+                            setRoutePreferences({
+                              ...routePreferences,
+                              avoidTolls: e.target.checked,
+                            })
+                          }
+                          className="rounded text-indigo-600 mr-2"
+                        />
+                        <span className="text-xs text-gray-600 dark:text-gray-300">
+                          Avoid toll roads
+                        </span>
+                      </label>
+
+                      <button
+                        onClick={() => {
+                          if (userLocation && selectedSpot) {
+                            setLoadingAction(true);
+                            processRouteRequest(userLocation, selectedSpot);
+                          }
+                        }}
+                        disabled={!userLocation || !selectedSpot}
+                        className="w-full mt-2 py-1.5 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600 transition-colors disabled:bg-gray-300 disabled:text-gray-500"
+                      >
+                        Apply Preferences
+                      </button>
+                    </div>
+                  </div>
+                )}
 
               {loadingAction ? (
                 <div className="flex flex-col items-center py-6">
@@ -207,32 +309,51 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
                   ) : (
                     <div className="space-y-3">
                       <div className="flex items-center space-x-2">
-                        <Navigation className="h-5 w-5 text-green-500" />
+                        {activeOption === "route" && (
+                          <Navigation className="h-5 w-5 text-green-500" />
+                        )}
+                        {activeOption === "weather-aware" && (
+                          <Umbrella className="h-5 w-5 text-blue-500" />
+                        )}
+                        {activeOption === "time-based" && (
+                          <Clock className="h-5 w-5 text-purple-500" />
+                        )}
+                        {activeOption === "parking-availability" && (
+                          <ParkingSquare className="h-5 w-5 text-green-500" />
+                        )}
+                        {activeOption === "analytics" && (
+                          <BarChart4 className="h-5 w-5 text-amber-500" />
+                        )}
                         <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                          Your Route
+                          {
+                            options.find((opt) => opt.id === activeOption)
+                              ?.title
+                          }
                         </p>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-300 italic">
                         {locationStatus}
                       </p>
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200 dark:border-gray-600">
-                        <div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            Distance
-                          </span>
-                          <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                            {routeDetails?.distance || "N/A"}
-                          </p>
+                      {activeOption === "route" && routeDetails && (
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                          <div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Distance
+                            </span>
+                            <p className="text-sm font-semibold text-gray-800 dark:text-white">
+                              {routeDetails?.distance || "N/A"}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Time
+                            </span>
+                            <p className="text-sm font-semibold text-gray-800 dark:text-white">
+                              {routeDetails?.duration || "N/A"}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            Time
-                          </span>
-                          <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                            {routeDetails?.duration || "N/A"}
-                          </p>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -256,7 +377,7 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
                 Your AI-powered parking assistant awaits!
               </p>
               <div className="space-y-3">
-                {aiOptions.map((option) => (
+                {options.map((option) => (
                   <button
                     key={option.id}
                     onClick={option.action}
@@ -273,6 +394,12 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
                     </div>
                   </button>
                 ))}
+              </div>
+              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+                <button className="w-full flex items-center justify-center py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                  <HelpCircle className="h-4 w-4 mr-1.5" />
+                  Need help with parking?
+                </button>
               </div>
             </>
           )}

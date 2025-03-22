@@ -48,6 +48,7 @@ const AppContent: React.FC = () => {
 
   const handleResetMapApp = (): void => {
     setSelectedSpotId(null);
+    setSelectedSpot(null);
     handleResetMap();
   };
 

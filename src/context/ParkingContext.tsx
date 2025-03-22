@@ -174,6 +174,7 @@ export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
       routes,
       setRoutes,
       handleResetMap,
+      fetchUserLocation,
     }),
     [
       parkingSpots,
@@ -189,6 +190,7 @@ export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
       selectedSpot,
       routes,
       handleResetMap,
+      fetchUserLocation,
     ]
   );
 

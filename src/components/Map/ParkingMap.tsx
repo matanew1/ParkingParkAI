@@ -72,7 +72,7 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
     null
   );
   const [showLocationMarker, setShowLocationMarker] = useState(false);
-  const { routes, selectedSpot } = useContext(ParkingContext); // Added selectedSpot and setSelectedSpot
+  const { routes, fetchUserLocation } = useContext(ParkingContext); // Added selectedSpot and setSelectedSpot
 
   const handleEnableLocation = () => {
     setShowLocationMarker(true);
@@ -80,42 +80,10 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
     if (userLocation) {
       setMapCenter(userLocation);
     } else {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const location: [number, number] = [latitude, longitude];
-          setUserLocation(location);
-          setMapCenter(location);
-        },
-        (error) => {
-          console.error("Error fetching location:", error.message);
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              alert(
-                "Location access denied. Please allow location access in your browser settings."
-              );
-              break;
-            case error.POSITION_UNAVAILABLE:
-              alert(
-                "Location information is unavailable. Please try again later."
-              );
-              break;
-            case error.TIMEOUT:
-              alert("Location request timed out. Showing default location.");
-              setMapCenter([32.0853, 34.7818]);
-              break;
-            default:
-              alert(
-                "Unable to fetch your location. Please enable location services."
-              );
-          }
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 20000,
-          maximumAge: 0,
-        }
-      );
+      setShowLocationMarker(true);
+
+      // Trigger location fetch when showLocationMarker is explicitly set to true
+      fetchUserLocation();
     }
   };
 
@@ -186,44 +154,45 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
       <Tooltip title="Show my location">
         <Fab
           color="primary"
-          size="medium"
+          size="small"
           onClick={handleEnableLocation}
           sx={{
-            position: "absolute",
-            bottom: 30,
+            position: "fixed",
             right: 20,
-            zIndex: 1000,
-            "@media (max-width: 600px)": {
-              bottom: 32,
-              right: "10%",
-              transform: "translateX(50%)",
+            top: { xs: 72, sm: 80, md: 88 },
+            zIndex: 1200,
+            backgroundColor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+            boxShadow: theme.shadows[3],
+            "&:hover": {
+              backgroundColor: theme.palette.primary.dark,
             },
           }}
         >
-          <Crosshair />
+          <Crosshair size={20} />
         </Fab>
       </Tooltip>
 
       {/* Reset Map Button */}
       <Tooltip title="Clear routes and selected spot">
         <Fab
-          color="secondary"
-          size="medium"
+          color="primary"
+          size="small"
           onClick={onResetMap}
-          disabled={routes.length === 0 && !selectedSpot} // Disable if no routes and no selected spot
           sx={{
-            position: "absolute",
-            bottom: 90,
-            right: 20,
-            zIndex: 1000,
-            "@media (max-width: 600px)": {
-              bottom: 92,
-              right: "10%",
-              transform: "translateX(50%)",
+            position: "fixed",
+            right: 70,
+            top: { xs: 72, sm: 80, md: 88 },
+            zIndex: 1200,
+            backgroundColor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+            boxShadow: theme.shadows[3],
+            "&:hover": {
+              backgroundColor: theme.palette.primary.dark,
             },
           }}
         >
-          <Trash2 />
+          <Trash2 size={20} />
         </Fab>
       </Tooltip>
 
