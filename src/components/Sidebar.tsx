@@ -1,4 +1,3 @@
-// Sidebar.tsx
 import React, { useState, useEffect } from "react";
 import { X, Clock, ChevronRight, RefreshCw } from "lucide-react";
 import { SidebarProps } from "../types/parking";
@@ -8,7 +7,6 @@ import {
   Typography,
   TextField,
   IconButton,
-  Button,
   List,
   ListItem,
   ListItemButton,
@@ -17,13 +15,14 @@ import {
   useTheme,
   InputAdornment,
   Divider,
+  LinearProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 
 const Sidebar: React.FC<SidebarProps> = ({
   spots,
   onSpotClick,
-  onSpotSelect, // Add this to props
+  onSpotSelect,
   lastUpdated,
   onRefresh,
   isRefreshing,
@@ -35,6 +34,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [lastValidStatus, setLastValidStatus] = useState(null);
   const [cachedData, setCachedData] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
+  const REFRESH_INTERVAL = 300; // Total refresh interval in seconds
 
   useEffect(() => {
     const cachedStatus = localStorage.getItem("lastValidStatus");
@@ -48,6 +49,27 @@ const Sidebar: React.FC<SidebarProps> = ({
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev === 1) {
+          handleRefresh();
+          return REFRESH_INTERVAL; // Reset timer to 5 minutes
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const progressColor = (value: number) => {
+    if (value < 25) return theme.palette.text.primary;
+    if (value < 50) return theme.palette.info.main;
+    if (value < 75) return theme.palette.warning.main;
+    return theme.palette.success.main;
+  };
+
   const filteredSpots = spots.filter(
     (spot) =>
       spot.Name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
@@ -58,6 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     try {
       onRefresh();
       setLastValidStatus(null);
+      setTimeLeft(REFRESH_INTERVAL); // Reset timer after manual refresh
     } catch (error) {
       if (error instanceof AxiosError && error.response) {
         if (error.response.status === 500) {
@@ -86,6 +109,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
     return "Status unavailable... Please refresh again";
   };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Calculate progress percentage (inverted, as we want to show time elapsed)
+  const progressValue =
+    ((REFRESH_INTERVAL - timeLeft) / REFRESH_INTERVAL) * 100;
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -140,22 +173,96 @@ const Sidebar: React.FC<SidebarProps> = ({
                 : "Loading data..."}
             </Typography>
           </Box>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            startIcon={
-              isRefreshing ? (
-                <RefreshCw size={14} className="animate-spin" />
-              ) : (
-                <RefreshCw size={14} />
-              )
-            }
-          >
-            Refresh
-          </Button>
         </Box>
+
+        {/* Clickable refresh button with integrated progress bar */}
+        <Paper
+          elevation={1}
+          onClick={isRefreshing ? undefined : handleRefresh}
+          sx={{
+            mb: 2,
+            overflow: "hidden",
+            cursor: isRefreshing ? "not-allowed" : "pointer",
+            transition: "all 0.2s",
+            "&:hover": {
+              boxShadow: 3,
+              transform: isRefreshing ? "none" : "translateY(-2px)",
+            },
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 1,
+            opacity: isRefreshing ? 0.7 : 1,
+          }}
+        >
+          <Box sx={{ p: 1.5, position: "relative" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 1,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                {isRefreshing ? (
+                  <RefreshCw size={18} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={18} />
+                )}
+                <Typography variant="body2" sx={{ ml: 1.5, fontWeight: 500 }}>
+                  {isRefreshing ? "Refreshing..." : "Refresh Data"}
+                </Typography>
+              </Box>
+              <Typography variant="caption" color="textSecondary">
+                {formatTime(timeLeft)}
+              </Typography>
+            </Box>
+
+            {/* Progress bar with integrated label */}
+            <Box sx={{ position: "relative", height: 30 }}>
+              <LinearProgress
+                variant="determinate"
+                value={progressValue}
+                sx={{
+                  height: 30,
+                  borderRadius: 2,
+                  backgroundColor: theme.palette.grey[200],
+                  "& .MuiLinearProgress-bar": {
+                    backgroundColor: theme.palette.primary.main,
+                  },
+                }}
+              />
+
+              {/* Centered text on top of progress bar */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 550,
+                    color: progressColor(progressValue),
+                    zIndex: 1,
+                    textShadow:
+                      progressValue > 50
+                        ? "0px 0px 2px rgba(0,0,0,0.3)"
+                        : "none",
+                  }}
+                >
+                  {isRefreshing ? "REFRESHING..." : "REFRESH"}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        </Paper>
 
         <Divider sx={{ my: 1 }} />
 
@@ -177,8 +284,8 @@ const Sidebar: React.FC<SidebarProps> = ({
               >
                 <ListItemButton
                   onClick={() => {
-                    onSpotSelect(spot.AhuzotCode); // Notify parent of selection
-                    onSpotClick(spot); // Center map
+                    onSpotSelect(spot.AhuzotCode);
+                    onSpotClick(spot);
                     if (isMobile) toggleDrawer();
                   }}
                 >
