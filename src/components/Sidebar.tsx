@@ -64,9 +64,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, []);
 
   const progressColor = (value: number) => {
-    if (value < 25) return theme.palette.text.primary;
-    if (value < 50) return theme.palette.info.main;
-    if (value < 75) return theme.palette.warning.main;
+    if (value < 25) return "black";
+    if (value < 50) return "orange";
+    if (value < 75) return "red";
     return theme.palette.success.main;
   };
 

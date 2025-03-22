@@ -18,4 +18,6 @@ export interface AIOption {
 export interface AIPopupProps {
   isOpen: boolean;
   onClose: () => void;
+  source: string;
+  destination: string;
 }

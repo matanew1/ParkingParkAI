@@ -17,13 +17,12 @@ import { lightTheme, darkTheme } from "./Theme/ThemeConfig";
 import AppHeader from "./AppHeader";
 import Sidebar from "./Sidebar";
 import AIDialog from "./AI/AIDialog";
-import {
-  fetchParkingSpots,
-  fetchParkingStatus,
-} from "../services/parkingService";
+import { ParkingService } from "../services/parkingService";
 import type { ParkingSpotWithStatus } from "../types/parking";
+import ParkingContext from "../context/ParkingContext";
 
 const ParkingMap = lazy(() => import("./Map/ParkingMap"));
+const parkingService = new ParkingService();
 
 const AppContent: React.FC = () => {
   const [isAIPopupOpen, setIsAIPopupOpen] = useState<boolean>(false);
@@ -42,6 +41,8 @@ const AppContent: React.FC = () => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null); // New state for selected spot
+
+  const { setSelectedSpot } = React.useContext(ParkingContext);
 
   const drawerWidth = isMobile ? "80%" : 320;
 
@@ -63,8 +64,8 @@ const AppContent: React.FC = () => {
         setRefreshing(true);
       }
       const [spots, statusMap] = await Promise.all([
-        fetchParkingSpots(),
-        fetchParkingStatus(),
+        parkingService.fetchParkingSpots(),
+        parkingService.fetchParkingStatus(),
       ]);
       const spotsWithStatus = spots.map((spot) => ({
         ...spot,
@@ -93,12 +94,17 @@ const AppContent: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [fetchParkingData]);
 
-  const handleSpotClick = useCallback((spot: ParkingSpotWithStatus) => {
-    setMapCenter([
-      parseFloat(spot.GPSLattitude),
-      parseFloat(spot.GPSLongitude),
-    ]);
-  }, []);
+  const handleSpotClick = useCallback(
+    (spot: ParkingSpotWithStatus) => {
+      setMapCenter([
+        parseFloat(spot.GPSLattitude),
+        parseFloat(spot.GPSLongitude),
+      ]);
+      setSelectedSpotId(spot.AhuzotCode);
+      setSelectedSpot(String(spot.GPSLattitude) +','+ String(spot.GPSLongitude));
+    },
+    [setSelectedSpot]
+  );
 
   const handleSpotSelect = useCallback((spotId: string | null) => {
     setSelectedSpotId(spotId);
