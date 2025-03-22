@@ -1,13 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  useMap,
-  Circle,
-} from "react-leaflet";
-import { Icon } from "leaflet";
+import { useState, useCallback } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Clock, RefreshCw, Crosshair } from "lucide-react";
 import type { ParkingSpotWithStatus } from "../types/parking";
 import {
@@ -25,6 +17,11 @@ import {
   Tooltip,
 } from "@mui/material";
 
+// Import the extracted components and utilities
+import { getMarkerIcon } from "./utils/MarkerUtils";
+import LocationMarker from "./LocationMarker";
+import MapController from "./MapController";
+
 import "leaflet/dist/leaflet.css";
 
 interface ParkingMapProps {
@@ -37,101 +34,6 @@ interface ParkingMapProps {
   onRefresh: () => void;
   setMapCenter: (center: [number, number]) => void;
 }
-
-const getMarkerIcon = (status?: string) => {
-  const color = status === "מלא" ? "red" : "blue";
-  return new Icon({
-    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-    shadowUrl:
-      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-  });
-};
-
-// User location marker (green)
-const userLocationIcon = new Icon({
-  iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png`,
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const MapController = ({ center }: { center: [number, number] }) => {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, 15);
-  }, [center, map]);
-  return null;
-};
-
-// Component to handle location watching
-const LocationMarker = ({
-  setUserLocation,
-}: {
-  setUserLocation: (location: [number, number]) => void;
-}) => {
-  const [position, setPosition] = useState<[number, number] | null>(null);
-  const [accuracy, setAccuracy] = useState<number>(0);
-  const map = useMap();
-
-  useEffect(() => {
-    let watchId: number;
-
-    const onLocationFound = (e: GeolocationPosition) => {
-      const { latitude, longitude, accuracy } = e.coords;
-      const newPos: [number, number] = [latitude, longitude];
-      setPosition(newPos);
-      setAccuracy(accuracy);
-      setUserLocation(newPos);
-    };
-
-    const onLocationError = (err: GeolocationPositionError) => {
-      console.error("Location error:", err.message);
-    };
-
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(
-        onLocationFound,
-        onLocationError,
-        {
-          enableHighAccuracy: true,
-          timeout: 20000, // 20 seconds
-          maximumAge: 0, // No cache
-        }
-      );
-    }
-
-    return () => {
-      if (watchId !== undefined) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-    };
-  }, [map, setUserLocation]);
-
-  return position === null ? null : (
-    <>
-      <Marker position={position} icon={userLocationIcon}>
-        <Popup>
-          <Typography variant="body1">You are here</Typography>
-          <Typography variant="caption" color="textSecondary">
-            Accuracy: ±{Math.round(accuracy)} meters
-          </Typography>
-        </Popup>
-      </Marker>
-      <Circle
-        center={position}
-        radius={accuracy}
-        pathOptions={{ color: "green", fillColor: "green", fillOpacity: 0.1 }}
-      />
-    </>
-  );
-};
 
 const ParkingMap: React.FC<ParkingMapProps> = ({
   parkingSpots,
@@ -270,9 +172,14 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
           onClick={handleEnableLocation}
           sx={{
             position: "absolute",
-            bottom: 20,
+            bottom: 30,
             right: 20,
             zIndex: 1000,
+            "@media (max-width: 600px)": {
+              bottom: 32,
+              right: "10%",
+              transform: "translateX(50%)",
+            },
           }}
         >
           <Crosshair />
