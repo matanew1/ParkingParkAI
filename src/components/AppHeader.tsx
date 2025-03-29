@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import ThemeToggle from "./Theme/ThemeToggle";
 import OptionButton from "./Options/OptionButton";
-import { AppHeaderProps } from "../types/app";
+import { AppHeaderProps } from "../Types/app";
 
 const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup }) => {
   const isMobile = useMediaQuery("(max-width:600px)");

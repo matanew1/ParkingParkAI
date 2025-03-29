@@ -7,7 +7,7 @@ import {
   Polyline,
 } from "react-leaflet";
 import { Clock, RefreshCw, Crosshair, Trash2 } from "lucide-react";
-import type { ParkingMapProps } from "../../types/location";
+import type { ParkingMapProps } from "../../Types/location";
 import {
   Box,
   Typography,
@@ -22,7 +22,7 @@ import {
   Fab,
   Tooltip,
 } from "@mui/material";
-import ParkingContext from "../../context/ParkingContext";
+import ParkingContext from "../../Context/ParkingContext";
 import {
   getMarkerIcon,
   selectedMarkerIcon,

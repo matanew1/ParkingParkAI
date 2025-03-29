@@ -48,5 +48,5 @@ export interface ParkingMapProps {
   selectedSpotId: string | null;
 }
 
-// types/ai.ts (if not already present)
+// Types/ai.ts (if not already present)
 export type Coordinates = [number, number];

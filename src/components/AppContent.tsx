@@ -12,14 +12,14 @@ import {
   Fade,
   Typography,
 } from "@mui/material";
-import { useTheme as useCustomTheme } from "../context/ThemeContext";
+import { useTheme as useCustomTheme } from "../Context/ThemeContext";
 import { lightTheme, darkTheme } from "./Theme/ThemeConfig";
 import AppHeader from "./AppHeader";
 import Sidebar from "./Sidebar/index";
 import OptionDialog from "./Options/OptionDialog";
-import { ParkingService } from "../services/parkingService";
-import type { ParkingSpotWithStatus } from "../types/parking";
-import ParkingContext from "../context/ParkingContext";
+import { ParkingService } from "../Services/parkingService";
+import type { ParkingSpotWithStatus } from "../Types/parking";
+import ParkingContext from "../Context/ParkingContext";
 
 const ParkingMap = lazy(() => import("./Map/ParkingMap"));
 const parkingService = new ParkingService();

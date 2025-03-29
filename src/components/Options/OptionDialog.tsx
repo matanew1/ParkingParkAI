@@ -6,7 +6,7 @@ import {
   useMediaQuery,
   Theme,
 } from "@mui/material";
-import type { OptionDialogProps } from "../../types/app";
+import type { OptionDialogProps } from "../../Types/app";
 
 // Lazy loaded component
 const OptionPopup = React.lazy(() => import("./OptionPopup"));

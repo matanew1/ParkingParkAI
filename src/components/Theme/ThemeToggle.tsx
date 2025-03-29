@@ -1,7 +1,7 @@
 import React from "react";
 import { Sun, Moon } from "lucide-react";
 import { IconButton } from "@mui/material";
-import { useTheme as useCustomTheme } from "../../context/ThemeContext";
+import { useTheme as useCustomTheme } from "../../Context/ThemeContext";
 
 const ThemeToggle: React.FC = () => {
   const { isDarkMode, toggleTheme } = useCustomTheme();

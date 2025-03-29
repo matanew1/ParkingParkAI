@@ -2,8 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Marker, Popup, useMap, Circle } from "react-leaflet";
 import { Typography } from "@mui/material";
 import { userLocationIcon } from "./utils/MarkerUtils";
-import type { LocationMarkerProps } from "../../types/location";
-import type { Coordinates } from "../../services/routeService";
+import type { LocationMarkerProps } from "../../Types/location";
+import type { Coordinates } from "../../Services/routeService";
 
 /**
  * Component that tracks and displays the user's current location on the map

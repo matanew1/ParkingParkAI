@@ -12,10 +12,10 @@ import {
   Filter,
   HelpCircle,
 } from "lucide-react";
-import { RouteService } from "../../services/routeService";
-import ParkingContext from "../../context/ParkingContext";
-import type { OptionPopupProps, AIOption } from "../../types/ai";
-import type { Coordinates } from "../../services/routeService";
+import { RouteService } from "../../Services/routeService";
+import ParkingContext from "../../Context/ParkingContext";
+import type { OptionPopupProps, AIOption } from "../../Types/ai";
+import type { Coordinates } from "../../Services/routeService";
 
 const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
   const [activeOption, setActiveOption] = useState<string | null>(null);

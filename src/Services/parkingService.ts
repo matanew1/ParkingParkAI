@@ -4,7 +4,7 @@ import {
   ParkingSpot,
   ParkingStatus,
   ParkingSpotWithStatus,
-} from "../types/parking";
+} from "../Types/parking";
 
 const API_BASE_URL = "https://api.tel-aviv.gov.il/parking";
 

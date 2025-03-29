@@ -1,6 +1,6 @@
 import React from "react";
-import { ThemeProvider as CustomThemeProvider } from "./context/ThemeContext";
-import { ParkingProvider } from "./context/ParkingContext";
+import { ThemeProvider as CustomThemeProvider } from "./Context/ThemeContext";
+import { ParkingProvider } from "./Context/ParkingContext";
 import AppContent from "./components/AppContent";
 
 const App: React.FC = () => {

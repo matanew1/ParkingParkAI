@@ -3,8 +3,8 @@ import "./MarkerUtils.css";
 import { useMap } from "react-leaflet";
 
 import React, { useEffect } from "react";
-import type { ParkingSpotWithStatus } from "../../types/location"; // Adjust import path as needed
-import type { Coordinates } from "../../services/routeService"; // Adjust import path as needed
+import type { ParkingSpotWithStatus } from "../../Types/location"; // Adjust import path as needed
+import type { Coordinates } from "../../Services/routeService"; // Adjust import path as needed
 
 // User location marker (green)
 export const userLocationIcon = new Icon({

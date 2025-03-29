@@ -1,6 +1,6 @@
 import React from "react";
 import { Button, useMediaQuery } from "@mui/material";
-import { OptionButtonProps } from "../../types/app";
+import { OptionButtonProps } from "../../Types/app";
 
 const OptionButton: React.FC<OptionButtonProps> = ({ onClick }) => {
   const isMobile = useMediaQuery("(max-width:600px)");

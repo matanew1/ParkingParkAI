@@ -1,4 +1,4 @@
-// src/types/parking.ts
+// src/Types/parking.ts
 export interface ParkingSpot {
   AhuzotCode: string;
   Name: string;

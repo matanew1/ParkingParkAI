@@ -6,10 +6,10 @@ import React, {
   ReactNode,
   useMemo,
 } from "react";
-import { ParkingSpotWithStatus } from "../types/parking";
-import { ParkingService } from "../services/parkingService";
-import { ParkingContextType } from "../types/location";
-import type { Coordinates } from "../services/routeService";
+import { ParkingSpotWithStatus } from "../Types/parking";
+import { ParkingService } from "../Services/parkingService";
+import { ParkingContextType } from "../Types/location";
+import type { Coordinates } from "../Services/routeService";
 
 // Default coordinates for Tel Aviv
 const DEFAULT_COORDINATES: Coordinates = [32.0853, 34.7818];
@@ -120,7 +120,7 @@ export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
         switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMessage =
-              "Location permission denied. Please enable location services.";
+              "Location permission denied. Please enable location Services.";
             break;
           case error.POSITION_UNAVAILABLE:
             errorMessage = "Location information is unavailable.";
@@ -153,7 +153,7 @@ export const ParkingProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, [showLocationMarker, userLocation, fetchUserLocation]);
 
-  // Memoize context value to prevent unnecessary re-renders
+  // Memoize Context value to prevent unnecessary re-renders
   const value = useMemo(
     () => ({
       parkingSpots,

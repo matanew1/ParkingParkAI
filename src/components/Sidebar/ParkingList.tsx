@@ -1,5 +1,5 @@
 import React from "react";
-import { ParkingSpotWithStatus } from "../../types/parking";
+import { ParkingSpotWithStatus } from "../../Types/parking";
 import {
   List,
   ListItem,
