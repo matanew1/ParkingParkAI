@@ -15,7 +15,7 @@ import {
 import { useTheme as useCustomTheme } from "../context/ThemeContext";
 import { lightTheme, darkTheme } from "./Theme/ThemeConfig";
 import AppHeader from "./AppHeader";
-import Sidebar from "./Sidebar";
+import Sidebar from "./Sidebar/index";
 import OptionDialog from "./Options/OptionDialog";
 import { ParkingService } from "../services/parkingService";
 import type { ParkingSpotWithStatus } from "../types/parking";
