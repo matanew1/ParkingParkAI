@@ -1,5 +1,6 @@
 import React from "react";
-import { ParkingSpotWithStatus } from "../../Types/parking";
+import { ParkingSpotWithStatus } from "../../types/parking";
+import { ParkingListProps } from "../../types/parking";
 import {
   List,
   ListItem,
@@ -12,14 +13,6 @@ import {
 } from "@mui/material";
 import { ChevronRight, Clock } from "lucide-react";
 import { useParkingStatus } from "../Hooks/useParkingStatus";
-
-interface ParkingListProps {
-  filteredSpots: ParkingSpotWithStatus[];
-  onSpotClick: (spot: ParkingSpotWithStatus) => void;
-  onSpotSelect: (spotId: string) => void;
-  toggleDrawer: () => void;
-  isMobile: boolean;
-}
 
 const ParkingList: React.FC<ParkingListProps> = ({
   filteredSpots,

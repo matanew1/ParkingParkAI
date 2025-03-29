@@ -29,3 +29,11 @@ export interface SidebarProps {
   toggleDrawer: () => void;
   isMobile: boolean;
 }
+
+interface ParkingListProps {
+  filteredSpots: ParkingSpotWithStatus[];
+  onSpotClick: (spot: ParkingSpotWithStatus) => void;
+  onSpotSelect: (spotId: string) => void;
+  toggleDrawer: () => void;
+  isMobile: boolean;
+}
