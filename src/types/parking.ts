@@ -1,4 +1,4 @@
-// src/Types/parking.ts
+// src/types/parking.ts
 export interface ParkingSpot {
   AhuzotCode: string;
   Name: string;
@@ -22,18 +22,10 @@ export interface ParkingSpotWithStatus extends ParkingSpot {
 export interface SidebarProps {
   spots: ParkingSpotWithStatus[];
   onSpotClick: (spot: ParkingSpotWithStatus) => void;
-  onSpotSelect: (spotId: string | null) => void; // New prop to pass selected spot
+  statusError: string | null;
   lastUpdated: Date | null;
   onRefresh: () => void;
   isRefreshing: boolean;
-  toggleDrawer: () => void;
-  isMobile: boolean;
-}
-
-interface ParkingListProps {
-  filteredSpots: ParkingSpotWithStatus[];
-  onSpotClick: (spot: ParkingSpotWithStatus) => void;
-  onSpotSelect: (spotId: string) => void;
   toggleDrawer: () => void;
   isMobile: boolean;
 }
