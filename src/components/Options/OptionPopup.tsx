@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { RouteService } from "../../Services/routeService";
 import ParkingContext from "../../Context/ParkingContext";
-import type { OptionPopupProps, AIOption } from "../../Types/ai";
+import type { OptionPopupProps, Option } from "../../Types/ai";
 import type { Coordinates } from "../../Services/routeService";
 
 const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
@@ -37,7 +37,7 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
 
   const routeService = React.useMemo(() => new RouteService(), []);
 
-  const options: AIOption[] = [
+  const options: Option[] = [
     {
       id: "route",
       title: "Optimal Route",

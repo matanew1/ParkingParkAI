@@ -7,7 +7,7 @@ export interface OptionDialogProps {
   onClose: () => void;
 }
 
-export interface AIOption {
+export interface Option {
   id: string;
   title: string;
   description: string;
