@@ -1,40 +1,59 @@
 import { Icon, divIcon } from "leaflet";
 import "./MarkerUtils.css";
 import { useMap } from "react-leaflet";
+import React, { useEffect, useCallback, useMemo } from "react";
+import type { ParkingSpotWithStatus } from "../../Types/parking";
+import type { Coordinates } from "../../Services/routeService";
 
-import React, { useEffect } from "react";
-import type { ParkingSpotWithStatus } from "../../Types/location"; // Adjust import path as needed
-import type { Coordinates } from "../../Services/routeService"; // Adjust import path as needed
+// Constants
+const ICON_SIZE = [25, 41];
+const ICON_ANCHOR = [12, 41];
+const POPUP_ANCHOR = [1, -34];
+const SHADOW_SIZE = [41, 41];
+const SHADOW_URL =
+  "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png";
+
+// Cache for marker icons to prevent recreating them
+const iconCache = new Map<string, Icon>();
 
 // User location marker (green)
 export const userLocationIcon = new Icon({
   iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png`,
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
+  shadowUrl: SHADOW_URL,
+  iconSize: ICON_SIZE,
+  iconAnchor: ICON_ANCHOR,
+  popupAnchor: POPUP_ANCHOR,
+  shadowSize: SHADOW_SIZE,
 });
 
 /**
  * Returns a marker icon based on the parking spot status
+ * Uses caching to improve performance
  * @param status The status of the parking spot
  * @returns Leaflet Icon with appropriate color
  */
 export const getMarkerIcon = (status?: string) => {
   const color = status === "מלא" ? "red" : "blue";
-  return new Icon({
+  const cacheKey = `marker-${color}`;
+
+  if (iconCache.has(cacheKey)) {
+    return iconCache.get(cacheKey)!;
+  }
+
+  const icon = new Icon({
     iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-    shadowUrl:
-      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
+    shadowUrl: SHADOW_URL,
+    iconSize: ICON_SIZE,
+    iconAnchor: ICON_ANCHOR,
+    popupAnchor: POPUP_ANCHOR,
+    shadowSize: SHADOW_SIZE,
   });
+
+  iconCache.set(cacheKey, icon);
+  return icon;
 };
 
+// Selected marker with glow effect
 export const selectedMarkerIcon = divIcon({
   className: "selected-marker-icon",
   html: `
@@ -64,65 +83,117 @@ export const selectedMarkerIcon = divIcon({
   popupAnchor: [1, -34],
 });
 
-// MapZoomController for selected spot
+// Start and end icons for routes
+export const routeIcons = {
+  start: new Icon({
+    iconUrl:
+      "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
+    iconSize: ICON_SIZE,
+    iconAnchor: ICON_ANCHOR,
+    popupAnchor: POPUP_ANCHOR,
+    shadowUrl: SHADOW_URL,
+    shadowSize: SHADOW_SIZE,
+  }),
+  end: new Icon({
+    iconUrl:
+      "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+    iconSize: ICON_SIZE,
+    iconAnchor: ICON_ANCHOR,
+    popupAnchor: POPUP_ANCHOR,
+    shadowUrl: SHADOW_URL,
+    shadowSize: SHADOW_SIZE,
+  }),
+};
+
+/**
+ * MapZoomController for selected spot
+ * Zooms map to the selected parking spot
+ */
 export const MapZoomController: React.FC<{
   selectedSpotId: string | null;
   spots: ParkingSpotWithStatus[];
 }> = ({ selectedSpotId, spots }) => {
   const map = useMap();
 
+  // Memoize the selected spot to prevent unnecessary processing
+  const selectedSpot = useMemo(() => {
+    if (!selectedSpotId) return null;
+    return spots.find((spot) => spot.AhuzotCode === selectedSpotId);
+  }, [selectedSpotId, spots]);
+
   useEffect(() => {
-    if (selectedSpotId) {
-      const selectedSpot = spots.find(
-        (spot) => spot.AhuzotCode === selectedSpotId
-      );
-      if (selectedSpot) {
-        const position: [number, number] = [
-          parseFloat(selectedSpot.GPSLattitude),
-          parseFloat(selectedSpot.GPSLongitude),
-        ];
+    if (selectedSpot) {
+      const position: Coordinates = [
+        parseFloat(selectedSpot.GPSLattitude),
+        parseFloat(selectedSpot.GPSLongitude),
+      ];
+
+      if (!isNaN(position[0]) && !isNaN(position[1])) {
         map.setView(position, 16);
       }
     }
-  }, [selectedSpotId, spots, map]);
+  }, [selectedSpot, map]);
 
   return null;
 };
 
-// RouteZoomController with validation
-export const RouteZoomController: React.FC<{ routes: Coordinates[][] }> = ({
-  routes,
-}) => {
+/**
+ * Validates coordinates to ensure they are usable
+ */
+const isValidCoordinate = (coord: Coordinates): boolean => {
+  return (
+    typeof coord[0] === "number" &&
+    typeof coord[1] === "number" &&
+    !isNaN(coord[0]) &&
+    !isNaN(coord[1]) &&
+    coord[0] >= -90 &&
+    coord[0] <= 90 &&
+    coord[1] >= -180 &&
+    coord[1] <= 180
+  );
+};
+
+/**
+ * RouteZoomController with validation
+ * Fits map bounds to show the entire route
+ */
+export const RouteZoomController: React.FC<{
+  routes: Coordinates[][];
+}> = ({ routes }) => {
   const map = useMap();
 
-  useEffect(() => {
-    if (routes.length > 0 && routes[0].length > 0) {
-      const validRoutes = routes
-        .map((route) =>
-          route.filter(
-            ([lat, lng]) =>
-              typeof lat === "number" &&
-              typeof lng === "number" &&
-              lat >= -90 &&
-              lat <= 90 &&
-              lng >= -180 &&
-              lng <= 180
-          )
-        )
-        .filter((route) => route.length > 0);
+  const getValidRoutes = useCallback((inputRoutes: Coordinates[][]) => {
+    return inputRoutes
+      .map((route) => route.filter(isValidCoordinate))
+      .filter((route) => route.length > 0);
+  }, []);
 
-      if (validRoutes.length > 0) {
+  useEffect(() => {
+    if (routes.length === 0 || !routes[0]?.length) return;
+
+    const validRoutes = getValidRoutes(routes);
+
+    if (validRoutes.length > 0 && validRoutes[0].length > 0) {
+      try {
         const bounds = validRoutes[0].reduce(
-          (acc, [lat, lng]) => acc.extend([lat, lng]),
-          new L.LatLngBounds(validRoutes[0][0], validRoutes[0][0])
+          (acc, coord) => acc.extend([coord[0], coord[1]]),
+          new L.LatLngBounds(
+            [validRoutes[0][0][0], validRoutes[0][0][1]],
+            [validRoutes[0][0][0], validRoutes[0][0][1]]
+          )
         );
+
+        // Add some padding around the route
         map.fitBounds(bounds, { padding: [50, 50] });
-      } else {
-        console.error("No valid route coordinates found");
-        map.setView([32.0853, 34.7818], 13);
+      } catch (err) {
+        console.error("Error fitting bounds:", err);
       }
     }
-  }, [routes, map]);
+  }, [routes, map, getValidRoutes]);
 
   return null;
 };
+/**
+ * MarkerUtils module for managing markers on the map
+ * Provides functions to create and manage marker icons
+ */

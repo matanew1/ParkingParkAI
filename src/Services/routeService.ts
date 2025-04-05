@@ -15,35 +15,80 @@ export interface RouteOptions {
   shortest?: boolean;
   avoidTolls?: boolean;
   avoidHighways?: boolean;
+  avoidFerries?: boolean;
+  preferenceLevel?: number;
+  costing?: CostingModel;
+}
+
+export interface TripSummary {
+  length: number; // in kilometers
+  time: number; // in seconds
+}
+
+export interface TripLeg {
+  summary: TripSummary;
+  shape: string;
+}
+
+export interface Trip {
+  legs: TripLeg[];
+  summary: TripSummary;
 }
 
 export class RouteService {
   private readonly BASE_URL = "https://valhalla1.openstreetmap.de/route";
+  private readonly cache = new Map<string, Trip>();
 
-  async fetchRoute(
+  // Helper to normalize coordinates for consistent caching
+  private normalizeCoordinates(coord: Coordinates | string): Coordinates {
+    if (typeof coord === "string") {
+      return coord.split(",").map((part) => parseFloat(part)) as Coordinates;
+    }
+    return coord;
+  }
+
+  // Generate a cache key based on start, end, and options
+  private getCacheKey(
+    start: Coordinates,
+    end: Coordinates,
+    options: RouteOptions
+  ): string {
+    return `${start.join(",")}_${end.join(",")}_${JSON.stringify(options)}`;
+  }
+
+  /**
+   * Fetches a route between two points with caching
+   * @param start Starting coordinates or string ("lat,lng")
+   * @param end Ending coordinates or string ("lat,lng")
+   * @param options Routing options
+   * @returns Promise with trip data
+   */
+  public async fetchRoute(
     start: Coordinates | string,
     end: Coordinates | string,
     options: RouteOptions = {}
-  ): Promise<Route> {
+  ): Promise<Trip> {
+    // Normalize coordinates for consistency
+    const startCoords = this.normalizeCoordinates(start);
+    const endCoords = this.normalizeCoordinates(end);
+
+    // Check cache first
+    const cacheKey = this.getCacheKey(startCoords, endCoords, options);
+    const cachedResult = this.cache.get(cacheKey);
+    if (cachedResult) {
+      console.log("Route cache hit:", cacheKey);
+      return cachedResult;
+    }
+
     const axiosConfig = {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
+      timeout: 15000, // 15 second timeout
     };
 
     try {
-      // Parse coordinates consistently
-      const startCoords =
-        typeof start === "string"
-          ? (start.split(",").map((part) => parseFloat(part)) as Coordinates)
-          : start;
-
-      const endCoords =
-        typeof end === "string"
-          ? (end.split(",").map((part) => parseFloat(part)) as Coordinates)
-          : end;
-
       // Build costing options based on user preferences
       const costingOptions: Record<string, unknown> = {};
 
@@ -82,24 +127,53 @@ export class RouteService {
 
       const response = await axios.post(this.BASE_URL, body, axiosConfig);
 
-      console.log("Route fetch response:", response.data);
       if (!response.data.trip) {
         throw new Error("No route found.");
       }
 
-      return response.data.trip;
+      // Process the route data
+      const route = response.data.trip;
+      const trip: Trip = {
+        legs: route.legs.map((leg: any) => ({
+          summary: {
+            length: leg.summary.length,
+            time: leg.summary.time,
+          },
+          shape: leg.shape,
+        })),
+        summary: {
+          length: route.summary.length,
+          time: route.summary.time,
+        },
+      };
+
+      // Cache the result
+      this.cache.set(cacheKey, trip);
+
+      // Return decoded route
+      if (trip.legs[0].shape) {
+        const coordinates = this.decodeShape(trip.legs[0].shape);
+        trip.legs[0].coordinates = coordinates;
+      }
+
+      return trip;
     } catch (error) {
       console.error("Route fetch error:", error);
+      if (axios.isAxiosError(error) && error.code === "ECONNABORTED") {
+        throw new Error("Route calculation timed out. Please try again.");
+      }
       throw new Error(
         "Unable to load route information. Please try again later."
       );
     }
   }
 
-  // Helper method to decode the polyline shape returned by the API
-  decodeShape(shape: string): Coordinates[] {
-    // This is a simplified implementation of Valhalla's polyline decoder
-    // For production use, you would need a full implementation of the polyline algorithm
+  /**
+   * Decodes the polyline shape returned by the API
+   * @param shape Encoded polyline string
+   * @returns Array of coordinates
+   */
+  public decodeShape(shape: string): Coordinates[] {
     const coordinates: Coordinates[] = [];
     let index = 0;
     let lat = 0;
@@ -136,5 +210,12 @@ export class RouteService {
     }
 
     return coordinates;
+  }
+
+  /**
+   * Clears the route cache
+   */
+  public clearCache(): void {
+    this.cache.clear();
   }
 }

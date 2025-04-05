@@ -1,13 +1,22 @@
-import { useState, useCallback, useContext } from "react";
+import { useState, useCallback, useContext, useEffect, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
   Marker,
   Popup,
   Polyline,
+  useMap,
 } from "react-leaflet";
-import { Clock, RefreshCw, Crosshair, Trash2 } from "lucide-react";
-import type { ParkingMapProps } from "../../Types/location";
+import {
+  Clock,
+  RefreshCw,
+  Crosshair,
+  Trash2,
+  Navigation,
+  Play,
+  Pause,
+} from "lucide-react";
+import type { ParkingMapProps } from "../../types/location";
 import {
   Box,
   Typography,
@@ -21,6 +30,7 @@ import {
   useMediaQuery,
   Fab,
   Tooltip,
+  IconButton,
 } from "@mui/material";
 import ParkingContext from "../../Context/ParkingContext";
 import {
@@ -55,7 +65,7 @@ const endIcon = new Icon({
   shadowSize: [41, 41],
 });
 
-const ParkingMap: React.FC<ParkingMapProps> = ({
+const ParkingMap = ({
   parkingSpots,
   loading,
   statusError,
@@ -68,11 +78,94 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(
-    null
-  );
+  const [userLocation, setUserLocation] = useState(null);
   const [showLocationMarker, setShowLocationMarker] = useState(false);
-  const { routes, fetchUserLocation } = useContext(ParkingContext); // Added selectedSpot and setSelectedSpot
+  const [navigationActive, setNavigationActive] = useState(false);
+  const [infoExpanded, setInfoExpanded] = useState(true);
+  const [distanceTraveled, setDistanceTraveled] = useState(0);
+  const [timeElapsed, setTimeElapsed] = useState(0);
+  const navigationStartTime = useRef(null);
+  const lastUpdateTime = useRef(null);
+  const animationFrameRef = useRef(null);
+  const [processedRoutes, setProcessedRoutes] = useState([]);
+
+  const { routes, fetchUserLocation } = useContext(ParkingContext);
+
+  // Process routes from context
+  useEffect(() => {
+    if (Array.isArray(routes) && routes.length > 0) {
+      // For handling the array of coordinates format
+      if (
+        Array.isArray(routes[0]) &&
+        Array.isArray(routes[0][0]) &&
+        routes[0][0].length >= 2
+      ) {
+        setProcessedRoutes(routes);
+      }
+      // For handling Valhalla API response
+      else if (routes.legs && routes.summary) {
+        const processed = processRouteData(routes);
+        if (processed) {
+          setProcessedRoutes([processed.coordinates]);
+        }
+      }
+    }
+  }, [routes]);
+
+  const handleToggleNavigation = () => {
+    if (!navigationActive) {
+      // Start navigation
+      setNavigationActive(true);
+      navigationStartTime.current = Date.now();
+      lastUpdateTime.current = Date.now();
+      setDistanceTraveled(0);
+      setTimeElapsed(0);
+      startNavigationUpdates();
+    } else {
+      // Stop navigation
+      setNavigationActive(false);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    }
+  };
+
+  const startNavigationUpdates = () => {
+    const updateNavigation = () => {
+      const now = Date.now();
+      const elapsed = now - lastUpdateTime.current;
+      lastUpdateTime.current = now;
+
+      setTimeElapsed((prev) => prev + elapsed / 1000);
+
+      // Get total route length
+      const totalLength = routes?.summary?.length || 0;
+
+      // Simulated progress based on elapsed time
+      if (routes?.summary?.time) {
+        const progress = Math.min(
+          (Date.now() - navigationStartTime.current) /
+            (routes.summary.time * 1000),
+          1
+        );
+        setDistanceTraveled(totalLength * progress);
+      }
+
+      animationFrameRef.current = requestAnimationFrame(updateNavigation);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(updateNavigation);
+  };
+
+  const handleResetNavigation = () => {
+    setNavigationActive(false);
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    setDistanceTraveled(0);
+    setTimeElapsed(0);
+    onResetMap();
+  };
 
   const handleEnableLocation = () => {
     setShowLocationMarker(true);
@@ -81,14 +174,12 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
       setMapCenter(userLocation);
     } else {
       setShowLocationMarker(true);
-
-      // Trigger location fetch when showLocationMarker is explicitly set to true
       fetchUserLocation();
     }
   };
 
   const updateUserLocation = useCallback(
-    (location: [number, number]) => {
+    (location) => {
       setUserLocation(location);
       if (showLocationMarker) {
         setMapCenter(location);
@@ -113,6 +204,15 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
       </Box>
     );
   }
+
+  // Helper to check if we have valid route data
+  const hasValidRouteData = () => {
+    return (
+      processedRoutes.length > 0 &&
+      Array.isArray(processedRoutes[0]) &&
+      processedRoutes[0].length > 1
+    );
+  };
 
   return (
     <Box position="relative" height="100%" width="100%">
@@ -150,51 +250,57 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
         </Alert>
       )}
 
-      {/* Location Button */}
-      <Tooltip title="Show my location">
-        <Fab
-          color="primary"
-          size="small"
-          onClick={handleEnableLocation}
-          sx={{
-            position: "fixed",
-            right: 20,
-            top: { xs: 72, sm: 80, md: 88 },
-            zIndex: 1200,
-            backgroundColor: theme.palette.primary.main,
-            color: theme.palette.primary.contrastText,
-            boxShadow: theme.shadows[3],
-            "&:hover": {
-              backgroundColor: theme.palette.primary.dark,
-            },
-          }}
-        >
-          <Crosshair size={20} />
-        </Fab>
-      </Tooltip>
+      {/* Floating action buttons */}
+      <Box
+        sx={{
+          position: "fixed",
+          right: 20,
+          top: { xs: 72, sm: 80, md: 88 },
+          zIndex: 1200,
+        }}
+      >
+        {/* Location button */}
+        <Tooltip title="Show my location">
+          <Fab
+            color="primary"
+            size="small"
+            onClick={handleEnableLocation}
+            sx={{
+              mb: 1.5,
+              mr: 2,
+              backgroundColor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
+              boxShadow: theme.shadows[3],
+              "&:hover": {
+                backgroundColor: theme.palette.primary.dark,
+              },
+            }}
+          >
+            <Crosshair size={20} />
+          </Fab>
+        </Tooltip>
 
-      {/* Reset Map Button */}
-      <Tooltip title="Clear routes and selected spot">
-        <Fab
-          color="primary"
-          size="small"
-          onClick={onResetMap}
-          sx={{
-            position: "fixed",
-            right: 70,
-            top: { xs: 72, sm: 80, md: 88 },
-            zIndex: 1200,
-            backgroundColor: theme.palette.primary.main,
-            color: theme.palette.primary.contrastText,
-            boxShadow: theme.shadows[3],
-            "&:hover": {
-              backgroundColor: theme.palette.primary.dark,
-            },
-          }}
-        >
-          <Trash2 size={20} />
-        </Fab>
-      </Tooltip>
+        {/* Reset Map Button */}
+        <Tooltip title="Clear routes and reset map">
+          <Fab
+            color="primary"
+            size="small"
+            onClick={handleResetNavigation}
+            sx={{
+              mb: 1.5,
+              mr: 2,
+              backgroundColor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
+              boxShadow: theme.shadows[3],
+              "&:hover": {
+                backgroundColor: theme.palette.primary.dark,
+              },
+            }}
+          >
+            <Trash2 size={20} />
+          </Fab>
+        </Tooltip>
+      </Box>
 
       <Box
         sx={{
@@ -222,7 +328,7 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
             selectedSpotId={selectedSpotId}
             spots={parkingSpots}
           />
-          <RouteZoomController routes={routes} />
+          <RouteZoomController routes={processedRoutes} />
           <TileLayer
             attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -314,6 +420,7 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
                         </Alert>
                       )}
 
+                      {/* Parking Fees */}
                       {spot.DaytimeFee && (
                         <Paper variant="outlined" sx={{ p: 2 }}>
                           <Typography variant="subtitle2" gutterBottom>
@@ -344,38 +451,49 @@ const ParkingMap: React.FC<ParkingMapProps> = ({
             );
           })}
 
-          {routes.map((route, index) => {
-            const validRoute = route.filter(
-              ([lat, lng]) =>
-                typeof lat === "number" &&
-                typeof lng === "number" &&
-                lat >= -90 &&
-                lat <= 90 &&
-                lng >= -180 &&
-                lng <= 180
-            );
-
-            if (validRoute.length < 2) {
-              console.error(
-                `Route ${index} contains invalid or insufficient coordinates:`,
-                route
+          {/* Route Polylines */}
+          {Array.isArray(routes) &&
+            routes.map((route, index) => {
+              // Ensure route is an array
+              if (!Array.isArray(route)) {
+                console.error(
+                  `Route at index ${index} is not an array:`,
+                  route
+                );
+                return null;
+              }
+              const validRoute = route.filter(
+                ([lat, lng]) =>
+                  typeof lat === "number" &&
+                  typeof lng === "number" &&
+                  lat >= -90 &&
+                  lat <= 90 &&
+                  lng >= -180 &&
+                  lng <= 180
               );
-              return null;
-            }
 
-            return (
-              <Polyline
-                key={`route-${index}`}
-                positions={validRoute}
-                pathOptions={{
-                  color: "black",
-                  weight: 5,
-                  opacity: 0.7,
-                }}
-              />
-            );
-          })}
+              if (validRoute.length < 2) {
+                console.error(
+                  `Route ${index} contains invalid or insufficient coordinates:`,
+                  route
+                );
+                return null;
+              }
 
+              return (
+                <Polyline
+                  key={`route-${index}`}
+                  positions={validRoute}
+                  pathOptions={{
+                    color: "black",
+                    weight: 5,
+                    opacity: 0.7,
+                  }}
+                />
+              );
+            })}
+
+          {/* Start and End Markers */}
           {routes.length > 0 && routes[0]?.length >= 2 && (
             <>
               <Marker position={routes[0][0]} icon={startIcon}>

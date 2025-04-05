@@ -19,6 +19,7 @@
     "@mui/material": "^6.4.8",
     "axios": "^1.6.7",
     "leaflet": "^1.9.4",
+    "leaflet-arrowheads": "^1.4.0",
     "lodash": "^4.17.21",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",

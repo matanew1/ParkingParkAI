@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   X,
   Car,
@@ -12,12 +12,12 @@ import {
   Filter,
   HelpCircle,
 } from "lucide-react";
-import { RouteService } from "../../Services/routeService";
-import ParkingContext from "../../Context/ParkingContext";
+import { useParkingContext } from "../../Context/ParkingContext";
 import type { OptionPopupProps, Option } from "../../Types/ai";
 import type { Coordinates } from "../../Services/routeService";
 
 const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
+  // State management
   const [activeOption, setActiveOption] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<boolean>(false);
   const [locationStatus, setLocationStatus] = useState<string>("");
@@ -32,11 +32,17 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
     shortest: false,
   });
 
-  const { userLocation, selectedSpot, setShowLocationMarker, setRoutes } =
-    useContext(ParkingContext);
+  // Get context data
+  const {
+    userLocation,
+    selectedSpot,
+    setShowLocationMarker,
+    setRoutes,
+    fetchUserLocation,
+    fetchRoute,
+  } = useParkingContext();
 
-  const routeService = React.useMemo(() => new RouteService(), []);
-
+  // Available options
   const options: Option[] = [
     {
       id: "route",
@@ -47,75 +53,23 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
     },
   ];
 
-  const decodePolyline = (polyline: string): Coordinates[] => {
-    // eslint-disable-next-line prefer-const -- 'coords' is mutated, not reassigned
-    let coords: Coordinates[] = [];
-    let index = 0;
-    const len = polyline.length;
-    let lat = 0,
-      lng = 0;
-
-    while (index < len) {
-      let b,
-        shift = 0,
-        result = 0;
-      do {
-        b = polyline.charCodeAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      lat += result & 1 ? ~(result >> 1) : result >> 1;
-
-      shift = 0;
-      result = 0;
-      do {
-        b = polyline.charCodeAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      lng += result & 1 ? ~(result >> 1) : result >> 1;
-
-      coords.push([lat / 1e6, lng / 1e6]);
-    }
-    return coords;
-  };
-
+  // Process route request with better error handling
   const processRouteRequest = useCallback(
     async (source: Coordinates, destination: string) => {
       setLocationStatus("Calculating your optimal route...");
       try {
-        const data = await routeService.fetchRoute(source, destination, {
+        const trip = await fetchRoute(source, destination, {
           shortest: routePreferences.shortest,
           avoidTolls: routePreferences.avoidTolls,
           avoidHighways: routePreferences.avoidHighways,
         });
-        const response = data.legs[0].shape;
-        console.log("Route details:", response);
 
-        let decodedRoute: Coordinates[];
-        if (typeof response === "string") {
-          decodedRoute = decodePolyline(response);
-        } else if (response?.data?.trip?.legs?.[0]?.shape) {
-          decodedRoute = decodePolyline(response.data.trip.legs[0].shape);
-          setRouteDetails({
-            distance: response.data.trip.summary.length.toFixed(2) + " km",
-            duration: response.data.trip.summary.time + " min",
-          });
-        } else {
-          throw new Error("Unsupported route response format");
-        }
+        setRouteDetails({
+          distance: trip.summary.length.toFixed(2) + " km",
+          duration: Math.round(trip.summary.time / 60) + " min",
+        });
 
-        if (decodedRoute?.length > 0) {
-          setRoutes([decodedRoute]);
-          setRouteDetails({
-            distance: data.summary.length.toFixed(2) + " km",
-            duration: Math.round(data.summary.time / 60) + " min",
-          });
-
-          setLocationStatus("Route ready! Happy travels!");
-        } else {
-          throw new Error("Invalid route data");
-        }
+        setLocationStatus("Route ready! Happy travels!");
         setLoadingAction(false);
         setNeedsDestination(false);
       } catch (error) {
@@ -124,14 +78,14 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
         setLoadingAction(false);
       }
     },
-    [routeService, setRoutes, routePreferences]
+    [fetchRoute, routePreferences]
   );
 
+  // Handle AI action selection
   const handleAIAction = useCallback(
     (optionId: string): void => {
       setActiveOption(optionId);
       setLoadingAction(true);
-
       setLocationStatus("Locating you...");
 
       if (optionId === "route") {
@@ -141,12 +95,10 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
           setLoadingAction(false);
         } else if (!userLocation && navigator.geolocation) {
           setShowLocationMarker(true);
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const coords: Coordinates = [
-                position.coords.latitude,
-                position.coords.longitude,
-              ];
+
+          // Try to get location
+          fetchUserLocation()
+            .then((coords) => {
               if (!selectedSpot) {
                 setLocationStatus("Please pick a parking spot on the map");
                 setNeedsDestination(true);
@@ -154,22 +106,27 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
               } else {
                 processRouteRequest(coords, selectedSpot);
               }
-            },
-            (error) => {
+            })
+            .catch((error) => {
               console.error("Location error:", error);
               setLocationStatus("Location access denied. Enable it?");
               setLoadingAction(false);
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-          );
-        } else {
+            });
+        } else if (userLocation && selectedSpot) {
           processRouteRequest(userLocation, selectedSpot);
         }
       }
     },
-    [userLocation, selectedSpot, processRouteRequest, setShowLocationMarker]
+    [
+      userLocation,
+      selectedSpot,
+      processRouteRequest,
+      setShowLocationMarker,
+      fetchUserLocation,
+    ]
   );
 
+  // Effect to process route when needed
   useEffect(() => {
     if (needsDestination && selectedSpot && userLocation) {
       setLoadingAction(true);
@@ -177,6 +134,7 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
     }
   }, [needsDestination, selectedSpot, userLocation, processRouteRequest]);
 
+  // Don't render if not open
   if (!isOpen) return null;
 
   return (
@@ -312,18 +270,6 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
                         {activeOption === "route" && (
                           <Navigation className="h-5 w-5 text-green-500" />
                         )}
-                        {activeOption === "weather-aware" && (
-                          <Umbrella className="h-5 w-5 text-blue-500" />
-                        )}
-                        {activeOption === "time-based" && (
-                          <Clock className="h-5 w-5 text-purple-500" />
-                        )}
-                        {activeOption === "parking-availability" && (
-                          <ParkingSquare className="h-5 w-5 text-green-500" />
-                        )}
-                        {activeOption === "analytics" && (
-                          <BarChart4 className="h-5 w-5 text-amber-500" />
-                        )}
                         <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                           {
                             options.find((opt) => opt.id === activeOption)
@@ -416,4 +362,4 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
   );
 };
 
-export default OptionPopup;
+export default React.memo(OptionPopup);

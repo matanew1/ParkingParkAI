@@ -1,5 +1,5 @@
 // AppContent.tsx
-import React, { lazy, Suspense, useState, useCallback, useEffect } from "react";
+import React, { lazy, Suspense, useCallback } from "react";
 import { Menu } from "lucide-react";
 import {
   Box,
@@ -15,90 +15,65 @@ import {
 import { useTheme as useCustomTheme } from "../Context/ThemeContext";
 import { lightTheme, darkTheme } from "./Theme/ThemeConfig";
 import AppHeader from "./AppHeader";
-import Sidebar from "./Sidebar/index";
+import Sidebar from "./Sidebar";
 import OptionDialog from "./Options/OptionDialog";
-import { ParkingService } from "../Services/parkingService";
+import { useParkingContext } from "../Context/ParkingContext";
 import type { ParkingSpotWithStatus } from "../Types/parking";
-import ParkingContext from "../Context/ParkingContext";
 
+// Lazy load the map component to improve initial load time
 const ParkingMap = lazy(() => import("./Map/ParkingMap"));
-const parkingService = new ParkingService();
 
 const AppContent: React.FC = () => {
-  const [isOptionPopupOpen, setIsOptionPopupOpen] = useState<boolean>(false);
+  // State for option popup
+  const [isOptionPopupOpen, setIsOptionPopupOpen] =
+    React.useState<boolean>(false);
+
+  // Theme and responsive layout
   const { isDarkMode } = useCustomTheme();
   const isMobile = useMediaQuery("(max-width:600px)");
   const theme = isDarkMode ? darkTheme : lightTheme;
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
-  const [parkingSpots, setParkingSpots] = useState<ParkingSpotWithStatus[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [, setError] = useState<string | null>(null);
-  const [statusError, setStatusError] = useState<string | null>(null);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([
-    32.0853, 34.7818,
-  ]);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null); // New state for selected spot
+  // Local sidebar state
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(!isMobile);
 
-  const { setSelectedSpot, handleResetMap } = React.useContext(ParkingContext);
+  // Selected spot for sidebar-map interaction
+  const [selectedSpotId, setSelectedSpotId] = React.useState<string | null>(
+    null
+  );
+
+  // Get parking context data
+  const {
+    parkingSpots,
+    loading,
+    statusError,
+    lastUpdated,
+    refreshing,
+    fetchParkingData,
+    mapCenter,
+    setMapCenter,
+    setSelectedSpot,
+    handleResetMap,
+  } = useParkingContext();
 
   const drawerWidth = isMobile ? "80%" : 320;
 
-  const handleResetMapApp = (): void => {
+  const handleResetMapApp = useCallback((): void => {
     setSelectedSpotId(null);
     setSelectedSpot(null);
     handleResetMap();
-  };
+  }, [setSelectedSpot, handleResetMap]);
 
-  const handleOpenOptionPopup = (): void => {
+  const handleOpenOptionPopup = useCallback((): void => {
     setIsOptionPopupOpen(true);
-  };
-
-  const handleCloseOptionPopup = (): void => {
-    setIsOptionPopupOpen(false);
-  };
-
-  const toggleSidebar = (): void => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  const fetchParkingData = useCallback(async (isManualRefresh = false) => {
-    try {
-      if (isManualRefresh) {
-        setRefreshing(true);
-      }
-      const [spots, statusMap] = await Promise.all([
-        parkingService.fetchParkingSpots(),
-        parkingService.fetchParkingStatus(),
-      ]);
-      const spotsWithStatus = spots.map((spot) => ({
-        ...spot,
-        status: statusMap.get(spot.AhuzotCode),
-      }));
-      setParkingSpots(spotsWithStatus);
-      setLastUpdated(new Date());
-      setError(null);
-      setStatusError(null);
-    } catch (err) {
-      console.error("Error fetching parking data:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load parking data. Please try again later."
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
   }, []);
 
-  useEffect(() => {
-    fetchParkingData();
-    const intervalId = setInterval(() => fetchParkingData(), 5 * 60 * 1000);
-    return () => clearInterval(intervalId);
-  }, [fetchParkingData]);
+  const handleCloseOptionPopup = useCallback((): void => {
+    setIsOptionPopupOpen(false);
+  }, []);
+
+  const toggleSidebar = useCallback((): void => {
+    setIsSidebarOpen((prev) => !prev);
+  }, []);
 
   const handleSpotClick = useCallback(
     (spot: ParkingSpotWithStatus) => {
@@ -107,11 +82,9 @@ const AppContent: React.FC = () => {
         parseFloat(spot.GPSLongitude),
       ]);
       setSelectedSpotId(spot.AhuzotCode);
-      setSelectedSpot(
-        String(spot.GPSLattitude) + "," + String(spot.GPSLongitude)
-      );
+      setSelectedSpot(`${spot.GPSLattitude},${spot.GPSLongitude}`);
     },
-    [setSelectedSpot]
+    [setMapCenter, setSelectedSpot]
   );
 
   const handleSpotSelect = useCallback((spotId: string | null) => {
@@ -143,7 +116,7 @@ const AppContent: React.FC = () => {
               width: isSidebarOpen ? drawerWidth : 0,
               flexShrink: 0,
               "& .MuiDrawer-paper": {
-                width: isSidebarOpen ? drawerWidth : 0,
+                width: drawerWidth,
                 boxSizing: "border-box",
                 zIndex: 1000,
                 position: "relative",
@@ -158,7 +131,7 @@ const AppContent: React.FC = () => {
             <Sidebar
               spots={parkingSpots}
               onSpotClick={handleSpotClick}
-              onSpotSelect={handleSpotSelect} // Pass new handler
+              onSpotSelect={handleSpotSelect}
               statusError={statusError}
               lastUpdated={lastUpdated}
               onRefresh={() => fetchParkingData(true)}
@@ -205,7 +178,9 @@ const AppContent: React.FC = () => {
                   minHeight="100vh"
                 >
                   <CircularProgress />
-                  <Typography variant="body2">Loading map...</Typography>
+                  <Typography variant="body2" sx={{ ml: 2 }}>
+                    Loading map...
+                  </Typography>
                 </Box>
               }
             >
@@ -218,7 +193,7 @@ const AppContent: React.FC = () => {
                 refreshing={refreshing}
                 onRefresh={() => fetchParkingData(true)}
                 setMapCenter={setMapCenter}
-                selectedSpotId={selectedSpotId} // Pass selected spot ID
+                selectedSpotId={selectedSpotId}
                 onResetMap={handleResetMapApp}
               />
             </Suspense>
@@ -233,4 +208,4 @@ const AppContent: React.FC = () => {
   );
 };
 
-export default AppContent;
+export default React.memo(AppContent);
