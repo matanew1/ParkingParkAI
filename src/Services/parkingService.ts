@@ -1,5 +1,5 @@
-// src/Services/parkingService.ts
 import axios from "axios";
+import { CacheManager } from "../utils/CacheManager";
 import {
   ParkingSpot,
   ParkingStatus,
@@ -8,55 +8,32 @@ import {
 
 const API_BASE_URL = "https://api.tel-aviv.gov.il/parking";
 
-/**
- * Service for fetching and managing parking data
- */
 export class ParkingService {
-  // Cache duration in milliseconds (5 minutes)
-  private CACHE_DURATION = 5 * 60 * 1000;
-
-  // Cache for parking spots data
-  private spotsCache: {
-    data: ParkingSpot[] | null;
-    timestamp: number;
-  } = {
-    data: null,
-    timestamp: 0,
+  private readonly CACHE_CONFIG = {
+    maxAge: 5 * 60 * 1000, // 5 minutes
+    capacity: 100
   };
 
-  // Cache for parking status data
-  private statusCache: {
-    data: Map<string, ParkingStatus> | null;
-    timestamp: number;
-  } = {
-    data: null,
-    timestamp: 0,
-  };
+  private spotsCache: CacheManager<ParkingSpot[]>;
+  private statusCache: CacheManager<Map<string, ParkingStatus>>;
 
-  // Default axios config
+  constructor() {
+    this.spotsCache = new CacheManager(this.CACHE_CONFIG);
+    this.statusCache = new CacheManager(this.CACHE_CONFIG);
+  }
+
   private axiosConfig = {
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
     },
-    timeout: 10000, // 10 second timeout
+    timeout: 10000,
   };
 
-  /**
-   * Fetches parking spots with caching
-   * @param forceRefresh Whether to bypass cache
-   * @returns Promise with parking spots array
-   */
   public async fetchParkingSpots(forceRefresh = false): Promise<ParkingSpot[]> {
-    const now = Date.now();
-    const isCacheValid =
-      this.spotsCache.data &&
-      !forceRefresh &&
-      now - this.spotsCache.timestamp < this.CACHE_DURATION;
-
-    if (isCacheValid) {
-      console.log("Using cached parking spots data");
-      return this.spotsCache.data;
+    if (!forceRefresh) {
+      const cachedSpots = this.spotsCache.get('spots');
+      if (cachedSpots) return cachedSpots;
     }
 
     try {
@@ -69,7 +46,6 @@ export class ParkingService {
         throw new Error("Invalid parking spots data format");
       }
 
-      // Filter out spots with invalid coordinates
       const filteredSpots = response.data.filter((spot: ParkingSpot) => {
         const lat = parseFloat(spot.GPSLattitude);
         const lng = parseFloat(spot.GPSLongitude);
@@ -85,45 +61,23 @@ export class ParkingService {
         );
       });
 
-      // Update cache
-      this.spotsCache = {
-        data: filteredSpots,
-        timestamp: now,
-      };
-
+      this.spotsCache.set('spots', filteredSpots);
       return filteredSpots;
     } catch (error) {
       console.error("Error fetching parking spots:", error);
-
-      // If we have cached data but it's expired, return it as fallback
-      if (this.spotsCache.data) {
-        console.log("Using expired cache as fallback");
-        return this.spotsCache.data;
+      const cachedSpots = this.spotsCache.get('spots');
+      if (cachedSpots) {
+        console.log("Using cached data as fallback");
+        return cachedSpots;
       }
-
-      throw new Error(
-        "Unable to fetch parking stations. Please try again later."
-      );
+      throw new Error("Unable to fetch parking stations");
     }
   }
 
-  /**
-   * Fetches parking status with caching
-   * @param forceRefresh Whether to bypass cache
-   * @returns Promise with parking status map
-   */
-  public async fetchParkingStatus(
-    forceRefresh = false
-  ): Promise<Map<string, ParkingStatus>> {
-    const now = Date.now();
-    const isCacheValid =
-      this.statusCache.data &&
-      !forceRefresh &&
-      now - this.statusCache.timestamp < this.CACHE_DURATION;
-
-    if (isCacheValid) {
-      console.log("Using cached parking status data");
-      return this.statusCache.data;
+  public async fetchParkingStatus(forceRefresh = false): Promise<Map<string, ParkingStatus>> {
+    if (!forceRefresh) {
+      const cachedStatus = this.statusCache.get('status');
+      if (cachedStatus) return cachedStatus;
     }
 
     try {
@@ -143,41 +97,23 @@ export class ParkingService {
         ])
       );
 
-      // Store last valid status in localStorage for offline fallback
-      if (statusMap.size > 0) {
-        try {
-          localStorage.setItem(
-            "lastValidStatus",
-            JSON.stringify(Array.from(statusMap.entries()))
-          );
-        } catch (err) {
-          console.warn("Could not save status to localStorage:", err);
-        }
-      }
-
-      // Update cache
-      this.statusCache = {
-        data: statusMap,
-        timestamp: now,
-      };
+      this.statusCache.set('status', statusMap);
+      localStorage.setItem(
+        "lastValidStatus",
+        JSON.stringify(Array.from(statusMap.entries()))
+      );
 
       return statusMap;
     } catch (error) {
       console.error("Error fetching parking status:", error);
+      
+      const cachedStatus = this.statusCache.get('status');
+      if (cachedStatus) return cachedStatus;
 
-      // If we have cached data but it's expired, return it as fallback
-      if (this.statusCache.data) {
-        console.log("Using expired cache as fallback");
-        return this.statusCache.data;
-      }
-
-      // Try to load from localStorage as last resort
       try {
         const savedStatus = localStorage.getItem("lastValidStatus");
         if (savedStatus) {
-          const parsedStatus = JSON.parse(savedStatus);
-          console.log("Using localStorage backup for status");
-          return new Map(parsedStatus);
+          return new Map(JSON.parse(savedStatus));
         }
       } catch (err) {
         console.warn("Could not load status from localStorage:", err);
@@ -187,12 +123,6 @@ export class ParkingService {
     }
   }
 
-  /**
-   * Combines parking spots with their status
-   * @param spots Array of parking spots
-   * @param statusMap Map of status by spot ID
-   * @returns Array of spots with status
-   */
   public combineParkingData(
     spots: ParkingSpot[],
     statusMap: Map<string, ParkingStatus>
@@ -203,12 +133,9 @@ export class ParkingService {
     }));
   }
 
-  /**
-   * Clears all caches
-   */
   public clearCache(): void {
-    this.spotsCache = { data: null, timestamp: 0 };
-    this.statusCache = { data: null, timestamp: 0 };
+    this.spotsCache.clear();
+    this.statusCache.clear();
     console.log("Parking service cache cleared");
   }
 }
