@@ -1,5 +1,4 @@
-// AppContent.tsx
-import React, { lazy, Suspense, useCallback } from "react";
+import React, { lazy, Suspense, useCallback, useState } from "react";
 import { Menu } from "lucide-react";
 import {
   Box,
@@ -14,34 +13,26 @@ import {
 } from "@mui/material";
 import { useTheme as useCustomTheme } from "../Context/ThemeContext";
 import { lightTheme, darkTheme } from "./Theme/ThemeConfig";
+import { motion, AnimatePresence } from "framer-motion";
 import AppHeader from "./AppHeader";
 import Sidebar from "./Sidebar";
 import OptionDialog from "./Options/OptionDialog";
+import MapSelector from "./Map/MapSelector";
 import { useParkingContext } from "../Context/ParkingContext";
 import type { ParkingSpotWithStatus } from "../Types/parking";
 
-// Lazy load the map component to improve initial load time
 const ParkingMap = lazy(() => import("./Map/ParkingMap"));
+const CesiumMap = lazy(() => import("./Map/CesiumMap"));
 
 const AppContent: React.FC = () => {
-  // State for option popup
-  const [isOptionPopupOpen, setIsOptionPopupOpen] =
-    React.useState<boolean>(false);
-
-  // Theme and responsive layout
+  const [isOptionPopupOpen, setIsOptionPopupOpen] = useState<boolean>(false);
+  const [mapType, setMapType] = useState<'2d' | '3d'>('2d');
   const { isDarkMode } = useCustomTheme();
   const isMobile = useMediaQuery("(max-width:600px)");
   const theme = isDarkMode ? darkTheme : lightTheme;
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
+  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
 
-  // Local sidebar state
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(!isMobile);
-
-  // Selected spot for sidebar-map interaction
-  const [selectedSpotId, setSelectedSpotId] = React.useState<string | null>(
-    null
-  );
-
-  // Get parking context data
   const {
     parkingSpots,
     loading,
@@ -94,112 +85,131 @@ const AppContent: React.FC = () => {
   return (
     <MuiThemeProvider theme={theme}>
       <CssBaseline />
-      <Box
-        sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
       >
-        <AppHeader onOpenOptionPopup={handleOpenOptionPopup} />
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            pt: { xs: 7, sm: 8, md: 9 },
-            display: "flex",
-            height: "calc(100vh - 64px)",
-          }}
-        >
-          <Drawer
-            variant={isMobile ? "temporary" : "persistent"}
-            anchor="left"
-            open={isSidebarOpen}
-            onClose={toggleSidebar}
+        <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+          <AppHeader onOpenOptionPopup={handleOpenOptionPopup} />
+          <Box
+            component="main"
             sx={{
-              width: isSidebarOpen ? drawerWidth : 0,
-              flexShrink: 0,
-              "& .MuiDrawer-paper": {
-                width: drawerWidth,
-                boxSizing: "border-box",
-                zIndex: 1000,
+              flexGrow: 1,
+              pt: { xs: 7, sm: 8, md: 9 },
+              display: "flex",
+              height: "calc(100vh - 64px)",
+            }}
+          >
+            <Drawer
+              variant={isMobile ? "temporary" : "persistent"}
+              anchor="left"
+              open={isSidebarOpen}
+              onClose={toggleSidebar}
+              sx={{
+                width: isSidebarOpen ? drawerWidth : 0,
+                flexShrink: 0,
+                "& .MuiDrawer-paper": {
+                  width: drawerWidth,
+                  boxSizing: "border-box",
+                  zIndex: 1000,
+                  position: "relative",
+                  height: "100%",
+                  transition: theme.transitions.create(["width", "margin"], {
+                    easing: theme.transitions.easing.sharp,
+                    duration: theme.transitions.duration.enteringScreen,
+                  }),
+                },
+              }}
+            >
+              <Sidebar
+                spots={parkingSpots}
+                onSpotClick={handleSpotClick}
+                onSpotSelect={handleSpotSelect}
+                statusError={statusError}
+                lastUpdated={lastUpdated}
+                onRefresh={() => fetchParkingData(true)}
+                isRefreshing={refreshing}
+                toggleDrawer={toggleSidebar}
+                isMobile={isMobile}
+              />
+            </Drawer>
+
+            <Box
+              sx={{
+                flexGrow: 1,
                 position: "relative",
-                height: "100%",
-                transition: theme.transitions.create(["width", "margin"], {
+                transition: theme.transitions.create(["margin"], {
                   easing: theme.transitions.easing.sharp,
                   duration: theme.transitions.duration.enteringScreen,
                 }),
-              },
-            }}
-          >
-            <Sidebar
-              spots={parkingSpots}
-              onSpotClick={handleSpotClick}
-              onSpotSelect={handleSpotSelect}
-              statusError={statusError}
-              lastUpdated={lastUpdated}
-              onRefresh={() => fetchParkingData(true)}
-              isRefreshing={refreshing}
-              toggleDrawer={toggleSidebar}
-              isMobile={isMobile}
-            />
-          </Drawer>
-          <Box
-            sx={{
-              flexGrow: 1,
-              position: "relative",
-              transition: theme.transitions.create(["margin"], {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
-              }),
-            }}
-          >
-            <Fade in={!isSidebarOpen}>
-              <IconButton
-                onClick={toggleSidebar}
-                sx={{
-                  position: "fixed",
-                  left: 20,
-                  top: { xs: 72, sm: 80, md: 88 },
-                  zIndex: 1200,
-                  backgroundColor: theme.palette.primary.main,
-                  color: theme.palette.primary.contrastText,
-                  boxShadow: theme.shadows[3],
-                  "&:hover": {
-                    backgroundColor: theme.palette.primary.dark,
-                  },
-                }}
-              >
-                <Menu size={24} />
-              </IconButton>
-            </Fade>
-            <Suspense
-              fallback={
-                <Box
-                  display="flex"
-                  justifyContent="center"
-                  alignItems="center"
-                  minHeight="100vh"
-                >
-                  <CircularProgress />
-                  <Typography variant="body2" sx={{ ml: 2 }}>
-                    Loading map...
-                  </Typography>
-                </Box>
-              }
+              }}
             >
-              <ParkingMap
-                parkingSpots={parkingSpots}
-                loading={loading}
-                statusError={statusError}
-                mapCenter={mapCenter}
-                lastUpdated={lastUpdated}
-                refreshing={refreshing}
-                onRefresh={() => fetchParkingData(true)}
-                setMapCenter={setMapCenter}
-                selectedSpotId={selectedSpotId}
-                onResetMap={handleResetMapApp}
-              />
-            </Suspense>
+              <MapSelector mapType={mapType} onMapTypeChange={setMapType} />
+
+              <Fade in={!isSidebarOpen}>
+                <IconButton
+                  onClick={toggleSidebar}
+                  sx={{
+                    position: "fixed",
+                    left: 20,
+                    top: { xs: 72, sm: 80, md: 88 },
+                    zIndex: 1200,
+                    backgroundColor: theme.palette.primary.main,
+                    color: theme.palette.primary.contrastText,
+                    boxShadow: theme.shadows[3],
+                    "&:hover": {
+                      backgroundColor: theme.palette.primary.dark,
+                    },
+                  }}
+                >
+                  <Menu size={24} />
+                </IconButton>
+              </Fade>
+
+              <Suspense
+                fallback={
+                  <Box
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
+                    minHeight="100vh"
+                  >
+                    <CircularProgress />
+                    <Typography variant="body2" sx={{ ml: 2 }}>
+                      Loading map...
+                    </Typography>
+                  </Box>
+                }
+              >
+                <AnimatePresence mode="wait">
+                  {mapType === '2d' ? (
+                    <ParkingMap
+                      key="2d-map"
+                      parkingSpots={parkingSpots}
+                      loading={loading}
+                      statusError={statusError}
+                      mapCenter={mapCenter}
+                      lastUpdated={lastUpdated}
+                      refreshing={refreshing}
+                      onRefresh={() => fetchParkingData(true)}
+                      setMapCenter={setMapCenter}
+                      selectedSpotId={selectedSpotId}
+                      onResetMap={handleResetMapApp}
+                    />
+                  ) : (
+                    <CesiumMap
+                      key="3d-map"
+                      parkingSpots={parkingSpots}
+                      loading={loading}
+                    />
+                  )}
+                </AnimatePresence>
+              </Suspense>
+            </Box>
           </Box>
         </Box>
-      </Box>
+      </motion.div>
       <OptionDialog
         isOpen={isOptionPopupOpen}
         onClose={handleCloseOptionPopup}
