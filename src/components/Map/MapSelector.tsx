@@ -39,7 +39,7 @@ const MapSelector: React.FC<MapSelectorProps> = ({ mapType, onMapTypeChange }) =
             <Typography variant="button">2D</Typography>
           </ToggleButton>
           <ToggleButton value="3d" aria-label="3D map">
-            <Cube className="mr-2" size={20} />
+            {/* <Cube className="mr-2" size={20} /> */}
             <Typography variant="button">3D</Typography>
           </ToggleButton>
         </ToggleButtonGroup>
