@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, ToggleButton, ToggleButtonGroup, Typography, Paper } from '@mui/material';
-import { Map, Cube } from 'lucide-react';
+import { Map, Cuboid as Cube } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface MapSelectorProps {
