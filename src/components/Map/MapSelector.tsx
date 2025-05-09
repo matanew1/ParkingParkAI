@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { Box, ToggleButton, ToggleButtonGroup, Typography, Paper } from '@mui/material';
 import { Map, Cube } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -15,17 +15,16 @@ const MapSelector: React.FC<MapSelectorProps> = ({ mapType, onMapTypeChange }) =
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Box
+      <Paper
+        elevation={3}
         sx={{
           position: 'absolute',
           top: { xs: 80, sm: 88, md: 96 },
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 1000,
-          bgcolor: 'background.paper',
           borderRadius: 2,
-          boxShadow: 3,
-          p: 1,
+          overflow: 'hidden',
         }}
       >
         <ToggleButtonGroup
@@ -33,19 +32,38 @@ const MapSelector: React.FC<MapSelectorProps> = ({ mapType, onMapTypeChange }) =
           exclusive
           onChange={(_, value) => value && onMapTypeChange(value)}
           aria-label="map type"
+          sx={{
+            '& .MuiToggleButton-root': {
+              px: 3,
+              py: 1.5,
+              borderRadius: 0,
+              borderColor: 'divider',
+              '&.Mui-selected': {
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                },
+              },
+            },
+          }}
         >
           <ToggleButton value="2d" aria-label="2D map">
-            <Map className="mr-2" size={20} />
-            <Typography variant="button">2D</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Map size={20} />
+              <Typography variant="button">2D Map</Typography>
+            </Box>
           </ToggleButton>
           <ToggleButton value="3d" aria-label="3D map">
-            {/* <Cube className="mr-2" size={20} /> */}
-            <Typography variant="button">3D</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Cube size={20} />
+              <Typography variant="button">3D Map</Typography>
+            </Box>
           </ToggleButton>
         </ToggleButtonGroup>
-      </Box>
+      </Paper>
     </motion.div>
   );
 };
 
-export default MapSelector;
+export default React.memo(MapSelector);
