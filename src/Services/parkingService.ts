@@ -64,13 +64,25 @@ export class ParkingService {
       this.spotsCache.set('spots', filteredSpots);
       return filteredSpots;
     } catch (error) {
-      console.error("Error fetching parking spots:", error);
+      let errorMessage = "Unable to fetch parking stations from Tel Aviv API";
+      
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          errorMessage = `Tel Aviv API returned error ${error.response.status}: ${error.response.statusText}`;
+        } else if (error.request) {
+          errorMessage = "Unable to connect to Tel Aviv API - please check your internet connection";
+        } else {
+          errorMessage = `Request to Tel Aviv API failed: ${error.message}`;
+        }
+      }
+      
+      console.error("Error fetching parking spots:", errorMessage, error);
       const cachedSpots = this.spotsCache.get('spots');
       if (cachedSpots) {
         console.log("Using cached data as fallback");
         return cachedSpots;
       }
-      throw new Error("Unable to fetch parking stations");
+      throw new Error(errorMessage);
     }
   }
 
@@ -105,7 +117,19 @@ export class ParkingService {
 
       return statusMap;
     } catch (error) {
-      console.error("Error fetching parking status:", error);
+      let errorMessage = "Unable to fetch parking status from Tel Aviv API";
+      
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          errorMessage = `Tel Aviv API returned error ${error.response.status}: ${error.response.statusText}`;
+        } else if (error.request) {
+          errorMessage = "Unable to connect to Tel Aviv API - please check your internet connection";
+        } else {
+          errorMessage = `Request to Tel Aviv API failed: ${error.message}`;
+        }
+      }
+      
+      console.error("Error fetching parking status:", errorMessage, error);
       
       const cachedStatus = this.statusCache.get('status');
       if (cachedStatus) return cachedStatus;
@@ -119,7 +143,7 @@ export class ParkingService {
         console.warn("Could not load status from localStorage:", err);
       }
 
-      throw new Error("Status information is temporarily unavailable");
+      throw new Error(errorMessage);
     }
   }
 
