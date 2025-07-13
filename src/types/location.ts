@@ -30,6 +30,7 @@ export interface ParkingMapProps {
   setMapCenter: (center: Coordinates) => void;
   selectedSpotId: string | null;
   onResetMap: () => void;
+  onSpotClick?: (spot: ParkingSpotWithStatus) => void;
 }
 
 /**

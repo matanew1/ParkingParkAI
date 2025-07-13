@@ -1,7 +1,7 @@
 @echo off
 
 REM This script adds all changes to the git staging area, commits them with a message, and pushes to the remote repository.
-set msg=%1
+set msg=%*
 
 echo Committing changes with message: %msg%
 git add .

@@ -26,12 +26,12 @@ ParkingPark is an intelligent parking management system designed to optimize par
     ```
 4. Start the application:
     ```bash
-    npm start
+    npm run dev
     ```
 
 ## Usage
 
-1. Open the application in your browser at `http://localhost:3000`.
+1. Open the application in your browser at `http://localhost:5173`.
 2. Follow the on-screen instructions to manage parking spaces or view availability.
 
 ## Technologies Used

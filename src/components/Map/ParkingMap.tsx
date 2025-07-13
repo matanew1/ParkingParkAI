@@ -75,6 +75,7 @@ const ParkingMap = ({
   setMapCenter,
   selectedSpotId,
   onResetMap,
+  onSpotClick,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -88,6 +89,7 @@ const ParkingMap = ({
   const lastUpdateTime = useRef(null);
   const animationFrameRef = useRef(null);
   const [processedRoutes, setProcessedRoutes] = useState([]);
+  const [shouldClosePopups, setShouldClosePopups] = useState(false);
 
   const { routes, fetchUserLocation } = useContext(ParkingContext);
 
@@ -165,7 +167,12 @@ const ParkingMap = ({
     setDistanceTraveled(0);
     setTimeElapsed(0);
     onResetMap();
+    setShouldClosePopups(true); // Trigger popups to close
   };
+
+  const handlePopupsClosed = useCallback(() => {
+    setShouldClosePopups(false);
+  }, []);
 
   const handleEnableLocation = () => {
     setShowLocationMarker(true);
@@ -212,6 +219,23 @@ const ParkingMap = ({
       Array.isArray(processedRoutes[0]) &&
       processedRoutes[0].length > 1
     );
+  };
+
+  // Component to handle closing all popups
+  const PopupController: React.FC<{
+    shouldClosePopups: boolean;
+    onPopupsClosed: () => void;
+  }> = ({ shouldClosePopups, onPopupsClosed }) => {
+    const map = useMap();
+
+    useEffect(() => {
+      if (shouldClosePopups) {
+        map.closePopup();
+        onPopupsClosed();
+      }
+    }, [shouldClosePopups, map, onPopupsClosed]);
+
+    return null;
   };
 
   return (
@@ -329,6 +353,10 @@ const ParkingMap = ({
             spots={parkingSpots}
           />
           <RouteZoomController routes={processedRoutes} />
+          <PopupController 
+            shouldClosePopups={shouldClosePopups} 
+            onPopupsClosed={handlePopupsClosed} 
+          />
           <TileLayer
             attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -360,6 +388,13 @@ const ParkingMap = ({
                     ? selectedMarkerIcon
                     : getMarkerIcon(spot.status_chenyon)
                 }
+                eventHandlers={{
+                  click: () => {
+                    if (onSpotClick) {
+                      onSpotClick(spot);
+                    }
+                  },
+                }}
               >
                 <Popup>
                   <Box sx={{ p: 0 }}>
@@ -529,6 +564,11 @@ const ParkingMap = ({
               </Marker>
             </>
           )}
+
+          <PopupController
+            shouldClosePopups={shouldClosePopups}
+            onPopupsClosed={() => setShouldClosePopups(false)}
+          />
         </MapContainer>
       </Box>
     </Box>

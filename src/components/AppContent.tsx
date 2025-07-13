@@ -188,6 +188,7 @@ const AppContent: React.FC = () => {
                   setMapCenter={setMapCenter}
                   selectedSpotId={selectedSpotId}
                   onResetMap={handleResetMapApp}
+                  onSpotClick={handleSpotClick}
                 />
               </Suspense>
             </Box>
