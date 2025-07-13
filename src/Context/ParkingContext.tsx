@@ -30,7 +30,6 @@ export const ParkingProvider = ({ children }: ParkingProviderProps) => {
   const [parkingSpots, setParkingSpots] = useState<ParkingSpotWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusError, setStatusError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -47,18 +46,7 @@ export const ParkingProvider = ({ children }: ParkingProviderProps) => {
         setRefreshing(true);
       }
 
-      const spots = await parkingService.fetchParkingSpots();
-
-      let statusMap = new Map();
-      try {
-        statusMap = await parkingService.fetchParkingStatus();
-        setStatusError(null);
-      } catch (err) {
-        console.error("Error fetching status data:", err);
-        setStatusError("Status information is temporarily unavailable");
-      }
-
-      const combinedData = parkingService.combineParkingData(spots, statusMap);
+      const combinedData = await parkingService.fetchParkingSpots();
 
       if (combinedData.length === 0) {
         throw new Error("No valid parking spots found");
@@ -194,7 +182,7 @@ export const ParkingProvider = ({ children }: ParkingProviderProps) => {
       parkingSpots,
       loading,
       error,
-      statusError,
+      statusError: null, // No longer used with new API
       lastUpdated,
       refreshing,
       mapCenter,
@@ -216,7 +204,6 @@ export const ParkingProvider = ({ children }: ParkingProviderProps) => {
       parkingSpots,
       loading,
       error,
-      statusError,
       lastUpdated,
       refreshing,
       mapCenter,

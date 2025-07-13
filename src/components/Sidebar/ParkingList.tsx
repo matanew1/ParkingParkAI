@@ -21,8 +21,6 @@ const ParkingList: React.FC<ParkingListProps> = ({
   toggleDrawer,
   isMobile,
 }) => {
-  const { handleSpotStatus } = useParkingStatus();
-
   if (filteredSpots.length === 0) {
     return (
       <Box sx={{ textAlign: "center", py: 4 }}>
@@ -37,13 +35,12 @@ const ParkingList: React.FC<ParkingListProps> = ({
     <List disablePadding>
       {filteredSpots.map((spot) => (
         <ParkingSpotItem
-          key={spot.AhuzotCode}
+          key={spot.code_achoza}
           spot={spot}
           onSpotClick={onSpotClick}
           onSpotSelect={onSpotSelect}
           toggleDrawer={toggleDrawer}
           isMobile={isMobile}
-          handleSpotStatus={handleSpotStatus}
         />
       ))}
     </List>
@@ -57,14 +54,30 @@ const ParkingSpotItem = ({
   onSpotSelect,
   toggleDrawer,
   isMobile,
-  handleSpotStatus,
 }) => {
   const theme = useTheme();
 
   const handleClick = () => {
-    onSpotSelect(spot.AhuzotCode);
+    onSpotSelect(spot.code_achoza.toString());
     onSpotClick(spot);
     if (isMobile) toggleDrawer();
+  };
+
+  const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'default' => {
+    switch (status?.toLowerCase()) {
+      case 'פנוי':
+        return 'success';
+      case 'מעט':
+        return 'warning';
+      case 'מלא':
+        return 'error';
+      case 'סגור':
+        return 'error';
+      case 'פעיל':
+        return 'success';
+      default:
+        return 'default';
+    }
   };
 
   return (
@@ -91,12 +104,12 @@ const ParkingSpotItem = ({
               }}
             >
               <Typography variant="subtitle1" noWrap>
-                {spot.Name}
+                {spot.shem_chenyon}
               </Typography>
               <ChevronRight size={16} color={theme.palette.text.secondary} />
             </Box>
             <Typography variant="body2" color="textSecondary" noWrap>
-              {spot.Address}
+              {spot.ktovet}
             </Typography>
             <Box
               sx={{
@@ -106,12 +119,12 @@ const ParkingSpotItem = ({
               }}
             >
               <Chip
-                label={handleSpotStatus(spot)}
+                label={spot.status_chenyon || 'Status unavailable'}
                 size="small"
-                color={handleSpotStatus(spot) === "מלא" ? "error" : "success"}
+                color={getStatusColor(spot.status_chenyon)}
                 sx={{ height: 24 }}
               />
-              {spot.status && (
+              {spot.tr_status_chenyon && spot.tr_status_chenyon > 0 && (
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Clock size={12} />
                   <Typography
@@ -120,7 +133,7 @@ const ParkingSpotItem = ({
                     sx={{ ml: 0.5 }}
                   >
                     {new Date(
-                      spot.status.LastUpdateFromDambach
+                      spot.tr_status_chenyon
                     ).toLocaleTimeString()}
                   </Typography>
                 </Box>

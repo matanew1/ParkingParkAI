@@ -2,11 +2,11 @@ import axios from "axios";
 import { CacheManager } from "../utils/CacheManager";
 import {
   ParkingSpot,
-  ParkingStatus,
   ParkingSpotWithStatus,
+  GISApiResponse,
 } from "../Types/parking";
 
-const API_BASE_URL = "https://api.tel-aviv.gov.il/parking";
+const GIS_API_URL = "https://gisn.tel-aviv.gov.il/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json";
 
 export class ParkingService {
   private readonly CACHE_CONFIG = {
@@ -14,12 +14,10 @@ export class ParkingService {
     capacity: 100
   };
 
-  private spotsCache: CacheManager<ParkingSpot[]>;
-  private statusCache: CacheManager<Map<string, ParkingStatus>>;
+  private spotsCache: CacheManager<ParkingSpotWithStatus[]>;
 
   constructor() {
     this.spotsCache = new CacheManager(this.CACHE_CONFIG);
-    this.statusCache = new CacheManager(this.CACHE_CONFIG);
   }
 
   private axiosConfig = {
@@ -27,139 +25,146 @@ export class ParkingService {
       Accept: "application/json",
       "Content-Type": "application/json",
     },
-    timeout: 10000,
+    timeout: 15000, // Increased timeout for GIS API
   };
 
-  public async fetchParkingSpots(forceRefresh = false): Promise<ParkingSpot[]> {
+  public async fetchParkingSpots(forceRefresh = false): Promise<ParkingSpotWithStatus[]> {
     if (!forceRefresh) {
       const cachedSpots = this.spotsCache.get('spots');
       if (cachedSpots) return cachedSpots;
     }
 
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/stations`,
-        this.axiosConfig
-      );
+      const response = await axios.get(GIS_API_URL, this.axiosConfig);
 
-      if (!response.data || !Array.isArray(response.data)) {
-        throw new Error("Invalid parking spots data format");
+      if (!response.data || !response.data.features || !Array.isArray(response.data.features)) {
+        throw new Error("Invalid GIS API response format");
       }
 
-      const filteredSpots = response.data.filter((spot: ParkingSpot) => {
-        const lat = parseFloat(spot.GPSLattitude);
-        const lng = parseFloat(spot.GPSLongitude);
-        return (
-          spot.GPSLattitude &&
-          spot.GPSLongitude &&
-          !isNaN(lat) &&
-          !isNaN(lng) &&
-          lat >= 31 &&
-          lat <= 33 &&
-          lng >= 34 &&
-          lng <= 35
-        );
-      });
+      const gisData: GISApiResponse = response.data;
+      
+      const processedSpots = gisData.features
+        .map((feature) => {
+          const spot = feature.attributes;
+          
+          // Validate coordinates
+          if (!spot.lat || !spot.lon || 
+              isNaN(spot.lat) || isNaN(spot.lon) ||
+              spot.lat < 31 || spot.lat > 33 ||
+              spot.lon < 34 || spot.lon > 35) {
+            return null;
+          }
 
-      this.spotsCache.set('spots', filteredSpots);
-      return filteredSpots;
+          // Process the spot data
+          const processedSpot: ParkingSpotWithStatus = {
+            ...spot,
+            geometry: feature.geometry,
+            // Ensure required fields have default values
+            shem_chenyon: spot.shem_chenyon || 'Unknown',
+            ktovet: spot.ktovet || 'Unknown Address',
+            status_chenyon: spot.status_chenyon || 'Unknown',
+            taarif_yom: spot.taarif_yom || 'No pricing information',
+            hearot_taarif: spot.hearot_taarif || '',
+          };
+
+          return processedSpot;
+        })
+        .filter((spot): spot is ParkingSpotWithStatus => spot !== null);
+
+      if (processedSpots.length === 0) {
+        throw new Error("No valid parking spots found in GIS data");
+      }
+
+      this.spotsCache.set('spots', processedSpots);
+      
+      // Cache in localStorage as backup
+      try {
+        localStorage.setItem("lastValidParkingData", JSON.stringify(processedSpots));
+      } catch (err) {
+        console.warn("Could not save to localStorage:", err);
+      }
+
+      return processedSpots;
     } catch (error) {
-      let errorMessage = "Unable to fetch parking stations from Tel Aviv API";
+      let errorMessage = "Unable to fetch parking data from Tel Aviv GIS API";
       
       if (axios.isAxiosError(error)) {
         if (error.response) {
-          errorMessage = `Tel Aviv API returned error ${error.response.status}: ${error.response.statusText}`;
+          errorMessage = `Tel Aviv GIS API returned error ${error.response.status}: ${error.response.statusText}`;
         } else if (error.request) {
-          errorMessage = "Unable to connect to Tel Aviv API - please check your internet connection";
+          errorMessage = "Unable to connect to Tel Aviv GIS API - please check your internet connection";
         } else {
-          errorMessage = `Request to Tel Aviv API failed: ${error.message}`;
+          errorMessage = `Request to Tel Aviv GIS API failed: ${error.message}`;
         }
       }
       
-      console.error("Error fetching parking spots:", errorMessage, error);
+      console.error("Error fetching parking data:", errorMessage, error);
+      
+      // Try to return cached data as fallback
       const cachedSpots = this.spotsCache.get('spots');
       if (cachedSpots) {
         console.log("Using cached data as fallback");
         return cachedSpots;
       }
-      throw new Error(errorMessage);
-    }
-  }
 
-  public async fetchParkingStatus(forceRefresh = false): Promise<Map<string, ParkingStatus>> {
-    if (!forceRefresh) {
-      const cachedStatus = this.statusCache.get('status');
-      if (cachedStatus) return cachedStatus;
-    }
-
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/StationsStatus`,
-        this.axiosConfig
-      );
-
-      if (!response.data || !Array.isArray(response.data)) {
-        throw new Error("Invalid parking status data format");
-      }
-
-      const statusMap = new Map(
-        response.data.map((status: ParkingStatus) => [
-          status.AhuzotCode,
-          status,
-        ])
-      );
-
-      this.statusCache.set('status', statusMap);
-      localStorage.setItem(
-        "lastValidStatus",
-        JSON.stringify(Array.from(statusMap.entries()))
-      );
-
-      return statusMap;
-    } catch (error) {
-      let errorMessage = "Unable to fetch parking status from Tel Aviv API";
-      
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          errorMessage = `Tel Aviv API returned error ${error.response.status}: ${error.response.statusText}`;
-        } else if (error.request) {
-          errorMessage = "Unable to connect to Tel Aviv API - please check your internet connection";
-        } else {
-          errorMessage = `Request to Tel Aviv API failed: ${error.message}`;
-        }
-      }
-      
-      console.error("Error fetching parking status:", errorMessage, error);
-      
-      const cachedStatus = this.statusCache.get('status');
-      if (cachedStatus) return cachedStatus;
-
+      // Try localStorage backup
       try {
-        const savedStatus = localStorage.getItem("lastValidStatus");
-        if (savedStatus) {
-          return new Map(JSON.parse(savedStatus));
+        const savedData = localStorage.getItem("lastValidParkingData");
+        if (savedData) {
+          console.log("Using localStorage backup data");
+          return JSON.parse(savedData);
         }
       } catch (err) {
-        console.warn("Could not load status from localStorage:", err);
+        console.warn("Could not load backup data from localStorage:", err);
       }
 
       throw new Error(errorMessage);
     }
   }
 
+  // Legacy method for compatibility - now just calls fetchParkingSpots
+  public async fetchParkingStatus(forceRefresh = false): Promise<Map<string, any>> {
+    // Status is now included in the main data, so we return an empty map
+    return new Map();
+  }
+
+  // Legacy method for compatibility - data is already combined
   public combineParkingData(
     spots: ParkingSpot[],
-    statusMap: Map<string, ParkingStatus>
+    statusMap: Map<string, any>
   ): ParkingSpotWithStatus[] {
-    return spots.map((spot: ParkingSpot) => ({
-      ...spot,
-      status: statusMap.get(spot.AhuzotCode),
-    }));
+    // Data is already combined in the new API
+    return spots as ParkingSpotWithStatus[];
   }
 
   public clearCache(): void {
     this.spotsCache.clear();
-    this.statusCache.clear();
     console.log("Parking service cache cleared");
+  }
+
+  // Helper method to get status color for UI
+  public getStatusColor(status: string): 'success' | 'warning' | 'error' | 'default' {
+    switch (status?.toLowerCase()) {
+      case 'פנוי':
+        return 'success';
+      case 'מעט':
+        return 'warning';
+      case 'מלא':
+        return 'error';
+      case 'סגור':
+        return 'error';
+      case 'פעיל':
+        return 'success';
+      default:
+        return 'default';
+    }
+  }
+
+  // Helper method to get status display text
+  public getStatusDisplay(status: string): string {
+    if (!status || status.trim() === '') {
+      return 'Status unavailable';
+    }
+    return status;
   }
 }

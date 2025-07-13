@@ -342,23 +342,23 @@ const ParkingMap = ({
           )}
 
           {parkingSpots.map((spot) => {
-            const lat = parseFloat(spot.GPSLattitude);
-            const lng = parseFloat(spot.GPSLongitude);
+            const lat = spot.lat;
+            const lng = spot.lon;
             if (isNaN(lat) || isNaN(lng)) {
               console.error(
-                `Invalid coordinates for spot ${spot.AhuzotCode}:`,
+                `Invalid coordinates for spot ${spot.code_achoza}:`,
                 spot
               );
               return null;
             }
             return (
               <Marker
-                key={spot.AhuzotCode}
+                key={spot.code_achoza}
                 position={[lat, lng]}
                 icon={
-                  spot.AhuzotCode === selectedSpotId
+                  spot.code_achoza.toString() === selectedSpotId
                     ? selectedMarkerIcon
-                    : getMarkerIcon(spot.status?.InformationToShow)
+                    : getMarkerIcon(spot.status_chenyon)
                 }
               >
                 <Popup>
@@ -375,10 +375,10 @@ const ParkingMap = ({
                         color="textSecondary"
                         paragraph
                       >
-                        {spot.Address}
+                        {spot.ktovet}
                       </Typography>
 
-                      {spot.status ? (
+                      {spot.status_chenyon ? (
                         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
                           <Typography variant="subtitle2" gutterBottom>
                             Status
@@ -391,25 +391,25 @@ const ParkingMap = ({
                             }}
                           >
                             <Chip
-                              label={spot.status.InformationToShow}
+                              label={spot.status_chenyon}
                               color={
-                                spot.status.InformationToShow === "מלא"
+                                spot.status_chenyon === "מלא"
                                   ? "error"
                                   : "success"
                               }
                               size="small"
                             />
-                            <Box sx={{ display: "flex", alignItems: "center" }}>
-                              <Clock size={14} style={{ marginRight: 4 }} />
-                              <Typography
-                                variant="caption"
-                                color="textSecondary"
-                              >
-                                {new Date(
-                                  spot.status.LastUpdateFromDambach
-                                ).toLocaleTimeString()}
-                              </Typography>
-                            </Box>
+                            {spot.tr_status_chenyon && spot.tr_status_chenyon > 0 && (
+                              <Box sx={{ display: "flex", alignItems: "center" }}>
+                                <Clock size={14} style={{ marginRight: 4 }} />
+                                <Typography
+                                  variant="caption"
+                                  color="textSecondary"
+                                >
+                                  {new Date(spot.tr_status_chenyon).toLocaleTimeString()}
+                                </Typography>
+                              </Box>
+                            )}
                           </Box>
                         </Paper>
                       ) : (
@@ -421,15 +421,15 @@ const ParkingMap = ({
                       )}
 
                       {/* Parking Fees */}
-                      {spot.DaytimeFee && (
+                      {spot.taarif_yom && (
                         <Paper variant="outlined" sx={{ p: 2 }}>
                           <Typography variant="subtitle2" gutterBottom>
                             Fees
                           </Typography>
                           <Typography variant="body2">
-                            {spot.DaytimeFee}
+                            {spot.taarif_yom}
                           </Typography>
-                          {spot.FeeComments && (
+                          {spot.hearot_taarif && (
                             <Typography
                               variant="caption"
                               color="textSecondary"
@@ -439,7 +439,7 @@ const ParkingMap = ({
                                 fontStyle: "italic",
                               }}
                             >
-                              {spot.FeeComments}
+                              {spot.hearot_taarif}
                             </Typography>
                           )}
                         </Paper>

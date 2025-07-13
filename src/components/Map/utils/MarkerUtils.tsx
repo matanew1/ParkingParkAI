@@ -33,7 +33,28 @@ export const userLocationIcon = new Icon({
  * @returns Leaflet Icon with appropriate color
  */
 export const getMarkerIcon = (status?: string) => {
-  const color = status === "מלא" ? "red" : "blue";
+  let color = "blue"; // default
+  
+  switch (status?.toLowerCase()) {
+    case "מלא":
+      color = "red";
+      break;
+    case "מעט":
+      color = "orange";
+      break;
+    case "פנוי":
+      color = "green";
+      break;
+    case "סגור":
+      color = "grey";
+      break;
+    case "פעיל":
+      color = "blue";
+      break;
+    default:
+      color = "blue";
+  }
+  
   const cacheKey = `marker-${color}`;
 
   if (iconCache.has(cacheKey)) {
@@ -118,14 +139,14 @@ export const MapZoomController: React.FC<{
   // Memoize the selected spot to prevent unnecessary processing
   const selectedSpot = useMemo(() => {
     if (!selectedSpotId) return null;
-    return spots.find((spot) => spot.AhuzotCode === selectedSpotId);
+    return spots.find((spot) => spot.code_achoza.toString() === selectedSpotId);
   }, [selectedSpotId, spots]);
 
   useEffect(() => {
     if (selectedSpot) {
       const position: Coordinates = [
-        parseFloat(selectedSpot.GPSLattitude),
-        parseFloat(selectedSpot.GPSLongitude),
+        selectedSpot.lat,
+        selectedSpot.lon,
       ];
 
       if (!isNaN(position[0]) && !isNaN(position[1])) {

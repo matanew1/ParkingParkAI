@@ -33,8 +33,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     () =>
       spots.filter(
         (spot) =>
-          spot.Name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          spot.Address.toLowerCase().includes(debouncedSearch.toLowerCase())
+          spot.shem_chenyon.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          spot.ktovet.toLowerCase().includes(debouncedSearch.toLowerCase())
       ),
     [spots, debouncedSearch]
   );

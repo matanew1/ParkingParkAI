@@ -66,11 +66,11 @@ const AppContent: React.FC = () => {
   const handleSpotClick = useCallback(
     (spot: ParkingSpotWithStatus) => {
       setMapCenter([
-        parseFloat(spot.GPSLattitude),
-        parseFloat(spot.GPSLongitude),
+        spot.lat,
+        spot.lon,
       ]);
-      setSelectedSpotId(spot.AhuzotCode);
-      setSelectedSpot(`${spot.GPSLattitude},${spot.GPSLongitude}`);
+      setSelectedSpotId(spot.code_achoza.toString());
+      setSelectedSpot(`${spot.lat},${spot.lon}`);
     },
     [setMapCenter, setSelectedSpot]
   );
