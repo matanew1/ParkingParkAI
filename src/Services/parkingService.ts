@@ -6,7 +6,7 @@ import {
   GISApiResponse,
 } from "../Types/parking";
 
-const GIS_API_URL = "https://gisn.tel-aviv.gov.il/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json";
+const GIS_API_URL = "/api/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json";
 
 export class ParkingService {
   private readonly CACHE_CONFIG = {
