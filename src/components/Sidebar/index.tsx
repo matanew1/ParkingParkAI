@@ -6,6 +6,7 @@ import SidebarHeader from "./SidebarHeader";
 import ParkingSearch from "./ParkingSearch";
 import RefreshControl from "./RefreshControl";
 import ParkingList from "./ParkingList";
+import TrafficToggle from "./TrafficToggle";
 import { Clock } from "lucide-react";
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -53,6 +54,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           isRefreshing={isRefreshing}
           statusError={statusError}
         />
+
+        <TrafficToggle />
 
         <ParkingList
           filteredSpots={filteredSpots}

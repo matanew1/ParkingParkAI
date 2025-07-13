@@ -41,6 +41,8 @@ import {
 } from "./utils/MarkerUtils";
 import LocationMarker from "./LocationMarker";
 import MapController from "./MapController";
+import TrafficMarkers from "./TrafficMarkers";
+import { useTrafficContext } from "../../Context/TrafficContext";
 import "leaflet/dist/leaflet.css";
 import { Icon } from "leaflet";
 
@@ -90,6 +92,7 @@ const ParkingMap = ({
   const [processedRoutes, setProcessedRoutes] = useState([]);
 
   const { routes, fetchUserLocation } = useContext(ParkingContext);
+  const { trafficReports, showTrafficReports } = useTrafficContext();
 
   // Process routes from context
   useEffect(() => {
@@ -339,6 +342,11 @@ const ParkingMap = ({
 
           {showLocationMarker && (
             <LocationMarker setUserLocation={updateUserLocation} />
+          )}
+
+          {/* Traffic Reports */}
+          {showTrafficReports && (
+            <TrafficMarkers reports={trafficReports} />
           )}
 
           {parkingSpots.map((spot) => {
