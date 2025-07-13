@@ -47,7 +47,7 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
     {
       id: "route",
       title: "Optimal Route",
-      description: "Find the best path to your spot with live traffic updates",
+      description: "Find the best path to your spot with optimal routing",
       icon: <Route className="h-6 w-6 text-indigo-500" />,
       action: () => handleAIAction("route"),
     },

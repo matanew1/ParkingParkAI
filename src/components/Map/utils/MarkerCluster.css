@@ -1,0 +1,32 @@
+/* Optimized marker styles for better performance */
+
+/* Cluster styles */
+.marker-cluster {
+    background-color: rgba(33, 150, 243, 0.8);
+    border: 2px solid white;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.marker-cluster-small {
+    width: 30px;
+    height: 30px;
+}
+
+.marker-cluster-medium {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+}
+
+.marker-cluster-large {
+    width: 50px;
+    height: 50px;
+    font-size: 16px;
+}

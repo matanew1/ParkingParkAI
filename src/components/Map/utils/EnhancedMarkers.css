@@ -1,0 +1,157 @@
+/* Enhanced marker styles */
+.enhanced-parking-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 3px solid #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.enhanced-parking-marker:hover {
+    transform: scale(1.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.enhanced-parking-marker--available {
+    background: linear-gradient(135deg, #4CAF50, #66BB6A);
+    color: white;
+}
+
+.enhanced-parking-marker--limited {
+    background: linear-gradient(135deg, #FF9800, #FFB74D);
+    color: white;
+}
+
+.enhanced-parking-marker--full {
+    background: linear-gradient(135deg, #F44336, #EF5350);
+    color: white;
+}
+
+.enhanced-parking-marker--closed {
+    background: linear-gradient(135deg, #757575, #9E9E9E);
+    color: white;
+}
+
+.enhanced-parking-marker--selected {
+    background: linear-gradient(135deg, #2196F3, #42A5F5);
+    color: white;
+    border-color: #1976D2;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 0 0 0 rgba(33, 150, 243, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 0 0 10px rgba(33, 150, 243, 0);
+    }
+
+    100% {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 0 0 0 rgba(33, 150, 243, 0);
+    }
+}
+
+/* Enhanced popup styles - Apply to ALL popups */
+.enhanced-popup,
+.leaflet-popup {
+    border-radius: 16px !important;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15) !important;
+    backdrop-filter: blur(12px);
+}
+
+.enhanced-popup .leaflet-popup-content-wrapper,
+.leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-radius: 16px !important;
+    padding: 0 !important;
+    border: 2px solid rgba(33, 150, 243, 0.2) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+.enhanced-popup .leaflet-popup-tip,
+.leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border: 2px solid rgba(33, 150, 243, 0.2) !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+.enhanced-popup .leaflet-popup-close-button,
+.leaflet-popup-close-button {
+    background: rgba(244, 67, 54, 0.1) !important;
+    border-radius: 50% !important;
+    width: 32px !important;
+    height: 32px !important;
+    text-align: center !important;
+    line-height: 28px !important;
+    font-size: 18px !important;
+    font-weight: bold !important;
+    color: #F44336 !important;
+    text-decoration: none !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    right: 8px !important;
+    top: 8px !important;
+}
+
+.enhanced-popup .leaflet-popup-close-button:hover,
+.leaflet-popup-close-button:hover {
+    background: #F44336 !important;
+    color: white !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3) !important;
+}
+
+
+
+/* Parking popup specific styles */
+.parking-popup .leaflet-popup-content-wrapper {
+    border-color: rgba(76, 175, 80, 0.3) !important;
+}
+
+.parking-popup .leaflet-popup-tip {
+    border-color: rgba(76, 175, 80, 0.3) !important;
+}
+
+/* Route popup specific styles */
+.route-popup .leaflet-popup-content-wrapper {
+    border-color: rgba(33, 150, 243, 0.3) !important;
+}
+
+.route-popup .leaflet-popup-tip {
+    border-color: rgba(33, 150, 243, 0.3) !important;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+
+    .enhanced-popup .leaflet-popup-content-wrapper,
+    .leaflet-popup-content-wrapper {
+        background: rgba(30, 30, 30, 0.98) !important;
+        color: white !important;
+        border-color: rgba(144, 202, 249, 0.3) !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .enhanced-popup .leaflet-popup-tip,
+    .leaflet-popup-tip {
+        background: rgba(30, 30, 30, 0.98) !important;
+        border-color: rgba(144, 202, 249, 0.3) !important;
+    }
+
+    .parking-popup .leaflet-popup-content-wrapper {
+        border-color: rgba(129, 199, 132, 0.4) !important;
+    }
+
+    .parking-popup .leaflet-popup-tip {
+        border-color: rgba(129, 199, 132, 0.4) !important;
+    }
+}
