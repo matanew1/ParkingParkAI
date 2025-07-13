@@ -17,16 +17,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import AppHeader from "./AppHeader";
 import Sidebar from "./Sidebar";
 import OptionDialog from "./Options/OptionDialog";
-import MapSelector from "./Map/MapSelector";
 import { useParkingContext } from "../Context/ParkingContext";
 import type { ParkingSpotWithStatus } from "../Types/parking";
 
 const ParkingMap = lazy(() => import("./Map/ParkingMap"));
-const CesiumMap = lazy(() => import("./Map/CesiumMap"));
 
 const AppContent: React.FC = () => {
   const [isOptionPopupOpen, setIsOptionPopupOpen] = useState<boolean>(false);
-  const [mapType, setMapType] = useState<'2d' | '3d'>('2d');
   const { isDarkMode } = useCustomTheme();
   const isMobile = useMediaQuery("(max-width:600px)");
   const theme = isDarkMode ? darkTheme : lightTheme;
@@ -145,8 +142,6 @@ const AppContent: React.FC = () => {
                 }),
               }}
             >
-              <MapSelector mapType={mapType} onMapTypeChange={setMapType} />
-
               <Fade in={!isSidebarOpen}>
                 <IconButton
                   onClick={toggleSidebar}
@@ -182,29 +177,18 @@ const AppContent: React.FC = () => {
                   </Box>
                 }
               >
-                <AnimatePresence mode="wait">
-                  {mapType === '2d' ? (
-                    <ParkingMap
-                      key="2d-map"
-                      parkingSpots={parkingSpots}
-                      loading={loading}
-                      statusError={statusError}
-                      mapCenter={mapCenter}
-                      lastUpdated={lastUpdated}
-                      refreshing={refreshing}
-                      onRefresh={() => fetchParkingData(true)}
-                      setMapCenter={setMapCenter}
-                      selectedSpotId={selectedSpotId}
-                      onResetMap={handleResetMapApp}
-                    />
-                  ) : (
-                    <CesiumMap
-                      key="3d-map"
-                      parkingSpots={parkingSpots}
-                      loading={loading}
-                    />
-                  )}
-                </AnimatePresence>
+                <ParkingMap
+                  parkingSpots={parkingSpots}
+                  loading={loading}
+                  statusError={statusError}
+                  mapCenter={mapCenter}
+                  lastUpdated={lastUpdated}
+                  refreshing={refreshing}
+                  onRefresh={() => fetchParkingData(true)}
+                  setMapCenter={setMapCenter}
+                  selectedSpotId={selectedSpotId}
+                  onResetMap={handleResetMapApp}
+                />
               </Suspense>
             </Box>
           </Box>
