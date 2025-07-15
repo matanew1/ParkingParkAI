@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
+import { useMediaQuery, useTheme } from "@mui/material";
 import type { MapControllerProps } from "../../Types/map";
 
 /**
@@ -7,15 +8,19 @@ import type { MapControllerProps } from "../../Types/map";
  */
 const MapController: React.FC<MapControllerProps> = ({ center }) => {
   const map = useMap();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
-    // Use flyTo instead of setView for smoother transitions
-    // that are less likely to close popups
-    map.flyTo(center, 15, {
+    // Use different zoom levels and animation duration for mobile
+    const zoomLevel = isMobile ? 14 : 15;
+    const duration = isMobile ? 0.8 : 1.0;
+    
+    map.flyTo(center, zoomLevel, {
       animate: true,
-      duration: 1.0
+      duration: duration
     });
-  }, [center, map]);
+  }, [center, map, isMobile]);
 
   return null;
 };

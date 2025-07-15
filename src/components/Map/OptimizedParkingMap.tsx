@@ -139,6 +139,10 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
     setShouldClosePopups(false);
   }, []);
 
+  const handleMapClick = useCallback(() => {
+    setShouldClosePopups(true);
+  }, []);
+
   const resetMap = useCallback(() => {
     setShouldClosePopups(true);
     onResetMap();
@@ -178,20 +182,21 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
           action={
             <Button
               color="inherit"
-              size="small"
+              size={isMobile ? "small" : "medium"}
               onClick={onRefresh}
               disabled={refreshing}
             >
-              {refreshing ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
+              {refreshing ? <CircularProgress size={isMobile ? 14 : 16} /> : <RefreshCw size={isMobile ? 14 : 16} />}
             </Button>
           }
           sx={{
             position: "absolute",
-            top: 16,
-            left: 16,
-            right: 16,
+            top: isMobile ? 8 : 16,
+            left: isMobile ? 8 : 16,
+            right: isMobile ? 8 : 16,
             zIndex: 1000,
-            maxWidth: isMobile ? "calc(100% - 32px)" : "400px",
+            maxWidth: isMobile ? "calc(100% - 16px)" : "400px",
+            fontSize: isMobile ? "0.875rem" : "1rem",
           }}
         >
           <AlertTitle>Connection Issue</AlertTitle>
@@ -216,6 +221,7 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
           shouldClosePopups={shouldClosePopups} 
           onPopupsClosed={handlePopupsClosed} 
         />
+        <MapClickHandler onMapClick={handleMapClick} />
         
         <TileLayer
           attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -270,33 +276,43 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
       <Box
         sx={{
           position: "absolute",
-          bottom: 16,
-          right: 16,
+          bottom: isMobile ? 12 : 16,
+          right: isMobile ? 12 : 16,
           display: "flex",
           flexDirection: "column",
-          gap: 1,
+          gap: isMobile ? 0.5 : 1,
           zIndex: 1000,
         }}
       >
-        <Tooltip title="Get My Location">
+        <Tooltip title="Get My Location" placement={isMobile ? "left" : "left"}>
           <Fab
             color="primary"
-            size="small"
+            size={isMobile ? "medium" : "small"}
             onClick={handleGetUserLocation}
-            sx={{ bgcolor: theme.palette.primary.main }}
+            sx={{ 
+              bgcolor: theme.palette.primary.main,
+              width: isMobile ? 48 : 40,
+              height: isMobile ? 48 : 40,
+              minHeight: isMobile ? 48 : 40,
+            }}
           >
-            <Crosshair size={20} />
+            <Crosshair size={isMobile ? 24 : 20} />
           </Fab>
         </Tooltip>
         
-        <Tooltip title="Reset Map">
+        <Tooltip title="Reset Map" placement={isMobile ? "left" : "left"}>
           <Fab
             color="secondary"
-            size="small"
+            size={isMobile ? "medium" : "small"}
             onClick={resetMap}
-            sx={{ bgcolor: theme.palette.secondary.main }}
+            sx={{ 
+              bgcolor: theme.palette.secondary.main,
+              width: isMobile ? 48 : 40,
+              height: isMobile ? 48 : 40,
+              minHeight: isMobile ? 48 : 40,
+            }}
           >
-            <Trash2 size={20} />
+            <Trash2 size={isMobile ? 24 : 20} />
           </Fab>
         </Tooltip>
       </Box>
@@ -311,6 +327,7 @@ const OptimizedMarkersLayer: React.FC<{
   onSpotClick?: (spot: any) => void;
 }> = ({ parkingSpots, selectedSpotId, onSpotClick }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   
   // Use viewport filtering for performance - now inside MapContainer context
   const { visibleSpots, zoomLevel, totalSpots, visibleCount } = useViewportFilter(parkingSpots, 0.1);
@@ -325,8 +342,8 @@ const OptimizedMarkersLayer: React.FC<{
     chunkedLoading: true,
     chunkInterval: 200,
     chunkDelay: 50,
-    maxClusterRadius: zoomLevel > 15 ? 40 : 80,
-    disableClusteringAtZoom: 17,
+    maxClusterRadius: zoomLevel > 15 ? (isMobile ? 30 : 40) : (isMobile ? 60 : 80),
+    disableClusteringAtZoom: isMobile ? 16 : 17,
     spiderfyOnMaxZoom: true,
     showCoverageOnHover: false,
     iconCreateFunction: (cluster) => {
@@ -335,18 +352,21 @@ const OptimizedMarkersLayer: React.FC<{
       if (count > 10) size = 'medium';
       if (count > 50) size = 'large';
       
+      const iconSize = isMobile ? 36 : 40;
+      const fontSize = isMobile ? 10 : 12;
+      
       return new Icon({
         iconUrl: `data:image/svg+xml;base64,${btoa(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-            <circle cx="20" cy="20" r="18" fill="${theme.palette.primary.main}" stroke="white" stroke-width="2"/>
-            <text x="20" y="25" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">${count}</text>
+          <svg xmlns="http://www.w3.org/2000/svg" width="${iconSize}" height="${iconSize}" viewBox="0 0 ${iconSize} ${iconSize}">
+            <circle cx="${iconSize/2}" cy="${iconSize/2}" r="${iconSize/2 - 2}" fill="${theme.palette.primary.main}" stroke="white" stroke-width="2"/>
+            <text x="${iconSize/2}" y="${iconSize/2 + 4}" font-family="Arial, sans-serif" font-size="${fontSize}" fill="white" text-anchor="middle" font-weight="bold">${count}</text>
           </svg>
         `)}`,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
+        iconSize: [iconSize, iconSize],
+        iconAnchor: [iconSize/2, iconSize/2],
       });
     },
-  }), [zoomLevel, theme.palette.primary.main]);
+  }), [zoomLevel, theme.palette.primary.main, isMobile]);
 
   return (
     <>
@@ -359,7 +379,7 @@ const OptimizedMarkersLayer: React.FC<{
             isSelected={spot.code_achoza.toString() === selectedSpotId}
             onSpotClick={onSpotClick}
             zoomLevel={zoomLevel}
-            showDetails={zoomLevel >= 14} // Only show popup details at higher zoom levels
+            showDetails={zoomLevel >= (isMobile ? 13 : 14)} // Show popup details at lower zoom on mobile
           />
         ))}
       </MarkerClusterGroup>
@@ -380,6 +400,33 @@ const PopupController: React.FC<{
       onPopupsClosed();
     }
   }, [shouldClosePopups, map, onPopupsClosed]);
+
+  return null;
+};
+
+// MapClickHandler component to close popups when clicking on map
+const MapClickHandler: React.FC<{
+  onMapClick: () => void;
+}> = ({ onMapClick }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    const handleMapClick = (e: any) => {
+      // Only close popup if clicking on the map itself, not on markers or popups
+      if (e.originalEvent && e.originalEvent.target && 
+          e.originalEvent.target.tagName !== 'path' && // SVG marker paths
+          !e.originalEvent.target.closest('.leaflet-marker-icon') && // Marker icons
+          !e.originalEvent.target.closest('.leaflet-popup')) { // Popup content
+        onMapClick();
+      }
+    };
+
+    map.on('click', handleMapClick);
+
+    return () => {
+      map.off('click', handleMapClick);
+    };
+  }, [map, onMapClick]);
 
   return null;
 };

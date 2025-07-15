@@ -3,6 +3,7 @@ import L from "leaflet";
 import "./MarkerUtils.css";
 import { useMap } from "react-leaflet";
 import React, { useEffect, useCallback, useMemo } from "react";
+import { useMediaQuery, useTheme } from "@mui/material";
 import type { ParkingSpotWithStatus } from "../../Types/parking";
 import type { Coordinates } from "../../Services/routeService";
 
@@ -136,6 +137,8 @@ export const MapZoomController: React.FC<{
   spots: ParkingSpotWithStatus[];
 }> = ({ selectedSpotId, spots }) => {
   const map = useMap();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Memoize the selected spot to prevent unnecessary processing
   const selectedSpot = useMemo(() => {
@@ -151,15 +154,18 @@ export const MapZoomController: React.FC<{
       ];
 
       if (!isNaN(position[0]) && !isNaN(position[1])) {
-        // Since this is only triggered by sidebar selection now, we can zoom more aggressively
-        // Use zoom level 18 for detailed street-level view
-        map.flyTo(position, 18, {
+        // Use different zoom levels for mobile vs desktop
+        // Mobile gets slightly lower zoom to show more context in smaller screen
+        const zoomLevel = isMobile ? 17 : 18;
+        const duration = isMobile ? 1.2 : 1.5;
+        
+        map.flyTo(position, zoomLevel, {
           animate: true,
-          duration: 1.5, // Slightly longer duration for the higher zoom
+          duration: duration,
         });
       }
     }
-  }, [selectedSpot, map]);
+  }, [selectedSpot, map, isMobile]);
 
   return null;
 };

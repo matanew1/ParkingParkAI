@@ -50,6 +50,69 @@ html {
   display: block !important;
 }
 
+/* Mobile-specific optimizations */
+@media (max-width: 600px) {
+  .leaflet-popup-content-wrapper {
+    font-size: 14px !important;
+    max-width: 280px !important;
+    min-width: 250px !important;
+  }
+
+  .leaflet-popup-content {
+    margin: 8px 12px !important;
+    line-height: 1.4 !important;
+  }
+
+  .leaflet-popup-close-button {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 16px !important;
+    line-height: 26px !important;
+    top: 6px !important;
+    right: 6px !important;
+  }
+
+  .leaflet-popup-tip-container {
+    width: 20px !important;
+    height: 10px !important;
+  }
+
+  .leaflet-popup-tip {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  /* Improve touch targets for mobile */
+  .leaflet-control-zoom a {
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 34px !important;
+    font-size: 18px !important;
+  }
+
+  /* Adjust cluster icons for mobile */
+  .marker-cluster {
+    font-size: 10px !important;
+  }
+
+  .marker-cluster-small {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .marker-cluster-medium {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 12px !important;
+  }
+
+  .marker-cluster-large {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 14px !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
