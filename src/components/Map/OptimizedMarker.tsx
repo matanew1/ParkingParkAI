@@ -1,10 +1,11 @@
-import React, { memo } from 'react';
-import { Marker, Popup } from 'react-leaflet';
+import React, { memo, useRef } from 'react';
+import { Marker, Popup, useMap } from 'react-leaflet';
 import { Box, Typography, Paper, Chip, useMediaQuery, useTheme } from '@mui/material';
 import { Clock } from 'lucide-react';
 import { ParkingSpotWithStatus } from '../../Types/parking';
 import { getMarkerIcon, selectedMarkerIcon } from './utils/MarkerUtils';
 import { getStatusColor, getTypeColor } from '../../utils/colorUtils';
+import { useAutoPopup } from '../../hooks/useAutoPopup';
 
 interface OptimizedMarkerProps {
   spot: ParkingSpotWithStatus;
@@ -12,6 +13,7 @@ interface OptimizedMarkerProps {
   onSpotClick?: (spot: ParkingSpotWithStatus) => void;
   zoomLevel: number;
   showDetails: boolean;
+  forceShowPopup?: boolean;
 }
 
 const OptimizedMarker = memo<OptimizedMarkerProps>(({ 
@@ -19,12 +21,18 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(({
   isSelected, 
   onSpotClick, 
   zoomLevel, 
-  showDetails 
+  showDetails,
+  forceShowPopup = false
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const markerRef = useRef<any>(null);
+  const popupRef = useRef<any>(null);
   const lat = spot.lat;
   const lng = spot.lon;
+
+  // Use the auto popup hook
+  useAutoPopup(lat, lng, isSelected, showDetails || forceShowPopup, spot.shem_chenyon || spot.Name || 'Parking Spot');
 
   if (isNaN(lat) || isNaN(lng)) {
     return null;
@@ -32,6 +40,7 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(({
 
   return (
     <Marker
+      ref={markerRef}
       position={[lat, lng]}
       icon={isSelected ? selectedMarkerIcon : getMarkerIcon(spot.status_chenyon)}
       eventHandlers={{
@@ -39,11 +48,12 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(({
           if (onSpotClick) {
             onSpotClick(spot);
           }
-        },
+        }
       }}
     >
-      {showDetails && (
+      {(showDetails || forceShowPopup) && (
         <Popup 
+          ref={popupRef}
           closeOnClick={false}
           autoClose={false}
           keepInView={true}
@@ -67,7 +77,7 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(({
                 {spot.shem_chenyon || spot.Name || 'Parking Spot'}
               </Typography>
               
-              {zoomLevel >= (isMobile ? 14 : 15) && (
+              {(forceShowPopup || zoomLevel >= (isMobile ? 14 : 15)) && (
                 <Typography 
                   variant="body2" 
                   color="textSecondary" 
@@ -103,23 +113,11 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(({
                       size={isMobile ? "small" : "small"}
                       sx={{ fontSize: isMobile ? "0.75rem" : "0.875rem" }}
                     />
-                    {spot.tr_status_chenyon && spot.tr_status_chenyon > 0 && (
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Clock size={isMobile ? 12 : 14} style={{ marginRight: 4 }} />
-                        <Typography 
-                          variant="caption" 
-                          color="textSecondary"
-                          sx={{ fontSize: isMobile ? "0.7rem" : "0.75rem" }}
-                        >
-                          {new Date(spot.tr_status_chenyon).toLocaleTimeString()}
-                        </Typography>
-                      </Box>
-                    )}
                   </Box>
                 </Paper>
               )}
 
-              {zoomLevel >= (isMobile ? 15 : 16) && spot.taarif_yom && (
+              {(forceShowPopup || zoomLevel >= (isMobile ? 15 : 16)) && spot.taarif_yom && (
                 <Paper variant="outlined" sx={{ p: isMobile ? 1.5 : 2, mb: isMobile ? 1.5 : 2 }}>
                   <Typography 
                     variant="subtitle2" 

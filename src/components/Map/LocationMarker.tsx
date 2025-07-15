@@ -83,7 +83,13 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ setUserLocation }) => {
       <Circle
         center={position}
         radius={accuracy}
-        pathOptions={{ color: "blue", fillColor: "blue", fillOpacity: 0.1 }}
+        pathOptions={{ 
+          color: "#00ffff", 
+          fillColor: "#00ffff", 
+          fillOpacity: 0.15,
+          weight: 2,
+          opacity: 0.7 
+        }}
       />
     </>
   );

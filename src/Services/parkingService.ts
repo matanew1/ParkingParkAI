@@ -3,6 +3,7 @@ import proj4 from 'proj4';
 import { CacheManager } from "../utils/CacheManager";
 import { SpatialCacheManager } from "../utils/SpatialCacheManager";
 import { RateLimiter } from "../utils/debounceThrottle";
+import { validateCoordinateWithLogging } from "../utils/coordinateValidation";
 import {
   ParkingSpot,
   ParkingSpotWithStatus,
@@ -89,11 +90,8 @@ export class ParkingService {
           console.log(url + " Processing GIS feature:", spot);
 
           if (type === "public") {
-            // Validate coordinates
-            if (!spot.lat || !spot.lon || 
-                isNaN(spot.lat) || isNaN(spot.lon) ||
-                spot.lat < 31 || spot.lat > 33 ||
-                spot.lon < 34 || spot.lon > 35) {
+            // Enhanced coordinate validation using centralized utility
+            if (!spot.lat || !spot.lon || !validateCoordinateWithLogging(spot.lat, spot.lon, 'Public parking spot')) {
               return null;
             }
 
@@ -127,10 +125,16 @@ export class ParkingService {
             // Convert from Israel TM Grid (EPSG:2039) to WGS84
             const wgs84Coords = this.convertITMtoWGS84(xCoord, yCoord);
             if (!wgs84Coords) {
+              console.warn(`Failed to convert private spot coordinates: ITM(${xCoord}, ${yCoord})`);
               return null;
             }
             
             const [lon, lat] = wgs84Coords;
+            
+            // Additional validation of converted coordinates using centralized utility
+            if (!validateCoordinateWithLogging(lat, lon, `Private parking spot (converted from ITM(${xCoord}, ${yCoord}))`)) {
+              return null;
+            }
             
             console.log(`Converted private parking coordinates: ITM(${xCoord}, ${yCoord}) -> WGS84(${lon.toFixed(6)}, ${lat.toFixed(6)})`);
 

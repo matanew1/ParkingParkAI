@@ -18,13 +18,13 @@ const SHADOW_URL =
 // Cache for marker icons to prevent recreating them
 const iconCache = new Map<string, Icon>();
 
-// User location marker (green)
+// User location marker with custom cyan icon
 export const userLocationIcon = new Icon({
-  iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png`,
+  iconUrl: `/me.svg`,
   shadowUrl: SHADOW_URL,
-  iconSize: ICON_SIZE,
-  iconAnchor: ICON_ANCHOR,
-  popupAnchor: POPUP_ANCHOR,
+  iconSize: [30, 45], // Slightly larger for visibility
+  iconAnchor: [15, 45],
+  popupAnchor: [1, -34],
   shadowSize: SHADOW_SIZE,
 });
 

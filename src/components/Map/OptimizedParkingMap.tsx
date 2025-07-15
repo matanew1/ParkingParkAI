@@ -386,6 +386,7 @@ const OptimizedMarkersLayer: React.FC<{
             onSpotClick={onSpotClick}
             zoomLevel={zoomLevel}
             showDetails={zoomLevel >= (isMobile ? 13 : 14)} // Show popup details at lower zoom on mobile
+            forceShowPopup={spot.code_achoza.toString() === selectedSpotId} // Force popup for selected spots
           />
         ))}
       </MarkerClusterGroup>

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useMap } from 'react-leaflet';
 import { ParkingSpotWithStatus } from '../Types/parking';
 import { debounce, throttle } from '../utils/debounceThrottle';
+import { isValidIsraeliCoordinate } from '../utils/coordinateValidation';
 
 export interface ViewportBounds {
   north: number;
@@ -43,14 +44,18 @@ export const useViewportFilter = (
     return `${bounds.north.toFixed(4)}_${bounds.south.toFixed(4)}_${bounds.east.toFixed(4)}_${bounds.west.toFixed(4)}_${roundedZoom}`;
   }, []);
 
-  // Memoized filter function for better performance
+  // Enhanced filter function with centralized geographic validation
   const filterSpotsByViewport = useCallback((spots: ParkingSpotWithStatus[], bounds: ViewportBounds) => {
     return spots.filter(spot => {
       const lat = spot.lat;
       const lon = spot.lon;
       
-      if (isNaN(lat) || isNaN(lon)) return false;
+      // Use centralized coordinate validation
+      if (!isValidIsraeliCoordinate(lat, lon)) {
+        return false;
+      }
       
+      // Check if within viewport bounds
       return (
         lat >= bounds.south &&
         lat <= bounds.north &&
