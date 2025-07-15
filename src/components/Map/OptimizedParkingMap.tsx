@@ -332,20 +332,26 @@ const OptimizedMarkersLayer: React.FC<{
   // Use viewport filtering for performance - now inside MapContainer context
   const { visibleSpots, zoomLevel, totalSpots, visibleCount } = useViewportFilter(parkingSpots, 0.1);
 
-  // Performance monitoring
+  // Performance monitoring (reduced logging for smoother performance)
   useEffect(() => {
-    console.log(`Performance: Showing ${visibleCount} of ${totalSpots} parking spots at zoom level ${zoomLevel}`);
-  }, [visibleCount, totalSpots, zoomLevel]);
+    // Only log significant changes to reduce console spam
+    if (visibleCount > 0 && Math.abs(zoomLevel - Math.round(zoomLevel)) < 0.1) {
+      console.log(`Performance: Showing ${visibleCount} of ${totalSpots} parking spots at zoom level ${Math.round(zoomLevel)}`);
+    }
+  }, [visibleCount, totalSpots, Math.round(zoomLevel)]);
 
-  // Memoize cluster options for performance
+  // Memoize cluster options for performance and smooth transitions
   const clusterOptions = useMemo(() => ({
     chunkedLoading: true,
-    chunkInterval: 200,
-    chunkDelay: 50,
-    maxClusterRadius: zoomLevel > 15 ? (isMobile ? 30 : 40) : (isMobile ? 60 : 80),
+    chunkInterval: 150, // Reduced for faster loading
+    chunkDelay: 30, // Reduced delay for smoother transitions
+    maxClusterRadius: zoomLevel > 15 ? (isMobile ? 25 : 35) : (isMobile ? 50 : 70), // Slightly smaller for better performance
     disableClusteringAtZoom: isMobile ? 16 : 17,
     spiderfyOnMaxZoom: true,
     showCoverageOnHover: false,
+    animate: true, // Enable smooth animations
+    animateAddingMarkers: false, // Disable to prevent lag during zoom
+    removeOutsideVisibleBounds: true, // Remove markers outside view for better performance
     iconCreateFunction: (cluster) => {
       const count = cluster.getChildCount();
       let size = 'small';

@@ -19,8 +19,9 @@ const viewportCache = new Map<string, {
 }>();
 
 const CACHE_DURATION = 5000; // 5 seconds cache
-const MIN_UPDATE_INTERVAL = 300; // Minimum 300ms between updates
-const ZOOM_THRESHOLD = 0.5; // Only update if zoom changes by more than 0.5
+const MIN_UPDATE_INTERVAL = 500; // Increased to 500ms between updates
+const ZOOM_THRESHOLD = 0.3; // Reduced threshold for more responsive updates
+const ANIMATION_DELAY = 250; // Delay after animation ends before updating
 
 export const useViewportFilter = (
   allSpots: ParkingSpotWithStatus[],
@@ -33,6 +34,8 @@ export const useViewportFilter = (
   const lastUpdateRef = useRef<number>(0);
   const lastZoomRef = useRef<number>(map.getZoom());
   const isAnimatingRef = useRef<boolean>(false);
+  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingUpdateRef = useRef<boolean>(false);
 
   // Create cache key based on bounds and zoom
   const createCacheKey = useCallback((bounds: ViewportBounds, zoom: number) => {
@@ -57,19 +60,32 @@ export const useViewportFilter = (
     });
   }, []);
 
-  // Optimized bounds update with smarter caching
+  // Optimized bounds update with smarter caching and animation handling
   const updateBounds = useCallback(() => {
-    if (!map || isAnimatingRef.current) return;
+    if (!map) return;
+
+    // Skip update during animations to prevent double rendering
+    if (isAnimatingRef.current) {
+      pendingUpdateRef.current = true;
+      return;
+    }
 
     const now = Date.now();
     const currentZoom = map.getZoom();
     
-    // Skip update if too soon or zoom change is minimal
-    if (now - lastUpdateRef.current < MIN_UPDATE_INTERVAL) return;
-    if (Math.abs(currentZoom - lastZoomRef.current) < ZOOM_THRESHOLD && viewportBounds) return;
+    // Skip update if too soon
+    if (now - lastUpdateRef.current < MIN_UPDATE_INTERVAL) {
+      return;
+    }
+    
+    // Skip if zoom change is minimal and bounds exist
+    if (Math.abs(currentZoom - lastZoomRef.current) < ZOOM_THRESHOLD && viewportBounds) {
+      return;
+    }
     
     lastUpdateRef.current = now;
     lastZoomRef.current = currentZoom;
+    pendingUpdateRef.current = false;
 
     const bounds = map.getBounds();
     
@@ -116,9 +132,9 @@ export const useViewportFilter = (
     setZoomLevel(currentZoom);
   }, [map, bufferPercent, allSpots, viewportBounds, createCacheKey, filterSpotsByViewport]);
 
-  // Throttled update bounds for better performance
+  // Throttled update bounds for better performance - increased throttle
   const throttledUpdateBounds = useCallback(
-    throttle(updateBounds, 200), // 200ms throttle
+    throttle(updateBounds, 300), // Increased to 300ms throttle
     [updateBounds]
   );
 
@@ -128,29 +144,62 @@ export const useViewportFilter = (
 
     const handleAnimationStart = () => {
       isAnimatingRef.current = true;
+      // Clear any pending timeout
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+        animationTimeoutRef.current = null;
+      }
     };
 
     const handleAnimationEnd = () => {
       isAnimatingRef.current = false;
-      // Update after animation ends
-      setTimeout(throttledUpdateBounds, 100);
+      
+      // Clear any existing timeout
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+      
+      // Schedule update after animation with delay to ensure smooth transition
+      animationTimeoutRef.current = setTimeout(() => {
+        if (pendingUpdateRef.current || !viewportBounds) {
+          throttledUpdateBounds();
+        }
+        animationTimeoutRef.current = null;
+      }, ANIMATION_DELAY);
     };
 
+    // Listen to both zoom and move events
     map.on('zoomstart', handleAnimationStart);
     map.on('movestart', handleAnimationStart);
     map.on('zoomend', handleAnimationEnd);
     map.on('moveend', handleAnimationEnd);
 
-    // Initial update
-    throttledUpdateBounds();
+    // Initial update only if no bounds exist
+    if (!viewportBounds) {
+      throttledUpdateBounds();
+    }
 
     return () => {
       map.off('zoomstart', handleAnimationStart);
       map.off('movestart', handleAnimationStart);
       map.off('zoomend', handleAnimationEnd);
       map.off('moveend', handleAnimationEnd);
+      
+      // Clean up timeout
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
     };
-  }, [map, throttledUpdateBounds]);
+  }, [map, throttledUpdateBounds, viewportBounds]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Memoized return values to prevent unnecessary re-renders
   const memoizedResult = useMemo(() => ({
