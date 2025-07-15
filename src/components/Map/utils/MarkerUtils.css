@@ -31,7 +31,7 @@
 }
 
 /* Apply animation to user location markers */
-.leaflet-marker-icon[src*="me.svg"] {
+.user-location-marker {
     animation: userLocationPulse 2s infinite ease-in-out;
     filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.8));
 }
