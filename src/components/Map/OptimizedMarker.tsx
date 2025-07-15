@@ -4,6 +4,7 @@ import { Box, Typography, Paper, Chip } from '@mui/material';
 import { Clock } from 'lucide-react';
 import { ParkingSpotWithStatus } from '../../Types/parking';
 import { getMarkerIcon, selectedMarkerIcon } from './utils/MarkerUtils';
+import { getStatusColor, getTypeColor } from '../../utils/colorUtils';
 
 interface OptimizedMarkerProps {
   spot: ParkingSpotWithStatus;
@@ -65,9 +66,7 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(({
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Chip
                       label={spot.status_chenyon}
-                      color={
-                        spot.status_chenyon === "מלא" ? "error" : "success"
-                      }
+                      color={getStatusColor(spot.status_chenyon)}
                       size="small"
                     />
                     {spot.tr_status_chenyon && spot.tr_status_chenyon > 0 && (

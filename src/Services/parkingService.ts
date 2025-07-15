@@ -38,6 +38,8 @@ export class ParkingService {
       "Content-Type": "application/json",
     },
     timeout: 15000, // Increased timeout for GIS API
+    // Handle CORS in production
+    withCredentials: false,
   };
 
   // Helper method for coordinate conversion from Israel TM Grid to WGS84

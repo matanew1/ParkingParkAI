@@ -42,8 +42,12 @@ export const ParkingProvider = ({ children }: ParkingProviderProps) => {
   const [showLocationMarker, setShowLocationMarker] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
 
-  const AHUZAT_HAHOF_URL = "/api/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json";
-  const PRIVATE_URL = "/api/arcgis/rest/services/IView2/MapServer/555/query?where=1%3D1&outFields=*&f=json";
+  // Use direct URLs for production, proxy URLs for development
+  const isDevelopment = import.meta.env.DEV;
+  const baseUrl = isDevelopment ? "/api" : "https://gisn.tel-aviv.gov.il";
+  
+  const AHUZAT_HAHOF_URL = `${baseUrl}/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json`;
+  const PRIVATE_URL = `${baseUrl}/arcgis/rest/services/IView2/MapServer/555/query?where=1%3D1&outFields=*&f=json`;
 
   // Debounced fetch to prevent rapid consecutive calls
   const debouncedFetch = useRef(

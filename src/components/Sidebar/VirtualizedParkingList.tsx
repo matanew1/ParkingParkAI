@@ -13,6 +13,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { ChevronRight, Clock } from "lucide-react";
+import { getStatusColor } from "../../utils/colorUtils";
 
 const VirtualizedParkingList: React.FC<ParkingListProps> = ({
   filteredSpots,
@@ -105,23 +106,6 @@ const ParkingSpotItem = React.memo<{
     onSpotSelect(spot.code_achoza.toString());
     onSpotClick(spot);
     if (isMobile) toggleDrawer();
-  };
-
-  const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'default' => {
-    switch (status?.toLowerCase()) {
-      case 'פנוי':
-        return 'success';
-      case 'מעט':
-        return 'warning';
-      case 'מלא':
-        return 'error';
-      case 'סגור':
-        return 'error';
-      case 'פעיל':
-        return 'success';
-      default:
-        return 'default';
-    }
   };
 
   return (
