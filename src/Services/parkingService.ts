@@ -1,12 +1,18 @@
 import axios from "axios";
+import proj4 from 'proj4';
 import { CacheManager } from "../utils/CacheManager";
+import { SpatialCacheManager } from "../utils/SpatialCacheManager";
+import { RateLimiter } from "../utils/debounceThrottle";
 import {
   ParkingSpot,
   ParkingSpotWithStatus,
   GISApiResponse,
 } from "../Types/parking";
 
-const GIS_API_URL = "/api/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json";
+// Define the Israel Transverse Mercator projection (EPSG:2039)
+proj4.defs("EPSG:2039", "+proj=tmerc +lat_0=31.73439361111111 +lon_0=35.20451694444445 +k=1.0000067 +x_0=219529.584 +y_0=626907.39 +ellps=GRS80 +units=m +no_defs");
+
+
 
 export class ParkingService {
   private readonly CACHE_CONFIG = {
@@ -15,9 +21,15 @@ export class ParkingService {
   };
 
   private spotsCache: CacheManager<ParkingSpotWithStatus[]>;
+  private spatialCache: SpatialCacheManager;
+  private rateLimiter: RateLimiter;
 
   constructor() {
     this.spotsCache = new CacheManager(this.CACHE_CONFIG);
+    this.spatialCache = new SpatialCacheManager();
+    this.rateLimiter = new RateLimiter(500, 10000); // Min 500ms between calls, max 10s backoff
+    // Load existing spatial cache on initialization
+    this.spatialCache.loadFromLocalStorage();
   }
 
   private axiosConfig = {
@@ -28,46 +40,129 @@ export class ParkingService {
     timeout: 15000, // Increased timeout for GIS API
   };
 
-  public async fetchParkingSpots(forceRefresh = false): Promise<ParkingSpotWithStatus[]> {
+  // Helper method for coordinate conversion from Israel TM Grid to WGS84
+  private convertITMtoWGS84(x: number, y: number): [number, number] | null {
+    try {
+      const wgs84Point = proj4("EPSG:2039", "WGS84", [x, y]);
+      const lon = wgs84Point[0];
+      const lat = wgs84Point[1];
+      
+      // Validate converted coordinates are in reasonable range for Israel
+      if (lat < 31 || lat > 33.5 || lon < 34 || lon > 35.5) {
+        console.warn(`Converted coordinates outside expected range: lat=${lat}, lon=${lon} from original x=${x}, y=${y}`);
+        return null;
+      }
+      
+      return [lon, lat];
+    } catch (error) {
+      console.error(`Error converting coordinates x=${x}, y=${y}:`, error);
+      return null;
+    }
+  }
+
+  public async fetchParkingSpots(url: string, type: string, forceRefresh = false): Promise<ParkingSpotWithStatus[]> {
+    const cacheKey = `spots_${type}`;
+    
     if (!forceRefresh) {
-      const cachedSpots = this.spotsCache.get('spots');
+      const cachedSpots = this.spotsCache.get(cacheKey);
       if (cachedSpots) return cachedSpots;
     }
 
     try {
-      const response = await axios.get(GIS_API_URL, this.axiosConfig);
+      // Use rate limiter for API calls
+      const response = await this.rateLimiter.execute(() => 
+        axios.get(url, this.axiosConfig)
+      );
 
       if (!response.data || !response.data.features || !Array.isArray(response.data.features)) {
         throw new Error("Invalid GIS API response format");
       }
 
       const gisData: GISApiResponse = response.data;
-      
+
       const processedSpots = gisData.features
         .map((feature) => {
           const spot = feature.attributes;
-          
-          // Validate coordinates
-          if (!spot.lat || !spot.lon || 
-              isNaN(spot.lat) || isNaN(spot.lon) ||
-              spot.lat < 31 || spot.lat > 33 ||
-              spot.lon < 34 || spot.lon > 35) {
-            return null;
+
+          console.log(url + " Processing GIS feature:", spot);
+
+          if (type === "public") {
+            // Validate coordinates
+            if (!spot.lat || !spot.lon || 
+                isNaN(spot.lat) || isNaN(spot.lon) ||
+                spot.lat < 31 || spot.lat > 33 ||
+                spot.lon < 34 || spot.lon > 35) {
+              return null;
+            }
+
+            // Process the spot data
+            const processedSpot: ParkingSpotWithStatus = {
+              ...spot,
+              geometry: feature.geometry,
+              // Create unique ID by prefixing with data source type
+              code_achoza: `public_${spot.code_achoza}`,
+              UniqueId: `public_${spot.code_achoza}_${spot.oid_hof || 'unknown'}`,
+              // Ensure required fields have default values
+              shem_chenyon: spot.shem_chenyon || 'Unknown',
+              ktovet: spot.ktovet || 'Unknown Address',
+              status_chenyon: spot.status_chenyon || 'Unknown',
+              taarif_yom: spot.taarif_yom || 'No pricing information',
+              hearot_taarif: spot.hearot_taarif || '',
+            };
+
+            return processedSpot;
+          } else if (type === "private") {
+            // Private parking uses different coordinate field names
+            const xCoord = spot.x_coord || spot.x;
+            const yCoord = spot.y_coord || spot.y;
+            
+            // Validate coordinates - these are in Israel TM Grid coordinates (EPSG:2039)
+            if (!xCoord || !yCoord ||
+                isNaN(xCoord) || isNaN(yCoord)) {
+              return null;
+            }
+
+            // Convert from Israel TM Grid (EPSG:2039) to WGS84
+            const wgs84Coords = this.convertITMtoWGS84(xCoord, yCoord);
+            if (!wgs84Coords) {
+              return null;
+            }
+            
+            const [lon, lat] = wgs84Coords;
+            
+            console.log(`Converted private parking coordinates: ITM(${xCoord}, ${yCoord}) -> WGS84(${lon.toFixed(6)}, ${lat.toFixed(6)})`);
+
+            // Process the spot data with proper field mapping
+            const processedSpot: ParkingSpotWithStatus = {
+              ...spot,
+              geometry: feature.geometry,
+              // Create unique identifiers
+              code_achoza: `private_${spot.oid_han || spot.UniqueId}`,
+              UniqueId: `private_${spot.UniqueId || spot.oid_han}`,
+              oid_hof: spot.oid_han || 0,
+              // Map coordinates
+              lat: lat,
+              lon: lon,
+              x: xCoord,
+              y: yCoord,
+              // Map private parking fields to standard fields
+              shem_chenyon: spot.shem_baal_chechbon || 'Private Parking',
+              ktovet: spot.shem_rechov || 'Unknown Address',
+              status_chenyon: spot.t_shimush || 'Unknown',
+              taarif_yom: 'Private parking - contact owner',
+              hearot_taarif: `Area: ${spot.shetach_arnona || 'N/A'} sqm`,
+              // Keep original private fields
+              shem_baal_chechbon: spot.shem_baal_chechbon,
+              shem_rechov: spot.shem_rechov,
+              t_shimush: spot.t_shimush,
+              shetach_arnona: spot.shetach_arnona,
+              num_cley_rechev: spot.num_cley_rechev,
+              oid_han: spot.oid_han,
+            };
+
+            return processedSpot;
           }
 
-          // Process the spot data
-          const processedSpot: ParkingSpotWithStatus = {
-            ...spot,
-            geometry: feature.geometry,
-            // Ensure required fields have default values
-            shem_chenyon: spot.shem_chenyon || 'Unknown',
-            ktovet: spot.ktovet || 'Unknown Address',
-            status_chenyon: spot.status_chenyon || 'Unknown',
-            taarif_yom: spot.taarif_yom || 'No pricing information',
-            hearot_taarif: spot.hearot_taarif || '',
-          };
-
-          return processedSpot;
         })
         .filter((spot): spot is ParkingSpotWithStatus => spot !== null);
 
@@ -75,11 +170,11 @@ export class ParkingService {
         throw new Error("No valid parking spots found in GIS data");
       }
 
-      this.spotsCache.set('spots', processedSpots);
+      this.spotsCache.set(cacheKey, processedSpots);
       
       // Cache in localStorage as backup
       try {
-        localStorage.setItem("lastValidParkingData", JSON.stringify(processedSpots));
+        localStorage.setItem(`lastValidParkingData_${type}`, JSON.stringify(processedSpots));
       } catch (err) {
         console.warn("Could not save to localStorage:", err);
       }
@@ -101,7 +196,7 @@ export class ParkingService {
       console.error("Error fetching parking data:", errorMessage, error);
       
       // Try to return cached data as fallback
-      const cachedSpots = this.spotsCache.get('spots');
+      const cachedSpots = this.spotsCache.get(cacheKey);
       if (cachedSpots) {
         console.log("Using cached data as fallback");
         return cachedSpots;
@@ -109,7 +204,7 @@ export class ParkingService {
 
       // Try localStorage backup
       try {
-        const savedData = localStorage.getItem("lastValidParkingData");
+        const savedData = localStorage.getItem(`lastValidParkingData_${type}`);
         if (savedData) {
           console.log("Using localStorage backup data");
           return JSON.parse(savedData);
@@ -139,7 +234,39 @@ export class ParkingService {
 
   public clearCache(): void {
     this.spotsCache.clear();
+    this.spatialCache.clear();
     console.log("Parking service cache cleared");
+  }
+
+  // Get cached data for specific viewport bounds
+  public getCachedViewportData(bounds: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  }, zoomLevel: number): ParkingSpotWithStatus[] | null {
+    return this.spatialCache.getCachedData(bounds, zoomLevel);
+  }
+
+  // Cache data for specific viewport bounds
+  public setCachedViewportData(bounds: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  }, zoomLevel: number, data: ParkingSpotWithStatus[]): void {
+    this.spatialCache.setCachedData(bounds, zoomLevel, data);
+  }
+
+  // Get cache statistics for monitoring
+  public getCacheStats(): any {
+    return {
+      regular: {
+        size: 'N/A', // CacheManager doesn't expose size
+        capacity: this.CACHE_CONFIG.capacity
+      },
+      spatial: this.spatialCache.getStats()
+    };
   }
 
   // Helper method to get status color for UI

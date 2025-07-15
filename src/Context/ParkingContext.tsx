@@ -6,11 +6,13 @@ import React, {
   ReactNode,
   useMemo,
   useContext,
+  useRef,
 } from "react";
 import { ParkingSpotWithStatus } from "../Types/parking";
 import { ParkingService } from "../Services/parkingService";
 import { RouteService, Coordinates } from "../Services/routeService";
 import { ParkingContextType } from "../Types/location";
+import { debounce } from "../utils/debounceThrottle";
 
 // Default coordinates for Tel Aviv
 const DEFAULT_COORDINATES: Coordinates = [32.0853, 34.7818];
@@ -40,33 +42,49 @@ export const ParkingProvider = ({ children }: ParkingProviderProps) => {
   const [showLocationMarker, setShowLocationMarker] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
 
+  const AHUZAT_HAHOF_URL = "/api/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json";
+  const PRIVATE_URL = "/api/arcgis/rest/services/IView2/MapServer/555/query?where=1%3D1&outFields=*&f=json";
+
+  // Debounced fetch to prevent rapid consecutive calls
+  const debouncedFetch = useRef(
+    debounce(async (isManualRefresh: boolean = false) => {
+      try {
+        if (isManualRefresh) {
+          setRefreshing(true);
+        }
+
+        console.log('Fetching parking data...');
+        const [combinedAhuzatHahofData, combinedPrivateData] = await Promise.all([
+          parkingService.fetchParkingSpots(AHUZAT_HAHOF_URL, "public"),
+          parkingService.fetchParkingSpots(PRIVATE_URL, "private")
+        ]);
+
+        if (combinedAhuzatHahofData.length === 0 && combinedPrivateData.length === 0) {
+          throw new Error("No valid parking spots found");
+        }
+
+        setParkingSpots([...combinedAhuzatHahofData, ...combinedPrivateData]);
+        setError(null);
+        setLastUpdated(new Date());
+        
+        console.log(`Successfully loaded ${combinedAhuzatHahofData.length + combinedPrivateData.length} parking spots`);
+      } catch (err) {
+        console.error("Error fetching parking data:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load parking data. Please try again later."
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }, 1000) // 1 second debounce
+  ).current;
+
   const fetchParkingData = useCallback(async (isManualRefresh = false) => {
-    try {
-      if (isManualRefresh) {
-        setRefreshing(true);
-      }
-
-      const combinedData = await parkingService.fetchParkingSpots();
-
-      if (combinedData.length === 0) {
-        throw new Error("No valid parking spots found");
-      }
-
-      setParkingSpots(combinedData);
-      setError(null);
-      setLastUpdated(new Date());
-    } catch (err) {
-      console.error("Error fetching parking data:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load parking data. Please try again later."
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+    debouncedFetch(isManualRefresh);
+  }, [debouncedFetch]);
 
   const fetchRoute = useCallback(
     async (start: Coordinates, end: Coordinates | string, options = {}) => {

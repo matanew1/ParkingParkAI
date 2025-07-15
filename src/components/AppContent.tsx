@@ -20,7 +20,7 @@ import OptionDialog from "./Options/OptionDialog";
 import { useParkingContext } from "../Context/ParkingContext";
 import type { ParkingSpotWithStatus } from "../Types/parking";
 
-const ParkingMap = lazy(() => import("./Map/ParkingMap"));
+const OptimizedParkingMap = lazy(() => import("./Map/OptimizedParkingMap"));
 
 const AppContent: React.FC = () => {
   const [isOptionPopupOpen, setIsOptionPopupOpen] = useState<boolean>(false);
@@ -96,6 +96,7 @@ const AppContent: React.FC = () => {
               pt: { xs: 7, sm: 8, md: 9 },
               display: "flex",
               height: "calc(100vh - 64px)",
+              overflow: "hidden", // Prevent main container from scrolling
             }}
           >
             <Drawer
@@ -112,6 +113,7 @@ const AppContent: React.FC = () => {
                   zIndex: 1000,
                   position: "relative",
                   height: "100%",
+                  overflow: "hidden", // Prevent drawer from creating its own scrollbar
                   transition: theme.transitions.create(["width", "margin"], {
                     easing: theme.transitions.easing.sharp,
                     duration: theme.transitions.duration.enteringScreen,
@@ -177,7 +179,7 @@ const AppContent: React.FC = () => {
                   </Box>
                 }
               >
-                <ParkingMap
+                <OptimizedParkingMap
                   parkingSpots={parkingSpots}
                   loading={loading}
                   statusError={statusError}

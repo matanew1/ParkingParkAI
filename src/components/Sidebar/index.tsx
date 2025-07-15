@@ -5,7 +5,7 @@ import { Box, Typography } from "@mui/material";
 import SidebarHeader from "./SidebarHeader";
 import ParkingSearch from "./ParkingSearch";
 import RefreshControl from "./RefreshControl";
-import ParkingList from "./ParkingList";
+import VirtualizedParkingList from "./VirtualizedParkingList";
 import { Clock } from "lucide-react";
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -43,7 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <SidebarHeader toggleDrawer={toggleDrawer} isMobile={isMobile} />
 
-      <Box sx={{ p: 2, flexGrow: 1, overflow: "auto" }}>
+      <Box sx={{ p: 2, flexGrow: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <ParkingSearch searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
 
         <LastUpdatedInfo lastUpdated={lastUpdated} />
@@ -54,13 +54,15 @@ const Sidebar: React.FC<SidebarProps> = ({
           statusError={statusError}
         />
 
-        <ParkingList
-          filteredSpots={filteredSpots}
-          onSpotClick={onSpotClick}
-          onSpotSelect={onSpotSelect}
-          toggleDrawer={toggleDrawer}
-          isMobile={isMobile}
-        />
+        <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+          <VirtualizedParkingList
+            filteredSpots={filteredSpots}
+            onSpotClick={onSpotClick}
+            onSpotSelect={onSpotSelect}
+            toggleDrawer={toggleDrawer}
+            isMobile={isMobile}
+          />
+        </Box>
       </Box>
     </Box>
   );

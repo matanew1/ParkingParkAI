@@ -2,7 +2,7 @@
 export interface ParkingSpot {
   oid_hof: number;
   rowid: number;
-  code_achoza: number;
+  code_achoza: number | string; // Allow both number and string for unique IDs
   ControllerID: number;
   shem_chenyon: string;
   ktovet: string;
@@ -32,6 +32,22 @@ export interface ParkingSpot {
     x: number;
     y: number;
   };
+  // Private parking specific fields (optional)
+  oid_han?: number;
+  x_coord?: number;
+  y_coord?: number;
+  shem_baal_chechbon?: string;
+  shem_rechov?: string;
+  shem_rechov_rev?: string;
+  t_shimush?: string;
+  shetach_arnona?: number;
+  num_cley_rechev?: number;
+  del_7?: number;
+  factor?: number;
+  k_rechov?: number;
+  k_shimush?: number;
+  ms_bait?: number;
+  ms_koma?: number;
 }
 
 export interface GISApiResponse {
