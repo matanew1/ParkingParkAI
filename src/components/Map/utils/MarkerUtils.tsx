@@ -1,4 +1,5 @@
-import { Icon, divIcon } from "leaflet";
+import { Icon, divIcon, LatLngBounds } from "leaflet";
+import L from "leaflet";
 import "./MarkerUtils.css";
 import { useMap } from "react-leaflet";
 import React, { useEffect, useCallback, useMemo } from "react";
@@ -128,7 +129,7 @@ export const routeIcons = {
 
 /**
  * MapZoomController for selected spot
- * Zooms map to the selected parking spot
+ * Zooms map to the selected parking spot, but with delayed zoom to avoid closing popups
  */
 export const MapZoomController: React.FC<{
   selectedSpotId: string | null;
@@ -150,7 +151,12 @@ export const MapZoomController: React.FC<{
       ];
 
       if (!isNaN(position[0]) && !isNaN(position[1])) {
-        map.setView(position, 16);
+        // Since this is only triggered by sidebar selection now, we can zoom more aggressively
+        // Use zoom level 18 for detailed street-level view
+        map.flyTo(position, 18, {
+          animate: true,
+          duration: 1.5, // Slightly longer duration for the higher zoom
+        });
       }
     }
   }, [selectedSpot, map]);
@@ -204,8 +210,13 @@ export const RouteZoomController: React.FC<{
           )
         );
 
-        // Add some padding around the route
-        map.fitBounds(bounds, { padding: [50, 50] });
+        // Use flyToBounds instead of fitBounds for smoother animation
+        // and less aggressive popup closing behavior
+        map.flyToBounds(bounds, { 
+          padding: [50, 50],
+          animate: true,
+          duration: 1.0
+        });
       } catch (err) {
         console.error("Error fitting bounds:", err);
       }

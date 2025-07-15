@@ -65,6 +65,17 @@ const AppContent: React.FC = () => {
 
   const handleSpotClick = useCallback(
     (spot: ParkingSpotWithStatus) => {
+      // When clicking a marker, we want the popup to open but don't want aggressive auto-zoom
+      // Only set the selected spot, don't change map center as user is already looking at it
+      setSelectedSpotId(spot.code_achoza.toString());
+      setSelectedSpot(`${spot.lat},${spot.lon}`);
+    },
+    [setSelectedSpot]
+  );
+
+  const handleSpotSelectFromSidebar = useCallback(
+    (spot: ParkingSpotWithStatus) => {
+      // When selecting from sidebar, we do want to move the map and zoom
       setMapCenter([
         spot.lat,
         spot.lon,
@@ -123,7 +134,7 @@ const AppContent: React.FC = () => {
             >
               <Sidebar
                 spots={parkingSpots}
-                onSpotClick={handleSpotClick}
+                onSpotClick={handleSpotSelectFromSidebar}
                 onSpotSelect={handleSpotSelect}
                 statusError={statusError}
                 lastUpdated={lastUpdated}

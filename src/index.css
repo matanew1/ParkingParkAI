@@ -26,6 +26,30 @@ html {
   position: absolute !important;
 }
 
+/* Ensure popups stay visible during map animations */
+.leaflet-popup-pane {
+  z-index: 700 !important;
+}
+
+.leaflet-popup {
+  pointer-events: auto !important;
+}
+
+/* Prevent popup from closing during map transitions */
+.leaflet-map-pane {
+  transition: none !important;
+}
+
+/* Keep popups stable during zoom and pan operations */
+.leaflet-popup-content-wrapper {
+  position: relative !important;
+}
+
+/* Make popup close button more prominent but don't auto-close */
+.leaflet-popup-close-button {
+  display: block !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

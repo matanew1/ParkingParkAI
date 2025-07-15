@@ -87,7 +87,6 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   
   const [userLocation, setUserLocation] = useState(null);
-  const [showLocationMarker, setShowLocationMarker] = useState(false);
   const [navigationActive, setNavigationActive] = useState(false);
   const [infoExpanded, setInfoExpanded] = useState(true);
   const [distanceTraveled, setDistanceTraveled] = useState(0);
@@ -98,7 +97,7 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
   const [processedRoutes, setProcessedRoutes] = useState([]);
   const [shouldClosePopups, setShouldClosePopups] = useState(false);
 
-  const { routes, fetchUserLocation } = useContext(ParkingContext);
+  const { routes, fetchUserLocation, showLocationMarker, setShowLocationMarker } = useContext(ParkingContext);
 
   // Process routes from context
   useEffect(() => {
@@ -127,12 +126,14 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
 
   const handleGetUserLocation = useCallback(async () => {
     try {
+      // Enable location marker
+      setShowLocationMarker(true);
       const location = await fetchUserLocation();
       setMapCenter(location);
     } catch (error) {
       console.error("Error getting user location:", error);
     }
-  }, [fetchUserLocation, setMapCenter]);
+  }, [fetchUserLocation, setMapCenter, setShowLocationMarker]);
 
   const handlePopupsClosed = useCallback(() => {
     setShouldClosePopups(false);

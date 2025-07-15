@@ -9,7 +9,12 @@ const MapController: React.FC<MapControllerProps> = ({ center }) => {
   const map = useMap();
 
   useEffect(() => {
-    map.setView(center, 15);
+    // Use flyTo instead of setView for smoother transitions
+    // that are less likely to close popups
+    map.flyTo(center, 15, {
+      animate: true,
+      duration: 1.0
+    });
   }, [center, map]);
 
   return null;

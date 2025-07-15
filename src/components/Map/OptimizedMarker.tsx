@@ -41,7 +41,13 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(({
       }}
     >
       {showDetails && (
-        <Popup>
+        <Popup 
+          closeOnClick={false}
+          autoClose={false}
+          keepInView={true}
+          closeButton={true}
+          autoPan={false}
+        >
           <Box sx={{ p: 0 }}>
             <Paper elevation={0} sx={{ p: 2, minWidth: 200 }}>
               <Typography variant="h6" gutterBottom fontWeight="bold">
