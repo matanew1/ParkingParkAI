@@ -13,9 +13,22 @@ import {
   useTheme,
   alpha,
   Avatar,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import { ChevronRight, Clock, MapPin, Car } from "lucide-react";
 import { getStatusColor } from "../../utils/colorUtils";
+
+// Waze Icon Component using the SVG from public folder
+const WazeIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <img
+    src="/waze-icon.svg"
+    alt="Waze"
+    width={size}
+    height={size}
+    style={{ display: 'block' }}
+  />
+);
 
 const VirtualizedParkingList: React.FC<ParkingListProps> = ({
   filteredSpots,
@@ -135,6 +148,23 @@ const ParkingSpotItem = React.memo<{
     if (isMobile) toggleDrawer();
   };
 
+  const handleWazeNavigation = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the main click handler
+    
+    // Check if user is on mobile device
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobileDevice) {
+      // Mobile: Use deep link to open Waze app
+      const wazeUrl = `waze://?ll=${spot.lat},${spot.lon}&navigate=yes`;
+      window.open(wazeUrl, '_blank');
+    } else {
+      // PC: Use web URL to open Waze in browser
+      const url = `https://waze.com/ul?ll=${spot.lat},${spot.lon}&navigate=yes`;
+      window.open(url, '_blank');
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'פנוי':
@@ -211,7 +241,26 @@ const ParkingSpotItem = React.memo<{
                 >
                   {spot.shem_chenyon}
                 </Typography>
-                <ChevronRight size={isMobile ? 16 : 20} color={theme.palette.action.active} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Tooltip title="Navigate with Waze" placement="left">
+                    <IconButton
+                      size="small"
+                      onClick={handleWazeNavigation}
+                      sx={{
+                        color: '#00D4FF', // Waze brand color
+                        '&:hover': {
+                          backgroundColor: alpha('#00D4FF', 0.1),
+                          transform: 'scale(1.1)',
+                        },
+                        transition: 'all 0.2s ease-in-out',
+                        padding: isMobile ? '4px' : '8px', // Reduce padding on mobile
+                      }}
+                    >
+                      <WazeIcon size={isMobile ? 16 : 20} />
+                    </IconButton>
+                  </Tooltip>
+                  <ChevronRight size={isMobile ? 16 : 20} color={theme.palette.action.active} />
+                </Box>
               </Box>
               
               <Typography 
