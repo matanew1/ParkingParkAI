@@ -1,6 +1,6 @@
 import React from "react";
 import { Sun, Moon } from "lucide-react";
-import { IconButton, Tooltip, alpha } from "@mui/material";
+import { IconButton, Tooltip, alpha, useMediaQuery } from "@mui/material";
 import { useTheme as useCustomTheme } from "../../Context/ThemeContext";
 
 const ThemeToggle: React.FC = () => {

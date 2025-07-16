@@ -8,6 +8,7 @@ import {
   useTheme,
   alpha,
   Button,
+  useMediaQuery,
 } from "@mui/material";
 import { RefreshCw } from "lucide-react";
 
@@ -42,10 +43,13 @@ const RefreshControl: React.FC<RefreshControlProps> = ({
     <Paper
       elevation={1}
       sx={{
-        p: { xs: 1.5, sm: 2 },
+        p: { xs: 1.5, sm: 6 },
         overflow: "hidden",
         border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.1)}`,
         borderRadius: 2,
+        justifyContent: "center",
+        display: "flex",
+        flexDirection: "column",
         background: (theme) => alpha(theme.palette.background.paper, 0.8),
         opacity: isRefreshing ? 0.7 : 1,
         transition: 'all 0.3s ease-in-out',
@@ -56,10 +60,9 @@ const RefreshControl: React.FC<RefreshControlProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          mb: { xs: 1, sm: 2 },
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, justifyContent: "center" }}>  
           <RefreshCw 
             size={isMobile ? 16 : 18} 
             style={{ 
@@ -68,7 +71,7 @@ const RefreshControl: React.FC<RefreshControlProps> = ({
             }} 
           />
           <Typography 
-            variant="body2" 
+            variant="h3" 
             sx={{ 
               ml: { xs: 1, sm: 1.5 }, 
               fontWeight: 600,

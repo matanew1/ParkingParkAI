@@ -18,11 +18,11 @@ const SHADOW_URL =
 // Cache for marker icons to prevent recreating them
 const iconCache = new Map<string, Icon>();
 
-// User location marker with custom cyan icon
+// User location marker using me.svg file
 export const userLocationIcon = new Icon({
   iconUrl: `/me.svg`,
   shadowUrl: SHADOW_URL,
-  iconSize: [30, 45], // Slightly larger for visibility
+  iconSize: [30, 45],
   iconAnchor: [15, 45],
   popupAnchor: [1, -34],
   shadowSize: SHADOW_SIZE,

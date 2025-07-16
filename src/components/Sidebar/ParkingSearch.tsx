@@ -1,5 +1,5 @@
 import React from "react";
-import { TextField, InputAdornment, alpha } from "@mui/material";
+import { TextField, InputAdornment, alpha, useMediaQuery } from "@mui/material";
 import { Search } from "lucide-react";
 
 interface ParkingSearchProps {

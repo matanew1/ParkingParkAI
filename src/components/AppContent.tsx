@@ -91,9 +91,9 @@ const AppContent: React.FC = () => {
   }, []);
 
   return (
-            pt: { xs: 7, sm: 8, md: 9 },
+    <MuiThemeProvider theme={theme}>
       <CssBaseline />
-            height: { xs: "calc(100vh - 56px)", sm: "calc(100vh - 64px)", md: "calc(100vh - 70px)" },
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -146,7 +146,6 @@ const AppContent: React.FC = () => {
             </Drawer>
 
             <Box
-                maxWidth: { xs: "85vw", sm: "40vw", md: "360px" },
               sx={{
                 flexGrow: 1,
                 position: "relative",

@@ -1,7 +1,7 @@
 // components/Sidebar/index.tsx
 import React from "react";
 import { SidebarProps } from "../../Types/parking";
-import { Box, Typography, Paper, alpha } from "@mui/material";
+import { Box, Typography, Paper, alpha, useMediaQuery } from "@mui/material";
 import SidebarHeader from "./SidebarHeader";
 import ParkingSearch from "./ParkingSearch";
 import RefreshControl from "./RefreshControl";
@@ -99,10 +99,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 // Simple component for displaying last updated info
 const LastUpdatedInfo = ({ lastUpdated, isMobile }) => {
   return (
-    <Paper
+    <Paper  
       elevation={0}
       sx={{
-        p: { xs: 1.5, sm: 2 },
+        p: { xs: 1, sm: 1 },
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",

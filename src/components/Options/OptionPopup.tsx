@@ -166,10 +166,10 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-                AI Assistant
+                Options
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Your smart parking companion
+                Enhance your parking experience
               </p>
             </div>
           </div>

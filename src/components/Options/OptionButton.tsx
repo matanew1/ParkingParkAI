@@ -32,7 +32,7 @@ const OptionButton: React.FC<OptionButtonProps> = ({ onClick }) => {
         transition: 'all 0.2s ease-in-out',
       }}
     >
-      {isSmallMobile ? "AI" : isMobile ? "Options" : "AI Assistant"}
+      {"Options"}
     </Button>
   );
 };

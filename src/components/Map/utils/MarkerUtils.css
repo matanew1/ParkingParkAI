@@ -30,8 +30,22 @@
     }
 }
 
-/* Apply animation to user location markers */
+/* User location marker styling */
 .user-location-marker {
-    animation: userLocationPulse 2s infinite ease-in-out;
-    filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.8));
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+    animation: userLocationPulse 2s infinite;
+}
+
+.user-location-marker div {
+    animation: userLocationGlow 1.5s infinite alternate;
+}
+
+@keyframes userLocationGlow {
+    0% {
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+    }
+
+    100% {
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.9);
+    }
 }
