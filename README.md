@@ -69,12 +69,14 @@ The built files will be in the `dist` directory, ready for deployment.
 - **Waze Integration**: Direct navigation to parking spots via Waze app (mobile) or web
 - **Route Planning**: Display routes to selected parking destinations
 - **Location Marker**: Visual indicator of user's current position on the map
+- **Favorite Parking Spots**: Bookmark frequently used parking locations for quick access
 
 ### 🔍 **Search & Filter**
 - **Real-Time Search**: Instant search through parking spots by name, address, or status
 - **Virtualized List**: High-performance rendering of large parking datasets
 - **Status-Based Filtering**: Filter parking spots by availability status
 - **Smart Debouncing**: Optimized search with reduced API calls
+- **Favorites Management**: Organize and manage bookmarked parking spots with custom nicknames
 
 ### 🎨 **User Interface**
 - **Dark/Light Theme**: Toggle between dark and light modes with smooth transitions
@@ -109,6 +111,7 @@ The built files will be in the `dist` directory, ready for deployment.
 - **Real-Time Status**: Live parking availability and pricing information
 - **Data Persistence**: localStorage backup for offline access
 - **Smart Caching**: Intelligent cache invalidation and refresh strategies
+- **Favorites Storage**: Persistent bookmarking with local storage and export/import capabilities
 
 ## Installation
 
@@ -157,6 +160,13 @@ The built files will be in the `dist` directory, ready for deployment.
 - **Search bar**: Type parking lot names, addresses, or keywords
 - **Real-time results**: Results update as you type
 - **Status filtering**: Filter by availability status
+- **Favorites tab**: Quick access to your bookmarked parking spots
+
+#### **Favorites Management**
+- **Bookmark spots**: Click the star icon to add parking spots to favorites
+- **Custom nicknames**: Give memorable names to your favorite spots (e.g., "Near office", "Shopping center")
+- **Organized view**: View all favorites in a dedicated tab with quick navigation
+- **Persistent storage**: Favorites are saved locally and persist across sessions
 
 #### **Navigation**
 - **Waze Integration**: Tap the Waze button on any parking spot for turn-by-turn navigation
@@ -225,23 +235,29 @@ ParkingParkAI/
 │   │   │   ├── LocationMarker.tsx         # User location marker
 │   │   │   └── utils/                     # Map utilities
 │   │   ├── Sidebar/      # Sidebar components
-│   │   │   ├── index.tsx                  # Main sidebar
+│   │   │   ├── index.tsx                  # Main sidebar with tabs
 │   │   │   ├── VirtualizedParkingList.tsx # Optimized parking list
 │   │   │   ├── ParkingSearch.tsx          # Search functionality
 │   │   │   └── RefreshControl.tsx         # Data refresh controls
+│   │   ├── Favorites/    # Favorites management
+│   │   │   ├── FavoritesList.tsx          # Favorites list component
+│   │   │   ├── FavoriteToggleButton.tsx   # Star toggle button
+│   │   │   └── index.ts                   # Favorites exports
 │   │   ├── Theme/        # Theme management
 │   │   │   ├── ThemeConfig.tsx            # Theme configuration
 │   │   │   └── ThemeToggle.tsx            # Dark/light mode toggle
 │   │   ├── Options/      # Settings and options
 │   │   ├── Hooks/        # Custom React hooks
 │   │   ├── AppContent.tsx # Main app layout
-│   │   └── AppHeader.tsx  # App header
+│   │   └── AppHeader.tsx  # App header with favorites badge
 │   ├── Context/          # React context providers
 │   │   ├── ParkingContext.tsx             # Main app state
-│   │   └── ThemeContext.tsx               # Theme state
+│   │   ├── ThemeContext.tsx               # Theme state
+│   │   └── FavoritesContext.tsx           # Favorites state management
 │   ├── Services/         # API and data services
 │   │   ├── parkingService.ts              # Parking data API
-│   │   └── routeService.ts                # Navigation routing
+│   │   ├── routeService.ts                # Navigation routing
+│   │   └── favoritesService.ts            # Favorites management service
 │   ├── Types/           # TypeScript type definitions
 │   │   ├── parking.ts                     # Parking data types
 │   │   ├── location.ts                    # Location types

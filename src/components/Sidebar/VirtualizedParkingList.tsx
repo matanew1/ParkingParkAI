@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import { ChevronRight, Clock, MapPin, Car } from "lucide-react";
 import { getStatusColor } from "../../utils/colorUtils";
+import FavoriteToggleButton from "../Favorites/FavoriteToggleButton";
 
 // Waze Icon Component using the SVG from public folder
 const WazeIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
@@ -242,6 +243,11 @@ const ParkingSpotItem = React.memo<{
                   {spot.shem_chenyon}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <FavoriteToggleButton 
+                    spot={spot} 
+                    size="small" 
+                    showTooltip={true}
+                  />
                   <Tooltip title="Navigate with Waze" placement="left">
                     <IconButton
                       size="small"

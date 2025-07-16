@@ -1,5 +1,5 @@
 import React from "react";
-import { MapPin, Menu } from "lucide-react";
+import { MapPin, Menu, Star } from "lucide-react";
 import {
   AppBar,
   Toolbar,
@@ -8,14 +8,18 @@ import {
   IconButton,
   useMediaQuery,
   alpha,
+  Badge,
+  Tooltip,
 } from "@mui/material";
 import ThemeToggle from "./Theme/ThemeToggle";
 import OptionButton from "./Options/OptionButton";
 import { AppHeaderProps } from "../Types/app";
+import { useFavorites } from "../Context/FavoritesContext";
 
 const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup }) => {
   const isMobile = useMediaQuery("(max-width:768px)");
   const isSmallMobile = useMediaQuery("(max-width:480px)");
+  const { favoritesCount } = useFavorites();
 
   return (
     <AppBar 
@@ -92,8 +96,41 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup }) => {
           gap: { xs: 0.5, sm: 1 },
           flexShrink: 0
         }}>
-        <ThemeToggle />
-        <OptionButton onClick={onOpenOptionPopup} />
+          {/* Favorites Badge */}
+          {favoritesCount > 0 && (
+            <Tooltip title={`${favoritesCount} favorite parking spots`}>
+              <Badge 
+                badgeContent={favoritesCount} 
+                color="warning"
+                sx={{
+                  '& .MuiBadge-badge': {
+                    backgroundColor: (theme) => theme.palette.warning.main,
+                    color: (theme) => theme.palette.warning.contrastText,
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }
+                }}
+              >
+                <IconButton
+                  size={isMobile ? "small" : "medium"}
+                  sx={{
+                    color: (theme) => theme.palette.warning.main,
+                    backgroundColor: (theme) => alpha(theme.palette.warning.main, 0.1),
+                    '&:hover': {
+                      backgroundColor: (theme) => alpha(theme.palette.warning.main, 0.2),
+                      transform: 'scale(1.05)',
+                    },
+                    transition: 'all 0.2s ease-in-out',
+                  }}
+                >
+                  <Star size={isMobile ? 16 : 18} fill="currentColor" />
+                </IconButton>
+              </Badge>
+            </Tooltip>
+          )}
+          
+          <ThemeToggle />
+          <OptionButton onClick={onOpenOptionPopup} />
         </Box>
       </Toolbar>
     </AppBar>

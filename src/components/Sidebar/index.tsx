@@ -1,12 +1,14 @@
 // components/Sidebar/index.tsx
 import React from "react";
 import { SidebarProps } from "../../Types/parking";
-import { Box, Typography, Paper, alpha, useMediaQuery } from "@mui/material";
+import { Box, Typography, Paper, alpha, useMediaQuery, Tabs, Tab } from "@mui/material";
 import SidebarHeader from "./SidebarHeader";
 import ParkingSearch from "./ParkingSearch";
 import RefreshControl from "./RefreshControl";
 import VirtualizedParkingList from "./VirtualizedParkingList";
-import { Clock, MapPin } from "lucide-react";
+import FavoritesList from "../Favorites/FavoritesList";
+import { Clock, MapPin, Star, Map } from "lucide-react";
+import { useFavorites } from "../../Context/FavoritesContext";
 
 const Sidebar: React.FC<SidebarProps> = ({
   spots,
@@ -21,6 +23,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [debouncedSearch, setDebouncedSearch] = React.useState("");
+  const [currentTab, setCurrentTab] = React.useState(0);
+  const { favoritesCount } = useFavorites();
   const isSmallMobile = useMediaQuery("(max-width:480px)");
 
   // Handle search debouncing
@@ -40,6 +44,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     [spots, debouncedSearch]
   );
 
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+    // Clear search when switching tabs
+    if (newValue === 1) {
+      setSearchTerm("");
+    }
+  };
+
   return (
     <Box 
       sx={{ 
@@ -52,6 +64,37 @@ const Sidebar: React.FC<SidebarProps> = ({
     >
       <SidebarHeader toggleDrawer={toggleDrawer} isMobile={isMobile} />
 
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', px: { xs: 1.5, sm: 2, md: 3 } }}>
+        <Tabs 
+          value={currentTab} 
+          onChange={handleTabChange}
+          variant="fullWidth"
+          sx={{
+            minHeight: 36,
+            '& .MuiTab-root': {
+              minHeight: 36,
+              py: 1,
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              fontWeight: 600,
+            },
+          }}
+        >
+          <Tab 
+            icon={<Map size={16} />} 
+            label="Parking" 
+            iconPosition="start"
+            sx={{ gap: 0.5 }}
+          />
+          <Tab 
+            icon={<Star size={16} />} 
+            label={`Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`}
+            iconPosition="start"
+            sx={{ gap: 0.5 }}
+          />
+        </Tabs>
+      </Box>
+
       <Box sx={{ 
         p: { xs: 1.5, sm: 2, md: 3 }, 
         flexGrow: 1, 
@@ -60,11 +103,16 @@ const Sidebar: React.FC<SidebarProps> = ({
         flexDirection: "column",
         gap: { xs: 1.5, sm: 2 },
       }}>
-        <ParkingSearch searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+        {/* Show search only for parking tab */}
+        {currentTab === 0 && (
+          <ParkingSearch searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+        )}
 
-        <LastUpdatedInfo lastUpdated={lastUpdated} isMobile={isMobile} />
+        {currentTab === 0 && (
+          <LastUpdatedInfo lastUpdated={lastUpdated} isMobile={isMobile} />
+        )}
 
-        {!isSmallMobile && (
+        {currentTab === 0 && !isSmallMobile && (
           <RefreshControl
             onRefresh={onRefresh}
             isRefreshing={isRefreshing}
@@ -73,16 +121,26 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         <Box sx={{ flexGrow: 1, minHeight: 0 }}>
-          <VirtualizedParkingList
-            filteredSpots={filteredSpots}
-            onSpotClick={onSpotClick}
-            onSpotSelect={onSpotSelect}
-            toggleDrawer={toggleDrawer}
-            isMobile={isMobile}
-          />
+          {currentTab === 0 ? (
+            <VirtualizedParkingList
+              filteredSpots={filteredSpots}
+              onSpotClick={onSpotClick}
+              onSpotSelect={onSpotSelect}
+              toggleDrawer={toggleDrawer}
+              isMobile={isMobile}
+            />
+          ) : (
+            <FavoritesList
+              onSpotClick={onSpotClick}
+              onSpotSelect={onSpotSelect}
+              toggleDrawer={toggleDrawer}
+              isMobile={isMobile}
+              maxHeight="100%"
+            />
+          )}
         </Box>
         
-        {isSmallMobile && (
+        {currentTab === 0 && isSmallMobile && (
           <Box sx={{ pt: 1 }}>
             <RefreshControl
               onRefresh={onRefresh}

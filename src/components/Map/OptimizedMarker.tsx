@@ -6,6 +6,7 @@ import { ParkingSpotWithStatus } from '../../Types/parking';
 import { getMarkerIcon, selectedMarkerIcon } from './utils/MarkerUtils';
 import { getStatusColor, getTypeColor } from '../../utils/colorUtils';
 import { useAutoPopup } from '../../hooks/useAutoPopup';
+import FavoriteToggleButton from '../Favorites/FavoriteToggleButton';
 
 // Waze Icon Component using the SVG from public folder
 const WazeIcon: React.FC<{ size?: number }> = ({ size = 32 }) => (
@@ -172,30 +173,38 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(({
                 </Paper>
               )}
 
-              {/* Waze Navigation Button */}
-              <Button
-                variant="contained"
-                color="primary"
-                fullWidth
-                startIcon={<WazeIcon size={isMobile ? 24 : 28} />}
-                onClick={handleWazeNavigation}
-                sx={{
-                  mt: isMobile ? 1 : 1.5,
-                  py: isMobile ? 1 : 1.2,
-                  fontSize: isMobile ? "0.875rem" : "1rem",
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  backgroundColor: '#00D4FF', // Waze brand color
-                  '&:hover': {
-                    backgroundColor: '#00B8E6',
-                    transform: 'translateY(-1px)',
-                  },
-                  transition: 'all 0.2s ease-in-out',
-                }}
-              >
-                Navigate with Waze
-              </Button>
+              {/* Action Buttons */}
+              <Box sx={{ display: 'flex', gap: 1, mt: isMobile ? 1 : 1.5 }}>
+                {/* Favorite Toggle Button */}
+                <FavoriteToggleButton 
+                  spot={spot} 
+                  size={isMobile ? "small" : "medium"}
+                />
+                
+                {/* Waze Navigation Button */}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  startIcon={<WazeIcon size={isMobile ? 24 : 28} />}
+                  onClick={handleWazeNavigation}
+                  sx={{
+                    py: isMobile ? 1 : 1.2,
+                    fontSize: isMobile ? "0.875rem" : "1rem",
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    borderRadius: 2,
+                    backgroundColor: '#00D4FF', // Waze brand color
+                    '&:hover': {
+                      backgroundColor: '#00B8E6',
+                      transform: 'translateY(-1px)',
+                    },
+                    transition: 'all 0.2s ease-in-out',
+                  }}
+                >
+                  Navigate with Waze
+                </Button>
+              </Box>
             </Paper>
           </Box>
         </Popup>
