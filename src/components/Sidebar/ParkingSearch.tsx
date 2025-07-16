@@ -1,6 +1,6 @@
 import React from "react";
-import { TextField, InputAdornment } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
+import { TextField, InputAdornment, alpha } from "@mui/material";
+import { Search } from "lucide-react";
 
 interface ParkingSearchProps {
   searchTerm: string;
@@ -15,15 +15,30 @@ const ParkingSearch: React.FC<ParkingSearchProps> = ({ searchTerm, setSearchTerm
       placeholder="Search parking spots..."
       value={searchTerm}
       onChange={(e) => setSearchTerm(e.target.value)}
-      margin="normal"
+      variant="outlined"
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">
-            <SearchIcon fontSize="small" />
+            <Search size={18} />
           </InputAdornment>
         ),
       }}
-      sx={{ mb: 2 }}
+      sx={{ 
+        '& .MuiOutlinedInput-root': {
+          backgroundColor: (theme) => alpha(theme.palette.background.paper, 0.8),
+          borderRadius: 3,
+          '&:hover': {
+            backgroundColor: (theme) => alpha(theme.palette.background.paper, 1),
+          },
+          '&.Mui-focused': {
+            backgroundColor: (theme) => alpha(theme.palette.background.paper, 1),
+            boxShadow: (theme) => `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
+          },
+        },
+        '& .MuiOutlinedInput-input': {
+          fontWeight: 500,
+        },
+      }}
     />
   );
 };

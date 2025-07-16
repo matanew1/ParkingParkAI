@@ -11,8 +11,10 @@ import {
   Paper,
   Chip,
   useTheme,
+  alpha,
+  Avatar,
 } from "@mui/material";
-import { ChevronRight, Clock } from "lucide-react";
+import { ChevronRight, Clock, MapPin, Car } from "lucide-react";
 import { getStatusColor } from "../../utils/colorUtils";
 
 const VirtualizedParkingList: React.FC<ParkingListProps> = ({
@@ -28,17 +30,30 @@ const VirtualizedParkingList: React.FC<ParkingListProps> = ({
   const rowVirtualizer = useVirtualizer({
     count: filteredSpots.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 100, // Estimated height of each item
+    estimateSize: () => 120, // Increased height for better design
     overscan: 10, // Render 10 extra items outside viewport
   });
 
   if (filteredSpots.length === 0) {
     return (
-      <Box sx={{ textAlign: "center", py: 4 }}>
-        <Typography color="textSecondary">
+      <Paper
+        elevation={0}
+        sx={{
+          textAlign: "center",
+          py: 6,
+          backgroundColor: (theme) => alpha(theme.palette.background.default, 0.3),
+          border: (theme) => `1px dashed ${alpha(theme.palette.divider, 0.3)}`,
+          borderRadius: 2,
+        }}
+      >
+        <Car size={48} style={{ opacity: 0.3, marginBottom: 16 }} />
+        <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
           No parking spots match your search.
         </Typography>
-      </Box>
+        <Typography variant="body2" color="text.secondary">
+          Try adjusting your search terms
+        </Typography>
+      </Paper>
     );
   }
 
@@ -108,59 +123,124 @@ const ParkingSpotItem = React.memo<{
     if (isMobile) toggleDrawer();
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'פנוי':
+        return '🟢';
+      case 'מעט':
+        return '🟡';
+      case 'מלא':
+        return '🔴';
+      case 'סגור':
+        return '⚫';
+      default:
+        return '🔵';
+    }
+  };
+
   return (
     <div style={style}>
       <Paper
-        elevation={1}
+        elevation={0}
         sx={{
-          mb: 1,
-          mx: 1,
+          mb: 1.5,
           overflow: "hidden",
-          transition: "all 0.2s",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          borderRadius: 3,
+          background: (theme) => alpha(theme.palette.background.paper, 0.8),
+          backdropFilter: 'blur(10px)',
           "&:hover": {
-            boxShadow: 3,
-            transform: "translateY(-2px)",
+            boxShadow: (theme) => `0 8px 32px ${alpha(theme.palette.common.black, 0.12)}`,
+            transform: "translateY(-4px)",
+            border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
           },
         }}
       >
-        <ListItemButton onClick={handleClick}>
-          <ListItem disablePadding>
-            <Box sx={{ width: "100%" }}>
+        <ListItemButton 
+          onClick={handleClick}
+          sx={{
+            p: 2.5,
+            '&:hover': {
+              backgroundColor: 'transparent',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
+            <Avatar
+              sx={{
+                width: 48,
+                height: 48,
+                mr: 2,
+                backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                border: (theme) => `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+              }}
+            >
+              <MapPin size={24} color={theme.palette.primary.main} />
+            </Avatar>
+            
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
               <Box
                 sx={{
                   display: "flex",
-                  justifyContent: "space-between",
                   alignItems: "center",
+                  justifyContent: "space-between",
+                  mb: 0.5,
                 }}
               >
-                <Typography variant="subtitle1" noWrap>
+                <Typography 
+                  variant="subtitle1" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    fontSize: '1rem',
+                  }}
+                  noWrap
+                >
                   {spot.shem_chenyon}
                 </Typography>
-                <ChevronRight size={16} color={theme.palette.text.secondary} />
+                <ChevronRight size={20} color={theme.palette.action.active} />
               </Box>
-              <Typography variant="body2" color="textSecondary" noWrap>
+              
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                sx={{ mb: 1.5, fontSize: '0.875rem' }}
+                noWrap
+              >
                 {spot.ktovet}
               </Typography>
+              
               <Box
                 sx={{
                   display: "flex",
-                  justifyContent: "space-between",
-                  mt: 1,
+                  alignItems: "center",
+                  gap: 1,
+                  flexWrap: 'wrap',
                 }}
               >
                 <Chip
+                  icon={<span style={{ fontSize: '12px' }}>{getStatusIcon(spot.status_chenyon)}</span>}
                   label={spot.status_chenyon || 'Status unavailable'}
                   size="small"
                   color={getStatusColor(spot.status_chenyon)}
-                  sx={{ height: 24 }}
+                  sx={{ 
+                    height: 28,
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    '& .MuiChip-icon': {
+                      fontSize: '12px',
+                    },
+                  }}
                 />
+                
                 {spot.tr_status_chenyon && spot.tr_status_chenyon > 0 && (
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Clock size={12} />
+                  <Box sx={{ display: "flex", alignItems: "center", ml: 'auto' }}>
+                    <Clock size={14} color={theme.palette.text.secondary} />
                     <Typography
-                      variant="caption"
-                      color="textSecondary"
-                      sx={{ ml: 0.5 }}
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ ml: 0.5, fontSize: '0.75rem' }}
                     >
                       {new Date(
                         spot.tr_status_chenyon
@@ -170,7 +250,7 @@ const ParkingSpotItem = React.memo<{
                 )}
               </Box>
             </Box>
-          </ListItem>
+          </Box>
         </ListItemButton>
       </Paper>
     </div>

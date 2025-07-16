@@ -1,12 +1,12 @@
 // components/Sidebar/index.tsx
 import React from "react";
 import { SidebarProps } from "../../Types/parking";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Paper, alpha } from "@mui/material";
 import SidebarHeader from "./SidebarHeader";
 import ParkingSearch from "./ParkingSearch";
 import RefreshControl from "./RefreshControl";
 import VirtualizedParkingList from "./VirtualizedParkingList";
-import { Clock } from "lucide-react";
+import { Clock, MapPin } from "lucide-react";
 
 const Sidebar: React.FC<SidebarProps> = ({
   spots,
@@ -40,10 +40,25 @@ const Sidebar: React.FC<SidebarProps> = ({
   );
 
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <Box 
+      sx={{ 
+        height: "100%", 
+        display: "flex", 
+        flexDirection: "column",
+        backgroundColor: (theme) => alpha(theme.palette.background.paper, 0.98),
+        backdropFilter: 'blur(20px)',
+      }}
+    >
       <SidebarHeader toggleDrawer={toggleDrawer} isMobile={isMobile} />
 
-      <Box sx={{ p: 2, flexGrow: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <Box sx={{ 
+        p: 3, 
+        flexGrow: 1, 
+        overflow: "hidden", 
+        display: "flex", 
+        flexDirection: "column",
+        gap: 2,
+      }}>
         <ParkingSearch searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
 
         <LastUpdatedInfo lastUpdated={lastUpdated} />
@@ -71,23 +86,27 @@ const Sidebar: React.FC<SidebarProps> = ({
 // Simple component for displaying last updated info
 const LastUpdatedInfo = ({ lastUpdated }) => {
   return (
-    <Box
+    <Paper
+      elevation={0}
       sx={{
+        p: 2,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        mb: 2,
+        backgroundColor: (theme) => alpha(theme.palette.background.default, 0.5),
+        border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        borderRadius: 2,
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center" }}>
-        <Clock size={16} />
-        <Typography variant="caption" sx={{ ml: 1 }}>
+        <Clock size={16} color="text.secondary" />
+        <Typography variant="body2" sx={{ ml: 1, fontWeight: 500 }}>
           {lastUpdated
             ? `Updated: ${lastUpdated.toLocaleTimeString()}`
             : "Loading data..."}
         </Typography>
       </Box>
-    </Box>
+    </Paper>
   );
 };
 

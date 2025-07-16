@@ -6,6 +6,8 @@ import {
   Paper,
   LinearProgress,
   useTheme,
+  alpha,
+  Button,
 } from "@mui/material";
 import { RefreshCw } from "lucide-react";
 
@@ -34,97 +36,77 @@ const RefreshControl: React.FC<RefreshControlProps> = ({
     }
   };
 
-  const progressColor = (value: number) => {
-    if (value < 25) return "black";
-    if (value < 50) return "orange";
-    if (value < 75) return "red";
-    return theme.palette.success.main;
-  };
-
   return (
     <Paper
       elevation={1}
-      onClick={handleRefresh}
       sx={{
-        mb: 2,
+        p: 2,
         overflow: "hidden",
-        cursor: isRefreshing ? "not-allowed" : "pointer",
-        transition: "all 0.2s",
-        "&:hover": {
-          boxShadow: 3,
-          transform: isRefreshing ? "none" : "translateY(-2px)",
-        },
-        border: `1px solid ${theme.palette.divider}`,
-        borderRadius: 1,
+        border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        borderRadius: 2,
+        background: (theme) => alpha(theme.palette.background.paper, 0.8),
         opacity: isRefreshing ? 0.7 : 1,
+        transition: 'all 0.3s ease-in-out',
       }}
     >
-      <Box sx={{ p: 1.5, position: "relative" }}>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            mb: 1,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            {isRefreshing ? (
-              <RefreshCw size={18} className="animate-spin" />
-            ) : (
-              <RefreshCw size={18} />
-            )}
-            <Typography variant="body2" sx={{ ml: 1.5, fontWeight: 500 }}>
-              {isRefreshing ? "Refreshing..." : "Refresh Data"}
-            </Typography>
-          </Box>
-          <Typography variant="caption" color="textSecondary">
-            {formatTime(timeLeft)}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <RefreshCw 
+            size={18} 
+            style={{ 
+              animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
+              color: theme.palette.primary.main,
+            }} 
+          />
+          <Typography variant="body2" sx={{ ml: 1.5, fontWeight: 600 }}>
+            Auto Refresh
           </Typography>
         </Box>
-
-        {/* Progress bar with integrated label */}
-        <Box sx={{ position: "relative", height: 30 }}>
-          <LinearProgress
-            variant="determinate"
-            value={progressValue}
-            sx={{
-              height: 30,
-              borderRadius: 2,
-              backgroundColor: theme.palette.grey[200],
-              "& .MuiLinearProgress-bar": {
-                backgroundColor: theme.palette.primary.main,
-              },
-            }}
-          />
-
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 550,
-                color: progressColor(progressValue),
-                zIndex: 1,
-                textShadow:
-                  progressValue > 50 ? "0px 0px 2px rgba(0,0,0,0.3)" : "none",
-              }}
-            >
-              {isRefreshing ? "REFRESHING..." : "REFRESH"}
-            </Typography>
-          </Box>
-        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+          {formatTime(timeLeft)}
+        </Typography>
       </Box>
+
+      <LinearProgress
+        variant="determinate"
+        value={progressValue}
+        sx={{
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+          mb: 2,
+          "& .MuiLinearProgress-bar": {
+            borderRadius: 4,
+            background: (theme) => `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+          },
+        }}
+      />
+
+      <Button
+        fullWidth
+        variant="outlined"
+        onClick={handleRefresh}
+        disabled={isRefreshing}
+        startIcon={<RefreshCw size={16} />}
+        sx={{
+          borderRadius: 2,
+          textTransform: 'none',
+          fontWeight: 600,
+          py: 1,
+          '&:hover': {
+            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+          },
+        }}
+      >
+        {isRefreshing ? "Refreshing..." : "Refresh Now"}
+      </Button>
     </Paper>
   );
 };

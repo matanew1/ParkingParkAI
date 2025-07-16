@@ -1,5 +1,5 @@
 import React from "react";
-import { MapPin } from "lucide-react";
+import { MapPin, Menu } from "lucide-react";
 import {
   AppBar,
   Toolbar,
@@ -7,6 +7,7 @@ import {
   Box,
   IconButton,
   useMediaQuery,
+  alpha,
 } from "@mui/material";
 import ThemeToggle from "./Theme/ThemeToggle";
 import OptionButton from "./Options/OptionButton";
@@ -16,30 +17,67 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup }) => {
   const isMobile = useMediaQuery("(max-width:600px)");
 
   return (
-    <AppBar position="fixed">
-      <Toolbar>
+    <AppBar 
+      position="fixed" 
+      elevation={0}
+      sx={{
+        backdropFilter: 'blur(20px)',
+        backgroundColor: (theme) => alpha(theme.palette.background.paper, 0.95),
+        borderBottom: (theme) => `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+      }}
+    >
+      <Toolbar sx={{ minHeight: { xs: 64, sm: 70 } }}>
         <IconButton
           edge="start"
-          color="inherit"
+          color="primary"
           aria-label="parking location"
-          sx={{ mr: 2 }}
+          sx={{ 
+            mr: 2,
+            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+            '&:hover': {
+              backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+            }
+          }}
         >
-          <MapPin size={24} />
+          <MapPin size={isMobile ? 20 : 24} />
         </IconButton>
 
         <Box sx={{ flexGrow: 1 }}>
-          <Typography variant="h6" component="h1" noWrap>
+          <Typography 
+            variant={isMobile ? "h6" : "h5"} 
+            component="h1" 
+            noWrap
+            sx={{
+              fontWeight: 700,
+              background: (theme) => `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '-0.02em',
+            }}
+          >
             Tel Aviv Parking Map
           </Typography>
           {!isMobile && (
-            <Typography variant="caption" component="p" noWrap>
+            <Typography 
+              variant="body2" 
+              component="p" 
+              noWrap
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 400,
+                mt: -0.5,
+              }}
+            >
               Find available parking spots in the city
             </Typography>
           )}
         </Box>
 
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <ThemeToggle />
         <OptionButton onClick={onOpenOptionPopup} />
+        </Box>
       </Toolbar>
     </AppBar>
   );
