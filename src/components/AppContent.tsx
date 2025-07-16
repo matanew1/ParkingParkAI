@@ -25,7 +25,8 @@ const OptimizedParkingMap = lazy(() => import("./Map/OptimizedParkingMap"));
 const AppContent: React.FC = () => {
   const [isOptionPopupOpen, setIsOptionPopupOpen] = useState<boolean>(false);
   const { isDarkMode } = useCustomTheme();
-  const isMobile = useMediaQuery("(max-width:600px)");
+  const isMobile = useMediaQuery("(max-width:768px)");
+  const isTablet = useMediaQuery("(max-width:1024px)");
   const theme = isDarkMode ? darkTheme : lightTheme;
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
@@ -43,7 +44,7 @@ const AppContent: React.FC = () => {
     handleResetMap,
   } = useParkingContext();
 
-  const drawerWidth = isMobile ? "80%" : 320;
+  const drawerWidth = isMobile ? "85%" : isTablet ? "40%" : 360;
 
   const handleResetMapApp = useCallback((): void => {
     setSelectedSpotId(null);
@@ -90,9 +91,9 @@ const AppContent: React.FC = () => {
   }, []);
 
   return (
-    <MuiThemeProvider theme={theme}>
+            pt: { xs: 7, sm: 8, md: 9 },
       <CssBaseline />
-      <motion.div
+            height: { xs: "calc(100vh - 56px)", sm: "calc(100vh - 64px)", md: "calc(100vh - 70px)" },
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -145,6 +146,7 @@ const AppContent: React.FC = () => {
             </Drawer>
 
             <Box
+                maxWidth: { xs: "85vw", sm: "40vw", md: "360px" },
               sx={{
                 flexGrow: 1,
                 position: "relative",
@@ -159,18 +161,22 @@ const AppContent: React.FC = () => {
                   onClick={toggleSidebar}
                   sx={{
                     position: "fixed",
-                    left: 20,
-                    top: { xs: 72, sm: 80, md: 88 },
+                    left: { xs: 12, sm: 16, md: 20 },
+                    top: { xs: 68, sm: 76, md: 88 },
                     zIndex: 1200,
+                    width: { xs: 48, sm: 56 },
+                    height: { xs: 48, sm: 56 },
                     backgroundColor: theme.palette.primary.main,
                     color: theme.palette.primary.contrastText,
                     boxShadow: theme.shadows[3],
                     "&:hover": {
                       backgroundColor: theme.palette.primary.dark,
+                      transform: 'scale(1.05)',
                     },
+                    transition: 'all 0.2s ease-in-out',
                   }}
                 >
-                  <Menu size={24} />
+                  <Menu size={isMobile ? 20 : 24} />
                 </IconButton>
               </Fade>
 

@@ -30,7 +30,7 @@ const VirtualizedParkingList: React.FC<ParkingListProps> = ({
   const rowVirtualizer = useVirtualizer({
     count: filteredSpots.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 120, // Increased height for better design
+    estimateSize: () => isMobile ? 100 : 120, // Smaller on mobile
     overscan: 10, // Render 10 extra items outside viewport
   });
 
@@ -40,17 +40,29 @@ const VirtualizedParkingList: React.FC<ParkingListProps> = ({
         elevation={0}
         sx={{
           textAlign: "center",
-          py: 6,
+          py: { xs: 4, sm: 6 },
+          px: { xs: 2, sm: 3 },
           backgroundColor: (theme) => alpha(theme.palette.background.default, 0.3),
           border: (theme) => `1px dashed ${alpha(theme.palette.divider, 0.3)}`,
           borderRadius: 2,
         }}
       >
-        <Car size={48} style={{ opacity: 0.3, marginBottom: 16 }} />
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+        <Car size={isMobile ? 36 : 48} style={{ opacity: 0.3, marginBottom: isMobile ? 12 : 16 }} />
+        <Typography 
+          variant={isMobile ? "subtitle1" : "h6"} 
+          color="text.secondary" 
+          sx={{ 
+            mb: 1,
+            fontSize: { xs: '1rem', sm: '1.25rem' }
+          }}
+        >
           No parking spots match your search.
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography 
+          variant="body2" 
+          color="text.secondary"
+          sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+        >
           Try adjusting your search terms
         </Typography>
       </Paper>
@@ -143,7 +155,7 @@ const ParkingSpotItem = React.memo<{
       <Paper
         elevation={0}
         sx={{
-          mb: 1.5,
+          mb: { xs: 1, sm: 1.5 },
           overflow: "hidden",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.1)}`,
@@ -152,7 +164,7 @@ const ParkingSpotItem = React.memo<{
           backdropFilter: 'blur(10px)',
           "&:hover": {
             boxShadow: (theme) => `0 8px 32px ${alpha(theme.palette.common.black, 0.12)}`,
-            transform: "translateY(-4px)",
+            transform: isMobile ? "translateY(-2px)" : "translateY(-4px)",
             border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
           },
         }}
@@ -160,7 +172,7 @@ const ParkingSpotItem = React.memo<{
         <ListItemButton 
           onClick={handleClick}
           sx={{
-            p: 2.5,
+            p: { xs: 1.5, sm: 2, md: 2.5 },
             '&:hover': {
               backgroundColor: 'transparent',
             },
@@ -169,14 +181,14 @@ const ParkingSpotItem = React.memo<{
           <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
             <Avatar
               sx={{
-                width: 48,
-                height: 48,
-                mr: 2,
+                width: { xs: 36, sm: 44, md: 48 },
+                height: { xs: 36, sm: 44, md: 48 },
+                mr: { xs: 1.5, sm: 2 },
                 backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
                 border: (theme) => `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
               }}
             >
-              <MapPin size={24} color={theme.palette.primary.main} />
+              <MapPin size={isMobile ? 18 : 24} color={theme.palette.primary.main} />
             </Avatar>
             
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
@@ -185,27 +197,30 @@ const ParkingSpotItem = React.memo<{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  mb: 0.5,
+                  mb: { xs: 0.25, sm: 0.5 },
                 }}
               >
                 <Typography 
-                  variant="subtitle1" 
+                  variant={isMobile ? "body1" : "subtitle1"} 
                   sx={{ 
                     fontWeight: 600,
                     color: 'text.primary',
-                    fontSize: '1rem',
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
                   }}
                   noWrap
                 >
                   {spot.shem_chenyon}
                 </Typography>
-                <ChevronRight size={20} color={theme.palette.action.active} />
+                <ChevronRight size={isMobile ? 16 : 20} color={theme.palette.action.active} />
               </Box>
               
               <Typography 
                 variant="body2" 
                 color="text.secondary" 
-                sx={{ mb: 1.5, fontSize: '0.875rem' }}
+                sx={{ 
+                  mb: { xs: 1, sm: 1.5 }, 
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                }}
                 noWrap
               >
                 {spot.ktovet}
@@ -215,32 +230,35 @@ const ParkingSpotItem = React.memo<{
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 1,
+                  gap: { xs: 0.5, sm: 1 },
                   flexWrap: 'wrap',
                 }}
               >
                 <Chip
-                  icon={<span style={{ fontSize: '12px' }}>{getStatusIcon(spot.status_chenyon)}</span>}
+                  icon={<span style={{ fontSize: isMobile ? '10px' : '12px' }}>{getStatusIcon(spot.status_chenyon)}</span>}
                   label={spot.status_chenyon || 'Status unavailable'}
                   size="small"
                   color={getStatusColor(spot.status_chenyon)}
                   sx={{ 
-                    height: 28,
+                    height: { xs: 24, sm: 28 },
                     fontWeight: 600,
-                    fontSize: '0.75rem',
+                    fontSize: { xs: '0.65rem', sm: '0.75rem' },
                     '& .MuiChip-icon': {
-                      fontSize: '12px',
+                      fontSize: isMobile ? '10px' : '12px',
                     },
                   }}
                 />
                 
                 {spot.tr_status_chenyon && spot.tr_status_chenyon > 0 && (
                   <Box sx={{ display: "flex", alignItems: "center", ml: 'auto' }}>
-                    <Clock size={14} color={theme.palette.text.secondary} />
+                    <Clock size={isMobile ? 12 : 14} color={theme.palette.text.secondary} />
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ ml: 0.5, fontSize: '0.75rem' }}
+                      sx={{ 
+                        ml: 0.5, 
+                        fontSize: { xs: '0.65rem', sm: '0.75rem' }
+                      }}
                     >
                       {new Date(
                         spot.tr_status_chenyon

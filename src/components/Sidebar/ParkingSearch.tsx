@@ -8,6 +8,8 @@ interface ParkingSearchProps {
 }
 
 const ParkingSearch: React.FC<ParkingSearchProps> = ({ searchTerm, setSearchTerm }) => {
+  const isMobile = useMediaQuery("(max-width:768px)");
+  
   return (
     <TextField
       fullWidth
@@ -19,7 +21,7 @@ const ParkingSearch: React.FC<ParkingSearchProps> = ({ searchTerm, setSearchTerm
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">
-            <Search size={18} />
+            <Search size={isMobile ? 16 : 18} />
           </InputAdornment>
         ),
       }}
@@ -27,6 +29,10 @@ const ParkingSearch: React.FC<ParkingSearchProps> = ({ searchTerm, setSearchTerm
         '& .MuiOutlinedInput-root': {
           backgroundColor: (theme) => alpha(theme.palette.background.paper, 0.8),
           borderRadius: 3,
+          fontSize: { xs: '0.875rem', sm: '1rem' },
+          '& input': {
+            py: { xs: 1, sm: 1.5 },
+          },
           '&:hover': {
             backgroundColor: (theme) => alpha(theme.palette.background.paper, 1),
           },

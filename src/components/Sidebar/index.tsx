@@ -21,6 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [debouncedSearch, setDebouncedSearch] = React.useState("");
+  const isSmallMobile = useMediaQuery("(max-width:480px)");
 
   // Handle search debouncing
   React.useEffect(() => {
@@ -52,22 +53,24 @@ const Sidebar: React.FC<SidebarProps> = ({
       <SidebarHeader toggleDrawer={toggleDrawer} isMobile={isMobile} />
 
       <Box sx={{ 
-        p: 3, 
+        p: { xs: 1.5, sm: 2, md: 3 }, 
         flexGrow: 1, 
         overflow: "hidden", 
         display: "flex", 
         flexDirection: "column",
-        gap: 2,
+        gap: { xs: 1.5, sm: 2 },
       }}>
         <ParkingSearch searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
 
-        <LastUpdatedInfo lastUpdated={lastUpdated} />
+        <LastUpdatedInfo lastUpdated={lastUpdated} isMobile={isMobile} />
 
-        <RefreshControl
-          onRefresh={onRefresh}
-          isRefreshing={isRefreshing}
-          statusError={statusError}
-        />
+        {!isSmallMobile && (
+          <RefreshControl
+            onRefresh={onRefresh}
+            isRefreshing={isRefreshing}
+            statusError={statusError}
+          />
+        )}
 
         <Box sx={{ flexGrow: 1, minHeight: 0 }}>
           <VirtualizedParkingList
@@ -78,18 +81,28 @@ const Sidebar: React.FC<SidebarProps> = ({
             isMobile={isMobile}
           />
         </Box>
+        
+        {isSmallMobile && (
+          <Box sx={{ pt: 1 }}>
+            <RefreshControl
+              onRefresh={onRefresh}
+              isRefreshing={isRefreshing}
+              statusError={statusError}
+            />
+          </Box>
+        )}
       </Box>
     </Box>
   );
 };
 
 // Simple component for displaying last updated info
-const LastUpdatedInfo = ({ lastUpdated }) => {
+const LastUpdatedInfo = ({ lastUpdated, isMobile }) => {
   return (
     <Paper
       elevation={0}
       sx={{
-        p: 2,
+        p: { xs: 1.5, sm: 2 },
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -99,10 +112,17 @@ const LastUpdatedInfo = ({ lastUpdated }) => {
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center" }}>
-        <Clock size={16} color="text.secondary" />
-        <Typography variant="body2" sx={{ ml: 1, fontWeight: 500 }}>
+        <Clock size={isMobile ? 14 : 16} color="text.secondary" />
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            ml: 1, 
+            fontWeight: 500,
+            fontSize: { xs: '0.75rem', sm: '0.875rem' }
+          }}
+        >
           {lastUpdated
-            ? `Updated: ${lastUpdated.toLocaleTimeString()}`
+            ? `${isMobile ? '' : 'Updated: '}${lastUpdated.toLocaleTimeString()}`
             : "Loading data..."}
         </Typography>
       </Box>

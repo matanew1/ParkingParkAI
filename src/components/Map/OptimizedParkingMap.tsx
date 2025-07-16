@@ -84,7 +84,8 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
   onSpotClick,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMobile = useMediaQuery("(max-width:768px)");
+  const isSmallMobile = useMediaQuery("(max-width:480px)");
   
   const [userLocation, setUserLocation] = useState(null);
   const [navigationActive, setNavigationActive] = useState(false);
@@ -182,24 +183,29 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
           action={
             <Button
               color="inherit"
-              size={isMobile ? "small" : "medium"}
+              size="small"
               onClick={onRefresh}
               disabled={refreshing}
             >
-              {refreshing ? <CircularProgress size={isMobile ? 14 : 16} /> : <RefreshCw size={isMobile ? 14 : 16} />}
+              {refreshing ? <CircularProgress size={12} /> : <RefreshCw size={12} />}
             </Button>
           }
           sx={{
             position: "absolute",
-            top: isMobile ? 8 : 16,
-            left: isMobile ? 8 : 16,
-            right: isMobile ? 8 : 16,
+            top: { xs: 8, sm: 12, md: 16 },
+            left: { xs: 8, sm: 12, md: 16 },
+            right: { xs: 8, sm: 12, md: 16 },
             zIndex: 1000,
-            maxWidth: isMobile ? "calc(100% - 16px)" : "400px",
-            fontSize: isMobile ? "0.875rem" : "1rem",
+            maxWidth: { xs: "calc(100% - 16px)", sm: "400px" },
+            fontSize: { xs: "0.75rem", sm: "0.875rem" },
+            '& .MuiAlert-message': {
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            },
           }}
         >
-          <AlertTitle>Connection Issue</AlertTitle>
+          <AlertTitle sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+            {isSmallMobile ? "Connection Issue" : "Connection Issue"}
+          </AlertTitle>
           {statusError}
         </Alert>
       )}
@@ -276,43 +282,51 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
       <Box
         sx={{
           position: "absolute",
-          bottom: isMobile ? 12 : 16,
-          right: isMobile ? 12 : 16,
+          bottom: { xs: 16, sm: 20, md: 24 },
+          right: { xs: 16, sm: 20, md: 24 },
           display: "flex",
           flexDirection: "column",
-          gap: isMobile ? 0.5 : 1,
+          gap: { xs: 1, sm: 1.5 },
           zIndex: 1000,
         }}
       >
-        <Tooltip title="Get My Location" placement={isMobile ? "left" : "left"}>
+        <Tooltip title="Get My Location" placement="left">
           <Fab
             color="primary"
-            size={isMobile ? "medium" : "small"}
+            size={isSmallMobile ? "small" : "medium"}
             onClick={handleGetUserLocation}
             sx={{ 
               bgcolor: theme.palette.primary.main,
-              width: isMobile ? 48 : 40,
-              height: isMobile ? 48 : 40,
-              minHeight: isMobile ? 48 : 40,
+              width: { xs: 48, sm: 56 },
+              height: { xs: 48, sm: 56 },
+              minHeight: { xs: 48, sm: 56 },
+              '&:hover': {
+                transform: 'scale(1.05)',
+              },
+              transition: 'all 0.2s ease-in-out',
             }}
           >
-            <Crosshair size={isMobile ? 24 : 20} />
+            <Crosshair size={isSmallMobile ? 20 : 24} />
           </Fab>
         </Tooltip>
         
-        <Tooltip title="Reset Map" placement={isMobile ? "left" : "left"}>
+        <Tooltip title="Reset Map" placement="left">
           <Fab
             color="secondary"
-            size={isMobile ? "medium" : "small"}
+            size={isSmallMobile ? "small" : "medium"}
             onClick={resetMap}
             sx={{ 
               bgcolor: theme.palette.secondary.main,
-              width: isMobile ? 48 : 40,
-              height: isMobile ? 48 : 40,
-              minHeight: isMobile ? 48 : 40,
+              width: { xs: 48, sm: 56 },
+              height: { xs: 48, sm: 56 },
+              minHeight: { xs: 48, sm: 56 },
+              '&:hover': {
+                transform: 'scale(1.05)',
+              },
+              transition: 'all 0.2s ease-in-out',
             }}
           >
-            <Trash2 size={isMobile ? 24 : 20} />
+            <Trash2 size={isSmallMobile ? 20 : 24} />
           </Fab>
         </Tooltip>
       </Box>
