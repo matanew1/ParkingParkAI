@@ -13,6 +13,8 @@ import { ParkingService } from "../Services/parkingService";
 import { RouteService, Coordinates } from "../Services/routeService";
 import { ParkingContextType } from "../Types/location";
 import { debounce } from "../utils/debounceThrottle";
+import { useNotifications } from "./NotificationContext";
+import { useFavorites } from "./FavoritesContext";
 
 // Default coordinates for Tel Aviv
 const DEFAULT_COORDINATES: Coordinates = [32.0853, 34.7818];

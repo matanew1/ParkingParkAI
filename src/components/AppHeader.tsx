@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { MapPin, Menu, Star } from "lucide-react";
 import {
   AppBar,
@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import ThemeToggle from "./Theme/ThemeToggle";
 import OptionButton from "./Options/OptionButton";
+import { NotificationBadge, NotificationPanel } from "./Notifications";
 import { AppHeaderProps } from "../Types/app";
 import { useFavorites } from "../Context/FavoritesContext";
 
@@ -20,6 +21,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup }) => {
   const isMobile = useMediaQuery("(max-width:768px)");
   const isSmallMobile = useMediaQuery("(max-width:480px)");
   const { favoritesCount } = useFavorites();
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
 
   return (
     <AppBar 
@@ -96,6 +98,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup }) => {
           gap: { xs: 0.5, sm: 1 },
           flexShrink: 0
         }}>
+          {/* Notifications */}
+          <NotificationBadge
+            onClick={() => setNotificationPanelOpen(true)}
+            size={isMobile ? "small" : "medium"}
+          />
+
           {/* Favorites Badge */}
           {favoritesCount > 0 && (
             <Tooltip title={`${favoritesCount} favorite parking spots`}>
@@ -133,6 +141,16 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup }) => {
           <OptionButton onClick={onOpenOptionPopup} />
         </Box>
       </Toolbar>
+      
+      {/* Notification Panel */}
+      <NotificationPanel
+        open={notificationPanelOpen}
+        onClose={() => setNotificationPanelOpen(false)}
+        onNavigateToSpot={(spotId) => {
+          // This will be handled by the parent component
+          console.log('Navigate to spot:', spotId);
+        }}
+      />
     </AppBar>
   );
 };

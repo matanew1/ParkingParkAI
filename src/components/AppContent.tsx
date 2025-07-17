@@ -18,6 +18,7 @@ import AppHeader from "./AppHeader";
 import Sidebar from "./Sidebar";
 import OptionDialog from "./Options/OptionDialog";
 import { useParkingContext } from "../Context/ParkingContext";
+import { useParkingNotificationIntegration } from "../hooks/useParkingNotificationIntegration";
 import type { ParkingSpotWithStatus } from "../Types/parking";
 
 const OptimizedParkingMap = lazy(() => import("./Map/OptimizedParkingMap"));
@@ -30,6 +31,9 @@ const AppContent: React.FC = () => {
   const theme = isDarkMode ? darkTheme : lightTheme;
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
+
+  // Initialize parking notification integration
+  const { isMonitoring } = useParkingNotificationIntegration();
 
   const {
     parkingSpots,
