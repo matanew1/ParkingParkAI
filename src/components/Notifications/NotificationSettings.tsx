@@ -47,6 +47,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ open, onClo
 
   const [localPreferences, setLocalPreferences] = useState<NotificationPreferences>(preferences);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+
+  // Detect if running on mobile device
+  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   const handleSave = () => {
     updatePreferences(localPreferences);
@@ -55,8 +59,12 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ open, onClo
 
   const handleRequestPermission = async () => {
     setIsRequestingPermission(true);
+    setPermissionError(null);
     try {
       await requestPermission();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to request notification permission';
+      setPermissionError(errorMessage);
     } finally {
       setIsRequestingPermission(false);
     }
@@ -132,7 +140,22 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ open, onClo
                 <Box>
                   <Alert severity="warning" sx={{ mb: 2 }}>
                     Notifications are disabled. Enable them to receive parking alerts.
+                    {isMobileDevice && (
+                      <Box sx={{ mt: 1, fontSize: '0.875rem' }}>
+                        <strong>Mobile users:</strong> After clicking "Enable Notifications", make sure to allow notifications when your browser asks.
+                      </Box>
+                    )}
                   </Alert>
+                  {permissionError && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      {permissionError}
+                      {isMobileDevice && permissionError.includes('blocked') && (
+                        <Box sx={{ mt: 1, fontSize: '0.875rem' }}>
+                          <strong>To fix this:</strong> Go to your browser settings → Site permissions → Notifications → Allow for this site.
+                        </Box>
+                      )}
+                    </Alert>
+                  )}
                   <Button
                     variant="contained"
                     onClick={handleRequestPermission}

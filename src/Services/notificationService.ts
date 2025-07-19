@@ -79,13 +79,28 @@ export class NotificationService {
   }
 
   /**
+   * Detect if running on mobile device
+   */
+  private isMobileDevice(): boolean {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+
+  /**
+   * Detect if running on iOS Safari
+   */
+  private isIOSSafari(): boolean {
+    const userAgent = navigator.userAgent;
+    return /iPad|iPhone|iPod/.test(userAgent) && /Safari/.test(userAgent) && !/CriOS|FxiOS/.test(userAgent);
+  }
+
+  /**
    * Request notification permission from user
    */
   async requestPermission(): Promise<boolean> {
     try {
       if (!('Notification' in window)) {
         console.warn('This browser does not support notifications');
-        return false;
+        throw new Error('Notifications are not supported in this browser');
       }
 
       if (Notification.permission === 'granted') {
@@ -93,14 +108,56 @@ export class NotificationService {
       }
 
       if (Notification.permission === 'denied') {
-        return false;
+        throw new Error('Notifications have been blocked. Please enable them in your browser settings.');
       }
 
+      // Special handling for iOS Safari
+      if (this.isIOSSafari()) {
+        // iOS Safari requires the permission request to be in direct response to user action
+        console.log('Requesting notification permission on iOS Safari...');
+        
+        // Use a more explicit approach for iOS
+        const permission = await new Promise<NotificationPermission>((resolve) => {
+          // For iOS Safari, we need to ensure this is called synchronously in the user gesture
+          const result = Notification.requestPermission((perm) => {
+            resolve(perm);
+          });
+          
+          // Handle modern promise-based API if available
+          if (result && typeof result.then === 'function') {
+            result.then(resolve);
+          }
+        });
+
+        if (permission === 'granted') {
+          console.log('iOS Safari notification permission granted');
+          return true;
+        } else {
+          throw new Error(`iOS Safari notification permission ${permission}. Please try again and allow notifications when prompted.`);
+        }
+      }
+
+      // Standard approach for other browsers
       const permission = await Notification.requestPermission();
-      return permission === 'granted';
+      
+      if (permission === 'granted') {
+        console.log('Notification permission granted');
+        return true;
+      } else {
+        throw new Error(`Notification permission ${permission}. Please enable notifications in your browser settings.`);
+      }
     } catch (error) {
       console.warn('Failed to request notification permission:', error);
-      return false;
+      
+      // Provide more specific error messages for mobile users
+      if (this.isMobileDevice()) {
+        if (error instanceof Error) {
+          throw error; // Re-throw our custom error messages
+        }
+        throw new Error('Notifications may not be supported on your mobile browser. Try using Chrome or Safari.');
+      }
+      
+      throw error;
     }
   }
 

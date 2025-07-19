@@ -80,7 +80,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       return granted;
     } catch (error) {
       console.error('Failed to request notification permission:', error);
-      return false;
+      // Re-throw the error so the UI can show the specific error message
+      throw error;
     }
   }, []);
 
