@@ -52,21 +52,29 @@ export class NotificationService {
   private registrationToken: string | null = null;
 
   constructor() {
-    this.loadStatusHistory();
-    this.initializeServiceWorker();
+    try {
+      this.loadStatusHistory();
+      this.initializeServiceWorker().catch(error => {
+        console.warn('Service Worker initialization failed:', error);
+      });
+    } catch (error) {
+      console.warn('NotificationService initialization failed:', error);
+    }
   }
 
   /**
    * Initialize service worker for background notifications
    */
   private async initializeServiceWorker() {
-    if ('serviceWorker' in navigator) {
-      try {
-        await navigator.serviceWorker.register('/sw.js');
-        console.log('Service Worker registered for notifications');
-      } catch (error) {
-        console.warn('Service Worker registration failed:', error);
-      }
+    if (!('serviceWorker' in navigator)) {
+      return;
+    }
+
+    try {
+      await navigator.serviceWorker.register('/sw.js');
+      console.log('Service Worker registered for notifications');
+    } catch (error) {
+      console.warn('Service Worker registration failed (this is normal on some browsers):', error);
     }
   }
 
@@ -74,21 +82,26 @@ export class NotificationService {
    * Request notification permission from user
    */
   async requestPermission(): Promise<boolean> {
-    if (!('Notification' in window)) {
-      console.warn('This browser does not support notifications');
+    try {
+      if (!('Notification' in window)) {
+        console.warn('This browser does not support notifications');
+        return false;
+      }
+
+      if (Notification.permission === 'granted') {
+        return true;
+      }
+
+      if (Notification.permission === 'denied') {
+        return false;
+      }
+
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    } catch (error) {
+      console.warn('Failed to request notification permission:', error);
       return false;
     }
-
-    if (Notification.permission === 'granted') {
-      return true;
-    }
-
-    if (Notification.permission === 'denied') {
-      return false;
-    }
-
-    const permission = await Notification.requestPermission();
-    return permission === 'granted';
   }
 
   /**
@@ -176,7 +189,7 @@ export class NotificationService {
         this.statusHistory = new Map(historyArray);
       }
     } catch (error) {
-      console.warn('Failed to load status history:', error);
+      console.warn('Failed to load status history (localStorage may not be available):', error);
       this.statusHistory = new Map();
     }
   }
@@ -340,50 +353,58 @@ export class NotificationService {
    * Show browser notification
    */
   private showBrowserNotification(notification: ParkingNotification): void {
-    if (Notification.permission !== 'granted') {
-      return;
-    }
-
-    const options: NotificationOptions = {
-      body: notification.body,
-      icon: '/me.png',
-      badge: '/me.png',
-      tag: notification.spotId,
-      timestamp: notification.timestamp.getTime(),
-      requireInteraction: notification.priority === 'high',
-      actions: [
-        {
-          action: 'view',
-          title: 'View Parking Spot',
-        },
-        {
-          action: 'dismiss',
-          title: 'Dismiss',
-        },
-      ],
-    };
-
-    const preferences = this.getPreferences();
-    if (preferences.vibration && 'vibrate' in navigator) {
-      navigator.vibrate([200, 100, 200]);
-    }
-
-    const browserNotification = new Notification(notification.title, options);
-
-    browserNotification.onclick = () => {
-      window.focus();
-      // Navigate to the parking spot
-      if (notification.actionUrl) {
-        window.location.hash = notification.actionUrl;
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') {
+        return;
       }
-      browserNotification.close();
-    };
 
-    // Auto-close after 10 seconds for non-high priority notifications
-    if (notification.priority !== 'high') {
-      setTimeout(() => {
+      const options: NotificationOptions = {
+        body: notification.body,
+        icon: '/me.png',
+        badge: '/me.png',
+        tag: notification.spotId,
+        timestamp: notification.timestamp.getTime(),
+        requireInteraction: notification.priority === 'high',
+        actions: [
+          {
+            action: 'view',
+            title: 'View Parking Spot',
+          },
+          {
+            action: 'dismiss',
+            title: 'Dismiss',
+          },
+        ],
+      };
+
+      const preferences = this.getPreferences();
+      if (preferences.vibration && 'vibrate' in navigator) {
+        try {
+          navigator.vibrate([200, 100, 200]);
+        } catch (error) {
+          console.warn('Vibration not supported:', error);
+        }
+      }
+
+      const browserNotification = new Notification(notification.title, options);
+
+      browserNotification.onclick = () => {
+        window.focus();
+        // Navigate to the parking spot
+        if (notification.actionUrl) {
+          window.location.hash = notification.actionUrl;
+        }
         browserNotification.close();
-      }, 10000);
+      };
+
+      // Auto-close after 10 seconds for non-high priority notifications
+      if (notification.priority !== 'high') {
+        setTimeout(() => {
+          browserNotification.close();
+        }, 10000);
+      }
+    } catch (error) {
+      console.warn('Failed to show browser notification:', error);
     }
   }
 

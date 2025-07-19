@@ -48,7 +48,14 @@ export const ParkingProvider = ({ children }: ParkingProviderProps) => {
   const [hasInitiallyLocated, setHasInitiallyLocated] = useState(false);
 
   // Use direct URLs for production, proxy URLs for development
-  const isDevelopment = import.meta.env.DEV;
+  // Fallback for iOS Safari compatibility
+  const isDevelopment = (() => {
+    try {
+      return import.meta?.env?.DEV === true;
+    } catch (error) {
+      return false;
+    }
+  })();
   const baseUrl = isDevelopment ? "/api" : "https://gisn.tel-aviv.gov.il";
   
   const AHUZAT_HAHOF_URL = `${baseUrl}/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json`;

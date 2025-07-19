@@ -5,6 +5,7 @@ import { FavoritesProvider } from "./Context/FavoritesContext";
 import { NotificationProvider } from "./Context/NotificationContext";
 import { AnimationProvider } from "./utils/AnimationProvider";
 import ErrorBoundary from "./utils/ErrorBoundary";
+import NotificationErrorBoundary from "./utils/NotificationErrorBoundary";
 import AppContent from "./components/AppContent";
 
 const App: React.FC = () => {
@@ -13,11 +14,13 @@ const App: React.FC = () => {
       <AnimationProvider>
         <ParkingProvider>
           <FavoritesProvider>
-            <NotificationProvider>
-              <CustomThemeProvider>
-                <AppContent />
-              </CustomThemeProvider>
-            </NotificationProvider>
+            <NotificationErrorBoundary>
+              <NotificationProvider>
+                <CustomThemeProvider>
+                  <AppContent />
+                </CustomThemeProvider>
+              </NotificationProvider>
+            </NotificationErrorBoundary>
           </FavoritesProvider>
         </ParkingProvider>
       </AnimationProvider>
