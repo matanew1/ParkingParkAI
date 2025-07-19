@@ -43,6 +43,9 @@ export const ParkingProvider = ({ children }: ParkingProviderProps) => {
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [showLocationMarker, setShowLocationMarker] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
+  
+  // Track whether we've already centered on user location to avoid auto-centering
+  const [hasInitiallyLocated, setHasInitiallyLocated] = useState(false);
 
   // Use direct URLs for production, proxy URLs for development
   const isDevelopment = import.meta.env.DEV;
@@ -135,7 +138,15 @@ export const ParkingProvider = ({ children }: ParkingProviderProps) => {
     setShowLocationMarker(false);
     setSelectedSpot(null);
     setRoutes([]);
+    setHasInitiallyLocated(false); // Reset the initial location flag
   }, []);
+
+  // Function to manually center on user location when button is clicked
+  const centerOnUserLocation = useCallback(() => {
+    if (userLocation) {
+      setMapCenter(userLocation);
+    }
+  }, [userLocation]);
 
   const fetchUserLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -188,10 +199,15 @@ export const ParkingProvider = ({ children }: ParkingProviderProps) => {
   }, [fetchParkingData]);
 
   useEffect(() => {
-    if (userLocation && showLocationMarker) {
+    // Only center on user location when:
+    // 1. We have a user location
+    // 2. Location marker is enabled
+    // 3. We haven't already initially located the user
+    if (userLocation && showLocationMarker && !hasInitiallyLocated) {
       setMapCenter(userLocation);
+      setHasInitiallyLocated(true);
     }
-  }, [userLocation, showLocationMarker]);
+  }, [userLocation, showLocationMarker, hasInitiallyLocated]);
 
   useEffect(() => {
     if (showLocationMarker && !userLocation) {
@@ -223,6 +239,7 @@ export const ParkingProvider = ({ children }: ParkingProviderProps) => {
       handleResetMap,
       fetchUserLocation,
       fetchRoute,
+      centerOnUserLocation,
     }),
     [
       parkingSpots,
@@ -239,6 +256,7 @@ export const ParkingProvider = ({ children }: ParkingProviderProps) => {
       handleResetMap,
       fetchUserLocation,
       fetchRoute,
+      centerOnUserLocation,
     ]
   );
 

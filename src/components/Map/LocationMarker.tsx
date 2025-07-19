@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Marker, Popup, useMap, Circle } from "react-leaflet";
 import { Typography } from "@mui/material";
 import { userLocationIcon } from "./utils/MarkerUtils";
@@ -12,6 +12,7 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ setUserLocation }) => {
   const [position, setPosition] = useState<Coordinates | null>(null);
   const [accuracy, setAccuracy] = useState<number>(0);
   const map = useMap();
+  const hasInitiallyPositioned = useRef(false);
 
   const handlePositionUpdate = useCallback(
     (coords: GeolocationCoordinates) => {
@@ -20,8 +21,14 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ setUserLocation }) => {
       setPosition(newPos);
       setAccuracy(accuracy);
       setUserLocation(newPos);
+      
+      // Only center the map on the first position update
+      if (!hasInitiallyPositioned.current) {
+        map.setView(newPos, map.getZoom());
+        hasInitiallyPositioned.current = true;
+      }
     },
-    [setUserLocation]
+    [setUserLocation, map]
   );
 
   useEffect(() => {
@@ -61,13 +68,6 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ setUserLocation }) => {
       }
     };
   }, [handlePositionUpdate]);
-
-  // Center map on position when first obtained
-  useEffect(() => {
-    if (position && !position.some(isNaN)) {
-      map.setView(position, map.getZoom());
-    }
-  }, [position, map]);
 
   return position === null || position.some(isNaN) ? null : (
     <>

@@ -66,6 +66,7 @@ export interface ParkingContextType {
     end: Coordinates | string,
     options?: any
   ) => Promise<any>;
+  centerOnUserLocation: () => void;
 }
 
 /**
