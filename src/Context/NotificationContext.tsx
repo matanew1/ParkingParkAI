@@ -35,7 +35,29 @@ interface NotificationProviderProps {
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<ParkingNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [preferences, setPreferences] = useState<NotificationPreferences>(notificationService.getPreferences());
+  const [preferences, setPreferences] = useState<NotificationPreferences>(() => {
+    try {
+      return notificationService.getPreferences();
+    } catch (error) {
+      console.warn('Failed to get notification preferences:', error);
+      return {
+        enabled: false,
+        types: {
+          availabilityAlerts: false,
+          priceDropAlerts: false,
+          statusChanges: false,
+          favoriteSpotUpdates: false,
+        },
+        quietHours: {
+          enabled: false,
+          start: '22:00',
+          end: '07:00',
+        },
+        sound: false,
+        vibration: false,
+      };
+    }
+  });
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 

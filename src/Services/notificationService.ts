@@ -584,4 +584,44 @@ export class NotificationService {
 }
 
 // Export singleton instance
-export const notificationService = new NotificationService();
+// Export service instance with safe initialization
+let notificationServiceInstance: NotificationService | null = null;
+
+export const notificationService = (() => {
+  if (!notificationServiceInstance) {
+    try {
+      notificationServiceInstance = new NotificationService();
+    } catch (error) {
+      console.error('Failed to create NotificationService instance:', error);
+      // Create a minimal fallback service
+      notificationServiceInstance = {
+        getPreferences: () => ({
+          enabled: false,
+          types: {
+            availabilityAlerts: false,
+            priceDropAlerts: false,
+            statusChanges: false,
+            favoriteSpotUpdates: false,
+          },
+          quietHours: {
+            enabled: false,
+            start: '22:00',
+            end: '07:00',
+          },
+          sound: false,
+          vibration: false,
+        }),
+        requestPermission: () => Promise.resolve(false),
+        updatePreferences: () => {},
+        getStoredNotifications: () => [],
+        getUnreadCount: () => 0,
+        markAsRead: () => {},
+        markAllAsRead: () => {},
+        clearAllNotifications: () => {},
+        updateParkingStatuses: () => [],
+        notifyFavoriteSpotAvailable: () => Promise.resolve(),
+      } as any;
+    }
+  }
+  return notificationServiceInstance;
+})();

@@ -9,6 +9,8 @@ import NotificationErrorBoundary from "./utils/NotificationErrorBoundary";
 import AppContent from "./components/AppContent";
 
 const App: React.FC = () => {
+  console.log('App component rendering...');
+  
   return (
     <ErrorBoundary>
       <AnimationProvider>
