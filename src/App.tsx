@@ -1,33 +1,10 @@
 import React from "react";
-import { ThemeProvider as CustomThemeProvider } from "./Context/ThemeContext";
-import { ParkingProvider } from "./Context/ParkingContext";
-import { FavoritesProvider } from "./Context/FavoritesContext";
-import { NotificationProvider } from "./Context/NotificationContext";
-import { AnimationProvider } from "./utils/AnimationProvider";
-import ErrorBoundary from "./utils/ErrorBoundary";
-import NotificationErrorBoundary from "./utils/NotificationErrorBoundary";
-import AppContent from "./components/AppContent";
+import AppContent from "./features/app/components/AppContent";
 
 const App: React.FC = () => {
-  console.log('App component rendering...');
-  
-  return (
-    <ErrorBoundary>
-      <AnimationProvider>
-        <ParkingProvider>
-          <FavoritesProvider>
-            <NotificationErrorBoundary>
-              <NotificationProvider>
-                <CustomThemeProvider>
-                  <AppContent />
-                </CustomThemeProvider>
-              </NotificationProvider>
-            </NotificationErrorBoundary>
-          </FavoritesProvider>
-        </ParkingProvider>
-      </AnimationProvider>
-    </ErrorBoundary>
-  );
+  console.log("App component rendering...");
+
+  return <AppContent />;
 };
 
 export default App;

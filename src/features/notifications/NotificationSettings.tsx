@@ -1,0 +1,438 @@
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Switch,
+  FormControlLabel,
+  FormGroup,
+  Typography,
+  Box,
+  Divider,
+  TextField,
+  Alert,
+  Chip,
+  Card,
+  CardContent,
+} from "@mui/material";
+import {
+  Notifications as NotificationsIcon,
+  NotificationsOff as NotificationsOffIcon,
+  VolumeUp as VolumeUpIcon,
+  Vibration as VibrationIcon,
+  Schedule as ScheduleIcon,
+  Star as StarIcon,
+  LocationOn as LocationIcon,
+  TrendingDown as TrendingDownIcon,
+} from "@mui/icons-material";
+import { useNotificationStore } from "../../stores/notificationStore";
+import { NotificationSettingsType } from "../../stores/notificationStore";
+
+interface NotificationSettingsProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+const NotificationSettings: React.FC<NotificationSettingsProps> = ({
+  open,
+  onClose,
+}) => {
+  const {
+    settings,
+    notifications,
+    unreadCount,
+    permissionGranted,
+    updateSettings,
+    requestPermission,
+  } = useNotificationStore();
+
+  const [localSettings, setLocalSettings] =
+    useState<NotificationSettingsType>(settings);
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+
+  // Detect if running on mobile device
+  const isMobileDevice =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+
+  const handleSave = () => {
+    updateSettings(localSettings);
+    onClose();
+  };
+
+  const handleRequestPermission = async () => {
+    setIsRequestingPermission(true);
+    setPermissionError(null);
+    try {
+      await requestPermission();
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to request notification permission";
+      setPermissionError(errorMessage);
+    } finally {
+      setIsRequestingPermission(false);
+    }
+  };
+
+  const updateLocalSettings = (updates: Partial<NotificationSettingsType>) => {
+    setLocalSettings((prev) => ({ ...prev, ...updates }));
+  };
+
+  const updateNotificationTypes = (
+    type: "favoriteAlerts" | "statusChangeAlerts",
+    enabled: boolean
+  ) => {
+    setLocalSettings((prev) => ({
+      ...prev,
+      [type]: enabled,
+    }));
+  };
+
+  const updateQuietHours = (
+    field: "enabled" | "start" | "end",
+    value: boolean | string
+  ) => {
+    setLocalSettings((prev) => ({
+      ...prev,
+      quietHours: {
+        ...prev.quietHours,
+        [field]: value,
+      },
+    }));
+  };
+
+  const getRecentNotificationStats = () => {
+    const recent = notifications.filter((notif) => {
+      const age = Date.now() - notif.timestamp.getTime();
+      return age < 24 * 60 * 60 * 1000; // Last 24 hours
+    });
+
+    const byType = recent.reduce((acc, notif) => {
+      acc[notif.type] = (acc[notif.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return { total: recent.length, byType };
+  };
+
+  const stats = getRecentNotificationStats();
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <NotificationsIcon />
+          Notification Settings
+          {unreadCount > 0 && (
+            <Chip
+              label={unreadCount}
+              size="small"
+              color="primary"
+              sx={{ ml: "auto" }}
+            />
+          )}
+        </Box>
+      </DialogTitle>
+
+      <DialogContent>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          {/* Permission Status */}
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Permission Status
+              </Typography>
+              {!permissionGranted ? (
+                <Box>
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    Notifications are disabled. Enable them to receive parking
+                    alerts.
+                    {isMobileDevice && (
+                      <Box sx={{ mt: 1, fontSize: "0.875rem" }}>
+                        <strong>Mobile users:</strong> After clicking "Enable
+                        Notifications", make sure to allow notifications when
+                        your browser asks.
+                      </Box>
+                    )}
+                  </Alert>
+                  {permissionError && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      {permissionError}
+                      {isMobileDevice &&
+                        permissionError.includes("blocked") && (
+                          <Box sx={{ mt: 1, fontSize: "0.875rem" }}>
+                            <strong>To fix this:</strong> Go to your browser
+                            settings → Site permissions → Notifications → Allow
+                            for this site.
+                          </Box>
+                        )}
+                    </Alert>
+                  )}
+                  <Button
+                    variant="contained"
+                    onClick={handleRequestPermission}
+                    disabled={isRequestingPermission}
+                    startIcon={<NotificationsIcon />}
+                    fullWidth
+                  >
+                    {isRequestingPermission
+                      ? "Requesting..."
+                      : "Enable Notifications"}
+                  </Button>
+                </Box>
+              ) : (
+                <Alert severity="success">
+                  Notifications are enabled and working!
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Statistics */}
+          {stats.total > 0 && (
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Recent Activity (24h)
+                </Typography>
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                  <Chip label={`${stats.total} notifications`} size="small" />
+                  {Object.entries(stats.byType).map(([type, count]) => (
+                    <Chip
+                      key={type}
+                      label={`${count} ${type.replace("_", " ")}`}
+                      size="small"
+                      variant="outlined"
+                    />
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Main Toggle */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={localSettings.enabled}
+                onChange={(e) =>
+                  updateLocalSettings({ enabled: e.target.checked })
+                }
+                disabled={!permissionGranted}
+              />
+            }
+            label={
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                {localSettings.enabled ? (
+                  <NotificationsIcon />
+                ) : (
+                  <NotificationsOffIcon />
+                )}
+                <Typography variant="body1">Enable Notifications</Typography>
+              </Box>
+            }
+          />
+
+          <Divider />
+
+          {/* Notification Types */}
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Notification Types
+            </Typography>
+            <FormGroup>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={localSettings.statusChangeAlerts}
+                    onChange={(e) =>
+                      updateNotificationTypes(
+                        "statusChangeAlerts",
+                        e.target.checked
+                      )
+                    }
+                    disabled={!localSettings.enabled}
+                  />
+                }
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <LocationIcon fontSize="small" />
+                    <Box>
+                      <Typography variant="body2">
+                        Availability Alerts
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Get notified when parking spots become available
+                      </Typography>
+                    </Box>
+                  </Box>
+                }
+              />
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={localSettings.favoriteAlerts}
+                    onChange={(e) =>
+                      updateNotificationTypes(
+                        "favoriteAlerts",
+                        e.target.checked
+                      )
+                    }
+                    disabled={!localSettings.enabled}
+                  />
+                }
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <StarIcon fontSize="small" />
+                    <Box>
+                      <Typography variant="body2">
+                        Favorite Spot Updates
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Priority alerts for your favorite parking locations
+                      </Typography>
+                    </Box>
+                  </Box>
+                }
+              />
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={localSettings.statusChangeAlerts}
+                    onChange={(e) =>
+                      updateNotificationTypes(
+                        "statusChangeAlerts",
+                        e.target.checked
+                      )
+                    }
+                    disabled={!localSettings.enabled}
+                  />
+                }
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <NotificationsIcon fontSize="small" />
+                    <Box>
+                      <Typography variant="body2">Status Changes</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        General parking status change notifications
+                      </Typography>
+                    </Box>
+                  </Box>
+                }
+              />
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={localSettings.favoriteAlerts}
+                    onChange={(e) =>
+                      updateNotificationTypes(
+                        "favoriteAlerts",
+                        e.target.checked
+                      )
+                    }
+                    disabled={!localSettings.enabled}
+                  />
+                }
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <TrendingDownIcon fontSize="small" />
+                    <Box>
+                      <Typography variant="body2">Price Drop Alerts</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Get notified about parking price decreases
+                      </Typography>
+                    </Box>
+                  </Box>
+                }
+              />
+            </FormGroup>
+          </Box>
+
+          <Divider />
+
+          {/* Quiet Hours */}
+          <Box>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{ display: "flex", alignItems: "center", gap: 1 }}
+            >
+              <ScheduleIcon />
+              Quiet Hours
+            </Typography>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={localSettings.quietHours.enabled}
+                  onChange={(e) =>
+                    updateLocalSettings({
+                      quietHours: {
+                        ...localSettings.quietHours,
+                        enabled: e.target.checked,
+                      },
+                    })
+                  }
+                  disabled={!localSettings.enabled}
+                />
+              }
+              label="Enable quiet hours"
+              sx={{ mb: 2 }}
+            />
+
+            {localSettings.quietHours.enabled && (
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <TextField
+                  label="Start Time"
+                  type="time"
+                  value={localSettings.quietHours.start}
+                  onChange={(e) => updateQuietHours("start", e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ step: 300 }}
+                  size="small"
+                  disabled={!localSettings.enabled}
+                />
+                <TextField
+                  label="End Time"
+                  type="time"
+                  value={localSettings.quietHours.end}
+                  onChange={(e) => updateQuietHours("end", e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ step: 300 }}
+                  size="small"
+                  disabled={!localSettings.enabled}
+                />
+              </Box>
+            )}
+            {localSettings.quietHours.enabled && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 1, display: "block" }}
+              >
+                No notifications will be sent during quiet hours
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSave}>
+          Save Settings
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export default NotificationSettings;
