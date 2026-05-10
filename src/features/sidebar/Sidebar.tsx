@@ -197,6 +197,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   onSpotSelect={onSpotSelect}
                   toggleDrawer={toggleDrawer}
                   isMobile={isMobile}
+                  loading={isRefreshing && spots.length === 0}
                 />
               </motion.div>
             ) : (

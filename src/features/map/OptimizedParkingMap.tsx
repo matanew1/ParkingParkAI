@@ -34,11 +34,13 @@ import {
   IconButton,
 } from "@mui/material";
 import { useParkingStore } from "../../stores/parkingStore";
+import { useThemeStore } from "../../stores/themeStore";
 import {
   getMarkerIcon,
   selectedMarkerIcon,
   MapZoomController,
   RouteZoomController,
+  routeIcons,
 } from "./utils/MarkerUtils";
 import LocationMarker from "./LocationMarker";
 import MapController from "./MapController";
@@ -48,27 +50,6 @@ import { useViewportFilter } from "../../hooks/useViewportFilter";
 import "leaflet/dist/leaflet.css";
 import "../../styles/markerClusters.css";
 import { Icon } from "leaflet";
-
-// Custom icons for start and end points
-const startIcon = new Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  shadowSize: [41, 41],
-});
-
-const endIcon = new Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  shadowSize: [41, 41],
-});
 
 // Performance-optimized map component that uses viewport filtering and clustering
 const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
@@ -86,6 +67,7 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery("(max-width:768px)");
   const isSmallMobile = useMediaQuery("(max-width:480px)");
+  const { isDarkMode } = useThemeStore();
 
   const [userLocation, setUserLocation] = useState(null);
   const [navigationActive, setNavigationActive] = useState(false);
@@ -249,10 +231,14 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
         <MapClickHandler onMapClick={handleMapClick} />
 
         <TileLayer
-          attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          errorTileUrl="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maxZoom={19}
+          attribution='© <a href="https://carto.com/attributions">CARTO</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url={
+            isDarkMode
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          }
+          subdomains="abcd"
+          maxZoom={20}
           minZoom={3}
         />
 
@@ -282,12 +268,12 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
         {/* Start and end markers for routes */}
         {hasValidRouteData() && processedRoutes[0] && (
           <>
-            <Marker position={processedRoutes[0][0]} icon={startIcon}>
+            <Marker position={processedRoutes[0][0]} icon={routeIcons.start}>
               <Popup>Start Point</Popup>
             </Marker>
             <Marker
               position={processedRoutes[0][processedRoutes[0].length - 1]}
-              icon={endIcon}
+              icon={routeIcons.end}
             >
               <Popup>Destination</Popup>
             </Marker>

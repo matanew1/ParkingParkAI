@@ -10,9 +10,9 @@ import {
   alpha,
   IconButton,
   Tooltip,
+  Skeleton,
 } from "@mui/material";
-import { ChevronRight, Clock, MapPin, Car, Navigation, Sparkles } from "lucide-react";
-import { getStatusColor } from "../../utils/colorUtils";
+import { ChevronRight, MapPin, Car, Sparkles } from "lucide-react";
 import FavoriteToggleButton from "../favorites/FavoriteToggleButton";
 import { motion } from "framer-motion";
 
@@ -27,12 +27,45 @@ const WazeIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
   />
 );
 
+const SkeletonCard: React.FC = () => {
+  const theme = useTheme();
+  return (
+    <Box sx={{ px: "4px", pb: "12px" }}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          borderRadius: 3,
+          border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+          backgroundColor: alpha(theme.palette.background.paper, 0.6),
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+          <Skeleton variant="rounded" width={44} height={44} sx={{ borderRadius: 2.5, flexShrink: 0 }} />
+          <Box sx={{ flex: 1 }}>
+            <Skeleton variant="text" width="70%" height={20} sx={{ mb: 0.5 }} />
+            <Skeleton variant="text" width="90%" height={16} sx={{ mb: 1 }} />
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Skeleton variant="rounded" width={64} height={24} sx={{ borderRadius: 1 }} />
+              <Box sx={{ display: "flex", gap: 0.5 }}>
+                <Skeleton variant="circular" width={32} height={32} />
+                <Skeleton variant="circular" width={32} height={32} />
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      </Paper>
+    </Box>
+  );
+};
+
 const VirtualizedParkingList: React.FC<ParkingListProps> = ({
   filteredSpots,
   onSpotClick,
   onSpotSelect,
   toggleDrawer,
   isMobile,
+  loading = false,
 }) => {
   const parentRef = React.useRef<HTMLDivElement>(null);
   const theme = useTheme();
@@ -49,6 +82,16 @@ const VirtualizedParkingList: React.FC<ParkingListProps> = ({
     () => filteredSpots.filter((s) => s.status_chenyon === "פנוי").length,
     [filteredSpots]
   );
+
+  if (loading) {
+    return (
+      <Box sx={{ overflow: "hidden" }}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </Box>
+    );
+  }
 
   if (filteredSpots.length === 0) {
     return (

@@ -95,4 +95,5 @@ export interface ParkingListProps {
   onSpotSelect: (spotId: string | null) => void;
   toggleDrawer: () => void;
   isMobile: boolean;
+  loading?: boolean;
 }
