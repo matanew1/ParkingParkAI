@@ -20,6 +20,7 @@ export interface NotificationItem {
   timestamp: Date;
   spotId?: string;
   read: boolean;
+  priority?: "low" | "medium" | "high";
 }
 
 export interface NotificationState {

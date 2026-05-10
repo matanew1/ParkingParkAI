@@ -1,4 +1,4 @@
-import { Icon, divIcon, LatLngBounds } from "leaflet";
+import { divIcon } from "leaflet";
 import L from "leaflet";
 import "./MarkerUtils.css";
 import { useMap } from "react-leaflet";
@@ -7,131 +7,86 @@ import { useMediaQuery, useTheme } from "@mui/material";
 import type { ParkingSpotWithStatus } from "../../Types/parking";
 import type { Coordinates } from "../../Services/routeService";
 
-// Constants
-const ICON_SIZE = [25, 41];
-const ICON_ANCHOR = [12, 41];
-const POPUP_ANCHOR = [1, -34];
-const SHADOW_SIZE = [41, 41];
-const SHADOW_URL =
-  "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png";
+// ─── Status colours ────────────────────────────────────────────────────────────
+const STATUS_COLORS: Record<string, string> = {
+  "פנוי": "#10b981",   // available – emerald
+  "מעט": "#f59e0b",    // limited   – amber
+  "מלא": "#ef4444",    // full      – red
+  "סגור": "#6b7280",   // closed    – gray
+  "פעיל": "#3b82f6",   // active    – blue
+};
+const DEFAULT_COLOR = "#3b82f6";
 
-// Cache for marker icons to prevent recreating them
-const iconCache = new Map<string, Icon>();
+const getStatusColor = (status?: string) =>
+  STATUS_COLORS[status ?? ""] ?? DEFAULT_COLOR;
 
-// User location marker using me.svg file
-export const userLocationIcon = new Icon({
-  iconUrl: `/me.svg`,
-  shadowUrl: SHADOW_URL,
-  iconSize: [30, 45],
-  iconAnchor: [15, 45],
-  popupAnchor: [1, -34],
-  shadowSize: SHADOW_SIZE,
+// ─── SVG marker builder ────────────────────────────────────────────────────────
+const makePMarker = (color: string, selected = false) => {
+  const size = selected ? 36 : 28;
+  const half = size / 2;
+  const r = selected ? 13 : 10;
+  const fontSize = selected ? 13 : 10;
+  const fontY = half + fontSize * 0.38;
+
+  const svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+  ${selected ? `<circle cx="${half}" cy="${half}" r="${half - 1}" fill="${color}" opacity="0.22"/>` : ""}
+  <circle cx="${half}" cy="${half}" r="${r}" fill="${color}" stroke="white" stroke-width="${selected ? 2.5 : 2}"/>
+  <text x="${half}" y="${fontY}" font-family="-apple-system,BlinkMacSystemFont,'Inter',sans-serif" font-size="${fontSize}" font-weight="800" fill="white" text-anchor="middle">P</text>
+</svg>`;
+
+  return divIcon({
+    html: svg,
+    className: "",
+    iconSize: [size, size],
+    iconAnchor: [half, half],
+    popupAnchor: [0, -(half + 6)],
+  });
+};
+
+// ─── Icon cache ────────────────────────────────────────────────────────────────
+const iconCache = new Map<string, ReturnType<typeof divIcon>>();
+
+export const getMarkerIcon = (status?: string) => {
+  const color = getStatusColor(status);
+  const key = `p-${color}`;
+  if (!iconCache.has(key)) iconCache.set(key, makePMarker(color));
+  return iconCache.get(key)!;
+};
+
+export const selectedMarkerIcon = makePMarker("#f59e0b", true); // gold selected
+
+// ─── User location marker ──────────────────────────────────────────────────────
+export const userLocationIcon = divIcon({
+  html: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="11" fill="#3b82f6" opacity="0.18"/>
+  <circle cx="12" cy="12" r="7" fill="#3b82f6" stroke="white" stroke-width="2.5"/>
+  <circle cx="12" cy="12" r="3" fill="white"/>
+</svg>`,
+  className: "",
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -16],
 });
 
-/**
- * Returns a marker icon based on the parking spot status
- * Uses caching to improve performance
- * @param status The status of the parking spot
- * @returns Leaflet Icon with appropriate color
- */
-export const getMarkerIcon = (status?: string) => {
-  let color = "blue"; // default
-  
-  switch (status?.toLowerCase()) {
-    case "מלא":
-      color = "red";
-      break;
-    case "מעט":
-      color = "orange";
-      break;
-    case "פנוי":
-      color = "green";
-      break;
-    case "סגור":
-      color = "grey";
-      break;
-    case "פעיל":
-      color = "blue";
-      break;
-    default:
-      color = "blue";
-  }
-  
-  const cacheKey = `marker-${color}`;
-
-  if (iconCache.has(cacheKey)) {
-    return iconCache.get(cacheKey)!;
-  }
-
-  const icon = new Icon({
-    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-    shadowUrl: SHADOW_URL,
-    iconSize: ICON_SIZE,
-    iconAnchor: ICON_ANCHOR,
-    popupAnchor: POPUP_ANCHOR,
-    shadowSize: SHADOW_SIZE,
+// ─── Route start / end markers ─────────────────────────────────────────────────
+const makeLetterMarker = (letter: string, color: string) =>
+  divIcon({
+    html: `<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="14" cy="14" r="12" fill="${color}" stroke="white" stroke-width="2.5"/>
+  <text x="14" y="18.5" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11" font-weight="800" fill="white" text-anchor="middle">${letter}</text>
+</svg>`,
+    className: "",
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -20],
   });
 
-  iconCache.set(cacheKey, icon);
-  return icon;
-};
-
-// Selected marker with glow effect
-export const selectedMarkerIcon = divIcon({
-  className: "selected-marker-icon",
-  html: `
-    <div style="
-      position: relative;
-      width: 35px;
-      height: 55px;
-    ">
-      <img 
-        src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png" 
-        style="width: 100%; height: 100%;"
-      />
-      <div style="
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.8);
-        animation: glow 1.5s infinite;
-      "></div>
-    </div>
-  `,
-  iconSize: [30, 50], // Larger size for emphasis
-  iconAnchor: [17, 55],
-  popupAnchor: [1, -34],
-});
-
-// Start and end icons for routes
 export const routeIcons = {
-  start: new Icon({
-    iconUrl:
-      "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
-    iconSize: ICON_SIZE,
-    iconAnchor: ICON_ANCHOR,
-    popupAnchor: POPUP_ANCHOR,
-    shadowUrl: SHADOW_URL,
-    shadowSize: SHADOW_SIZE,
-  }),
-  end: new Icon({
-    iconUrl:
-      "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-    iconSize: ICON_SIZE,
-    iconAnchor: ICON_ANCHOR,
-    popupAnchor: POPUP_ANCHOR,
-    shadowUrl: SHADOW_URL,
-    shadowSize: SHADOW_SIZE,
-  }),
+  start: makeLetterMarker("A", "#10b981"),
+  end: makeLetterMarker("B", "#ef4444"),
 };
 
-/**
- * MapZoomController for selected spot
- * Zooms map to the selected parking spot, but with delayed zoom to avoid closing popups
- */
+// ─── MapZoomController ─────────────────────────────────────────────────────────
 export const MapZoomController: React.FC<{
   selectedSpotId: string | null;
   spots: ParkingSpotWithStatus[];
@@ -140,98 +95,52 @@ export const MapZoomController: React.FC<{
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // Memoize the selected spot to prevent unnecessary processing
-  const selectedSpot = useMemo(() => {
-    if (!selectedSpotId) return null;
-    return spots.find((spot) => spot.code_achoza.toString() === selectedSpotId);
-  }, [selectedSpotId, spots]);
+  const selectedSpot = useMemo(
+    () =>
+      selectedSpotId
+        ? spots.find((s) => s.code_achoza.toString() === selectedSpotId)
+        : null,
+    [selectedSpotId, spots]
+  );
 
   useEffect(() => {
-    if (selectedSpot) {
-      const position: Coordinates = [
-        selectedSpot.lat,
-        selectedSpot.lon,
-      ];
-
-      if (!isNaN(position[0]) && !isNaN(position[1])) {
-        // Use different zoom levels for mobile vs desktop
-        // Mobile gets slightly lower zoom to show more context in smaller screen
-        const zoomLevel = isMobile ? 17 : 18;
-        const duration = isMobile ? 1.2 : 1.5;
-        
-        map.flyTo(position, zoomLevel, {
-          animate: true,
-          duration: duration,
-        });
-      }
+    if (!selectedSpot) return;
+    const pos: Coordinates = [selectedSpot.lat, selectedSpot.lon];
+    if (!isNaN(pos[0]) && !isNaN(pos[1])) {
+      map.flyTo(pos, isMobile ? 17 : 18, {
+        animate: true,
+        duration: isMobile ? 1.2 : 1.5,
+      });
     }
   }, [selectedSpot, map, isMobile]);
 
   return null;
 };
 
-/**
- * Validates coordinates to ensure they are usable
- */
-const isValidCoordinate = (coord: Coordinates): boolean => {
-  return (
-    typeof coord[0] === "number" &&
-    typeof coord[1] === "number" &&
-    !isNaN(coord[0]) &&
-    !isNaN(coord[1]) &&
-    coord[0] >= -90 &&
-    coord[0] <= 90 &&
-    coord[1] >= -180 &&
-    coord[1] <= 180
-  );
-};
+// ─── RouteZoomController ───────────────────────────────────────────────────────
+const isValidCoord = (c: Coordinates) =>
+  !isNaN(c[0]) && !isNaN(c[1]) && c[0] >= -90 && c[0] <= 90;
 
-/**
- * RouteZoomController with validation
- * Fits map bounds to show the entire route
- */
-export const RouteZoomController: React.FC<{
-  routes: Coordinates[][];
-}> = ({ routes }) => {
+export const RouteZoomController: React.FC<{ routes: Coordinates[][] }> = ({ routes }) => {
   const map = useMap();
 
-  const getValidRoutes = useCallback((inputRoutes: Coordinates[][]) => {
-    return inputRoutes
-      .map((route) => route.filter(isValidCoordinate))
-      .filter((route) => route.length > 0);
-  }, []);
+  const validRoutes = useCallback(
+    (input: Coordinates[][]) => input.map((r) => r.filter(isValidCoord)).filter((r) => r.length),
+    []
+  );
 
   useEffect(() => {
-    if (routes.length === 0 || !routes[0]?.length) return;
-
-    const validRoutes = getValidRoutes(routes);
-
-    if (validRoutes.length > 0 && validRoutes[0].length > 0) {
-      try {
-        const bounds = validRoutes[0].reduce(
-          (acc, coord) => acc.extend([coord[0], coord[1]]),
-          new L.LatLngBounds(
-            [validRoutes[0][0][0], validRoutes[0][0][1]],
-            [validRoutes[0][0][0], validRoutes[0][0][1]]
-          )
-        );
-
-        // Use flyToBounds instead of fitBounds for smoother animation
-        // and less aggressive popup closing behavior
-        map.flyToBounds(bounds, { 
-          padding: [50, 50],
-          animate: true,
-          duration: 1.0
-        });
-      } catch (err) {
-        console.error("Error fitting bounds:", err);
-      }
-    }
-  }, [routes, map, getValidRoutes]);
+    if (!routes.length || !routes[0]?.length) return;
+    const vr = validRoutes(routes);
+    if (!vr.length) return;
+    try {
+      const bounds = vr[0].reduce(
+        (acc, c) => acc.extend([c[0], c[1]]),
+        new L.LatLngBounds([vr[0][0][0], vr[0][0][1]], [vr[0][0][0], vr[0][0][1]])
+      );
+      map.flyToBounds(bounds, { padding: [50, 50], animate: true, duration: 1.0 });
+    } catch {}
+  }, [routes, map, validRoutes]);
 
   return null;
 };
-/**
- * MarkerUtils module for managing markers on the map
- * Provides functions to create and manage marker icons
- */

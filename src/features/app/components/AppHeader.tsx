@@ -21,7 +21,7 @@ import { NotificationBadge, NotificationPanel } from "../../notifications";
 import { AppHeaderProps } from "../../../Types/app";
 import { motion } from "framer-motion";
 
-const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup, onNavigateToSpot }) => {
   const isMobile = useMediaQuery("(max-width:768px)");
   const isSmallMobile = useMediaQuery("(max-width:480px)");
   const { favoritesCount } = useFavoritesStore();
@@ -193,9 +193,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup }) => {
       <NotificationPanel
         open={notificationPanelOpen}
         onClose={() => setNotificationPanelOpen(false)}
-        onNavigateToSpot={(spotId) => {
-          console.log("Navigate to spot:", spotId);
-        }}
+        onNavigateToSpot={onNavigateToSpot}
       />
     </AppBar>
   );
