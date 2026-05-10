@@ -1,14 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   X,
-  Car,
   Route,
   MapPin,
   Navigation,
-  Clock,
-  Umbrella,
-  ParkingSquare,
-  BarChart4,
   Filter,
   HelpCircle,
   Sparkles,
@@ -38,7 +33,6 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
     userLocation,
     selectedSpot,
     setShowLocationMarker,
-    setRoutes,
     fetchUserLocation,
     fetchRoute,
   } = useParkingStore();
@@ -59,18 +53,12 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
     async (source: Coordinates, destination: string) => {
       setLocationStatus("Calculating your optimal route...");
       try {
-        const trip = await fetchRoute(source, destination, {
-          shortest: routePreferences.shortest,
-          avoidTolls: routePreferences.avoidTolls,
-          avoidHighways: routePreferences.avoidHighways,
-        });
-
+        await fetchRoute(source, destination);
         setRouteDetails({
-          distance: trip.summary.length.toFixed(2) + " km",
-          duration: Math.round(trip.summary.time / 60) + " min",
+          distance: "See map",
+          duration: "Route shown",
         });
-
-        setLocationStatus("Route ready! Happy travels!");
+        setLocationStatus("Route ready! Check the map.");
         setLoadingAction(false);
         setNeedsDestination(false);
       } catch (error) {
@@ -79,7 +67,7 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
         setLoadingAction(false);
       }
     },
-    [fetchRoute, routePreferences]
+    [fetchRoute]
   );
 
   // Handle AI action selection
@@ -97,15 +85,20 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
         } else if (!userLocation && navigator.geolocation) {
           setShowLocationMarker(true);
 
-          // Try to get location
           fetchUserLocation()
-            .then((coords) => {
+            .then(() => {
+              const currentLocation = useParkingStore.getState().userLocation;
+              if (!currentLocation) {
+                setLocationStatus("Location access denied. Enable it?");
+                setLoadingAction(false);
+                return;
+              }
               if (!selectedSpot) {
                 setLocationStatus("Please pick a parking spot on the map");
                 setNeedsDestination(true);
                 setLoadingAction(false);
               } else {
-                processRouteRequest(coords, selectedSpot);
+                processRouteRequest(currentLocation, selectedSpot);
               }
             })
             .catch((error) => {
@@ -222,7 +215,7 @@ const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
                         >
                           <input
                             type="checkbox"
-                            checked={routePreferences[key]}
+                            checked={routePreferences[key as keyof typeof routePreferences]}
                             onChange={(e) =>
                               setRoutePreferences({
                                 ...routePreferences,

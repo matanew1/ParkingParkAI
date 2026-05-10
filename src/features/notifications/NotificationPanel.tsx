@@ -25,12 +25,9 @@ import {
   Delete as DeleteIcon,
   Star as StarIcon,
   LocationOn as LocationIcon,
-  TrendingDown as TrendingDownIcon,
-  Schedule as ScheduleIcon,
   MoreVert as MoreVertIcon,
 } from "@mui/icons-material";
-import { useNotificationStore } from "../../stores/notificationStore";
-import { ParkingNotification } from "../../services/notificationService";
+import { useNotificationStore, NotificationItem } from "../../stores/notificationStore";
 import NotificationSettings from "./NotificationSettings";
 
 interface NotificationPanelProps {
@@ -50,30 +47,24 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
     markAsRead,
     markAllAsRead,
     clearNotifications,
+    removeNotification,
     permissionGranted,
   } = useNotificationStore();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
-  const handleNotificationClick = (notification: ParkingNotification) => {
+  const handleNotificationClick = (notification: NotificationItem) => {
     if (!notification.read) {
       markAsRead(notification.id);
     }
-
-    if (onNavigateToSpot) {
+    if (notification.spotId && onNavigateToSpot) {
       onNavigateToSpot(notification.spotId);
       onClose();
     }
   };
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setMenuAnchor(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setMenuAnchor(null);
-  };
+  const handleMenuClose = () => setMenuAnchor(null);
 
   const handleMarkAllRead = () => {
     markAllAsRead();
@@ -85,65 +76,54 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
     handleMenuClose();
   };
 
-  const getNotificationIcon = (type: ParkingNotification["type"]) => {
-    switch (type) {
-      case "favorite_update":
-        return <StarIcon color="primary" />;
-      case "status_change":
-        return <LocationIcon color="success" />;
-      case "price_drop":
-        return <TrendingDownIcon color="info" />;
-      case "availability_alert":
-        return <NotificationsIcon color="warning" />;
-      default:
-        return <NotificationsIcon />;
-    }
+  const getNotificationIcon = (notification: NotificationItem) => {
+    if (notification.priority === "high") return <StarIcon color="warning" />;
+    if (notification.type === "success") return <LocationIcon color="success" />;
+    return <NotificationsIcon color="primary" />;
   };
 
-  const getPriorityColor = (priority: ParkingNotification["priority"]) => {
+  const getPriorityChipColor = (
+    priority: NotificationItem["priority"]
+  ): "error" | "warning" | "info" | "default" => {
     switch (priority) {
-      case "high":
-        return "error";
-      case "medium":
-        return "warning";
-      case "low":
-        return "info";
-      default:
-        return "default";
+      case "high": return "error";
+      case "medium": return "warning";
+      case "low": return "info";
+      default: return "default";
     }
   };
 
   const formatTimestamp = (timestamp: Date) => {
     const now = new Date();
-    const diff = now.getTime() - timestamp.getTime();
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
+    const ts = new Date(timestamp);
+    const diff = now.getTime() - ts.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
     if (minutes < 1) return "Just now";
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
     if (days < 7) return `${days}d ago`;
-    return timestamp.toLocaleDateString();
+    return ts.toLocaleDateString();
   };
 
-  const groupedNotifications = notifications.reduce((groups, notification) => {
-    const today = new Date();
-    const notifDate = new Date(notification.timestamp);
-    const isToday = notifDate.toDateString() === today.toDateString();
+  const groupedNotifications = notifications.reduce<Record<string, NotificationItem[]>>(
+    (groups, notification) => {
+      const today = new Date();
+      const notifDate = new Date(notification.timestamp);
+      const isToday = notifDate.toDateString() === today.toDateString();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const isYesterday = notifDate.toDateString() === yesterday.toDateString();
+      const group = isToday ? "Today" : isYesterday ? "Yesterday" : "Older";
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(notification);
+      return groups;
+    },
+    {}
+  );
 
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const isYesterday = notifDate.toDateString() === yesterday.toDateString();
-
-    let group = "Older";
-    if (isToday) group = "Today";
-    else if (isYesterday) group = "Yesterday";
-
-    if (!groups[group]) groups[group] = [];
-    groups[group].push(notification);
-    return groups;
-  }, {} as Record<string, ParkingNotification[]>);
+  const groupOrder = ["Today", "Yesterday", "Older"];
 
   return (
     <>
@@ -178,7 +158,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
             </Typography>
 
             <Tooltip title="More options">
-              <IconButton onClick={handleMenuClick} size="small">
+              <IconButton onClick={e => setMenuAnchor(e.currentTarget)} size="small">
                 <MoreVertIcon />
               </IconButton>
             </Tooltip>
@@ -197,8 +177,19 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
           {/* Content */}
           <Box sx={{ flexGrow: 1, overflow: "auto" }}>
             {!permissionGranted && (
-              <Alert severity="info" sx={{ m: 2 }}>
-                Enable notifications in settings to receive parking alerts.
+              <Alert
+                severity="info"
+                sx={{ m: 2 }}
+                action={
+                  <Button
+                    size="small"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    Enable
+                  </Button>
+                }
+              >
+                Enable notifications to receive parking alerts.
               </Alert>
             )}
 
@@ -214,20 +205,19 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
                   textAlign: "center",
                 }}
               >
-                <NotificationsIcon
-                  sx={{ fontSize: 48, color: "text.secondary", mb: 2 }}
-                />
+                <NotificationsIcon sx={{ fontSize: 48, color: "text.secondary", mb: 2 }} />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                   No notifications yet
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  You'll see parking alerts and updates here
+                  You&apos;ll see parking alerts and updates here
                 </Typography>
               </Box>
             ) : (
               <List sx={{ p: 0 }}>
-                {Object.entries(groupedNotifications).map(
-                  ([group, groupNotifications]) => (
+                {groupOrder
+                  .filter(g => groupedNotifications[g]?.length)
+                  .map(group => (
                     <Box key={group}>
                       <Typography
                         variant="overline"
@@ -244,36 +234,40 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
                         {group}
                       </Typography>
 
-                      {groupNotifications.map((notification, index) => (
+                      {groupedNotifications[group].map((notification, index) => (
                         <React.Fragment key={notification.id}>
                           <ListItem
-                            button
-                            onClick={() =>
-                              handleNotificationClick(notification)
-                            }
+                            onClick={() => handleNotificationClick(notification)}
                             sx={{
+                              cursor: notification.spotId ? "pointer" : "default",
                               backgroundColor: notification.read
                                 ? "transparent"
                                 : "action.hover",
-                              "&:hover": {
-                                backgroundColor: "action.selected",
-                              },
+                              "&:hover": { backgroundColor: "action.selected" },
+                              pr: 1,
                             }}
+                            secondaryAction={
+                              <Tooltip title="Remove">
+                                <IconButton
+                                  edge="end"
+                                  size="small"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    removeNotification(notification.id);
+                                  }}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            }
                           >
                             <ListItemIcon>
-                              {getNotificationIcon(notification.type)}
+                              {getNotificationIcon(notification)}
                             </ListItemIcon>
 
                             <ListItemText
                               primary={
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 1,
-                                    mb: 0.5,
-                                  }}
-                                >
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                                   <Typography
                                     variant="subtitle2"
                                     sx={{
@@ -283,16 +277,15 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
                                   >
                                     {notification.title}
                                   </Typography>
-
-                                  <Chip
-                                    label={notification.priority}
-                                    size="small"
-                                    color={getPriorityColor(
-                                      notification.priority
-                                    )}
-                                    variant="outlined"
-                                    sx={{ height: 20, fontSize: "0.65rem" }}
-                                  />
+                                  {notification.priority && (
+                                    <Chip
+                                      label={notification.priority}
+                                      size="small"
+                                      color={getPriorityChipColor(notification.priority)}
+                                      variant="outlined"
+                                      sx={{ height: 20, fontSize: "0.65rem" }}
+                                    />
+                                  )}
                                 </Box>
                               }
                               secondary={
@@ -302,23 +295,12 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
                                     color="text.secondary"
                                     sx={{ mb: 0.5 }}
                                   >
-                                    {notification.body}
+                                    {notification.message}
                                   </Typography>
-
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 1,
-                                    }}
-                                  >
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                    >
+                                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    <Typography variant="caption" color="text.secondary">
                                       {formatTimestamp(notification.timestamp)}
                                     </Typography>
-
                                     {!notification.read && (
                                       <Box
                                         sx={{
@@ -329,18 +311,26 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
                                         }}
                                       />
                                     )}
+                                    {notification.spotId && (
+                                      <Typography
+                                        variant="caption"
+                                        color="primary.main"
+                                        sx={{ fontWeight: 600 }}
+                                      >
+                                        Tap to view
+                                      </Typography>
+                                    )}
                                   </Box>
                                 </Box>
                               }
                             />
                           </ListItem>
 
-                          {index < groupNotifications.length - 1 && <Divider />}
+                          {index < groupedNotifications[group].length - 1 && <Divider />}
                         </React.Fragment>
                       ))}
                     </Box>
-                  )
-                )}
+                  ))}
               </List>
             )}
           </Box>
@@ -348,19 +338,15 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
           {/* Footer */}
           {notifications.length > 0 && (
             <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mb: 1 }}
-              >
-                {notifications.length} total • {unreadCount} unread
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                {notifications.length} total · {unreadCount} unread
               </Typography>
             </Box>
           )}
         </Box>
       </Drawer>
 
-      {/* Menu */}
+      {/* More options menu */}
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
@@ -370,20 +356,13 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
           <MarkReadIcon sx={{ mr: 1 }} />
           Mark all as read
         </MenuItem>
-        <MenuItem
-          onClick={handleClearAll}
-          disabled={notifications.length === 0}
-        >
+        <MenuItem onClick={handleClearAll} disabled={notifications.length === 0}>
           <DeleteIcon sx={{ mr: 1 }} />
           Clear all
         </MenuItem>
       </Menu>
 
-      {/* Settings Dialog */}
-      <NotificationSettings
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-      />
+      <NotificationSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   );
 };

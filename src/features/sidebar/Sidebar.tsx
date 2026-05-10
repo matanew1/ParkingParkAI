@@ -4,9 +4,6 @@ import {
   Box,
   Typography,
   alpha,
-  useMediaQuery,
-  Tabs,
-  Tab,
   Chip,
 } from "@mui/material";
 import SidebarHeader from "./SidebarHeader";
@@ -14,9 +11,17 @@ import ParkingSearch from "./ParkingSearch";
 import RefreshControl from "./RefreshControl";
 import VirtualizedParkingList from "./VirtualizedParkingList";
 import FavoritesList from "../favorites/FavoritesList";
-import { Clock, MapPin, Star, Map, Sparkles } from "lucide-react";
+import { Clock, Map, Star } from "lucide-react";
 import { useFavoritesStore } from "../../stores/favoritesStore";
 import { motion, AnimatePresence } from "framer-motion";
+
+const STATUS_FILTERS = [
+  { label: "All", value: null },
+  { label: "Available", value: "פנוי", color: "success" as const },
+  { label: "Limited", value: "מעט", color: "warning" as const },
+  { label: "Full", value: "מלא", color: "error" as const },
+  { label: "Closed", value: "סגור", color: "default" as const },
+];
 
 const Sidebar: React.FC<SidebarProps> = ({
   spots,
@@ -32,8 +37,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [searchTerm, setSearchTerm] = React.useState("");
   const [debouncedSearch, setDebouncedSearch] = React.useState("");
   const [currentTab, setCurrentTab] = React.useState(0);
+  const [statusFilter, setStatusFilter] = React.useState<string | null>(null);
   const { favoritesCount } = useFavoritesStore();
-  const isSmallMobile = useMediaQuery("(max-width:480px)");
 
   React.useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearch(searchTerm), 300);
@@ -44,17 +49,21 @@ const Sidebar: React.FC<SidebarProps> = ({
     () =>
       spots.filter(
         (spot) =>
-          spot.shem_chenyon
+          (!statusFilter || spot.status_chenyon === statusFilter) &&
+          (spot.shem_chenyon
             .toLowerCase()
             .includes(debouncedSearch.toLowerCase()) ||
-          spot.ktovet.toLowerCase().includes(debouncedSearch.toLowerCase())
+            spot.ktovet.toLowerCase().includes(debouncedSearch.toLowerCase()))
       ),
-    [spots, debouncedSearch]
+    [spots, debouncedSearch, statusFilter]
   );
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_: React.SyntheticEvent | null, newValue: number) => {
     setCurrentTab(newValue);
-    if (newValue === 1) setSearchTerm("");
+    if (newValue === 1) {
+      setSearchTerm("");
+      setStatusFilter(null);
+    }
   };
 
   return (
@@ -68,14 +77,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     >
       <SidebarHeader toggleDrawer={toggleDrawer} isMobile={isMobile} />
 
-      {/* Modern Tab Bar */}
-      <Box
-        sx={{
-          px: 2,
-          pt: 1,
-          pb: 2,
-        }}
-      >
+      {/* Tab Bar */}
+      <Box sx={{ px: 2, pt: 1, pb: 2 }}>
         <Box
           sx={{
             display: "flex",
@@ -86,13 +89,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         >
           <TabButton
             active={currentTab === 0}
-            onClick={() => handleTabChange(null as any, 0)}
+            onClick={() => handleTabChange(null, 0)}
             icon={<Map size={16} />}
             label="All Spots"
           />
           <TabButton
             active={currentTab === 1}
-            onClick={() => handleTabChange(null as any, 1)}
+            onClick={() => handleTabChange(null, 1)}
             icon={<Star size={16} />}
             label={`Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ""}`}
           />
@@ -108,13 +111,45 @@ const Sidebar: React.FC<SidebarProps> = ({
           px: 2,
           pb: 2,
           overflow: "hidden",
-          gap: 2,
+          gap: 1.5,
         }}
       >
         {currentTab === 0 && (
           <>
             <ParkingSearch searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-            
+
+            {/* Status Filter Chips */}
+            <Box
+              sx={{
+                display: "flex",
+                gap: 0.75,
+                flexWrap: "nowrap",
+                overflowX: "auto",
+                pb: 0.5,
+                "&::-webkit-scrollbar": { display: "none" },
+                scrollbarWidth: "none",
+              }}
+            >
+              {STATUS_FILTERS.map((f) => (
+                <Chip
+                  key={f.label}
+                  label={f.label}
+                  size="small"
+                  color={statusFilter === f.value ? (f.color ?? "primary") : "default"}
+                  variant={statusFilter === f.value ? "filled" : "outlined"}
+                  onClick={() => setStatusFilter(f.value)}
+                  sx={{
+                    height: 28,
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    flexShrink: 0,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                />
+              ))}
+            </Box>
+
             {/* Status Bar */}
             <Box
               sx={{
@@ -124,8 +159,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                 gap: 1,
               }}
             >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Clock size={14} color="text.secondary" />
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                <Clock size={14} />
                 <Typography
                   variant="caption"
                   sx={{ color: "text.secondary", fontSize: "0.75rem" }}
@@ -210,7 +245,9 @@ const TabButton: React.FC<{
       cursor: "pointer",
       transition: "all 0.2s ease",
       backgroundColor: active ? "background.paper" : "transparent",
-      boxShadow: active ? (theme) => `0 2px 8px ${alpha(theme.palette.common.black, 0.1)}` : "none",
+      boxShadow: active
+        ? (theme) => `0 2px 8px ${alpha(theme.palette.common.black, 0.1)}`
+        : "none",
       color: active ? "text.primary" : "text.secondary",
       fontWeight: active ? 600 : 500,
       fontSize: "0.8rem",
@@ -224,11 +261,7 @@ const TabButton: React.FC<{
     {icon}
     <Typography
       variant="body2"
-      sx={{
-        fontWeight: "inherit",
-        fontSize: "inherit",
-        whiteSpace: "nowrap",
-      }}
+      sx={{ fontWeight: "inherit", fontSize: "inherit", whiteSpace: "nowrap" }}
     >
       {label}
     </Typography>

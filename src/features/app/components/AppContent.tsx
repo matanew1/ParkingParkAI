@@ -1,8 +1,7 @@
 import React, { lazy, Suspense, useCallback, useState } from "react";
-import { Menu, X, List, Map as MapIcon } from "lucide-react";
+import { List } from "lucide-react";
 import {
   Box,
-  IconButton,
   useMediaQuery,
   Drawer,
   ThemeProvider as MuiThemeProvider,
@@ -12,13 +11,10 @@ import {
   Zoom,
   useTheme,
   SwipeableDrawer,
-  Typography,
 } from "@mui/material";
 import { useThemeStore } from "../../../stores/themeStore";
 import { useParkingStore } from "../../../stores/parkingStore";
-import { useNotificationStore } from "../../../stores/notificationStore";
 import { lightTheme, darkTheme } from "../../../components/Theme/ThemeConfig";
-import { motion, AnimatePresence } from "framer-motion";
 import AppHeader from "./AppHeader";
 import { Sidebar } from "../../sidebar";
 import { OptionDialog } from "../../options";
@@ -99,6 +95,22 @@ const AppContent: React.FC = () => {
     setSelectedSpotId(spotId);
   }, []);
 
+  const handleNavigateToSpot = useCallback(
+    (spotId: string) => {
+      const spot = parkingSpots.find(s => s.code_achoza.toString() === spotId);
+      if (spot) {
+        setMapCenter([spot.lat, spot.lon]);
+        setSelectedSpotId(spotId);
+        setSelectedSpot(`${spot.lat},${spot.lon}`);
+        if (isMobile) {
+          setMobileView("map");
+          setIsSidebarOpen(false);
+        }
+      }
+    },
+    [parkingSpots, setMapCenter, setSelectedSpot, isMobile]
+  );
+
   // Mobile bottom sheet drawer
   const MobileDrawer = isMobile ? SwipeableDrawer : Drawer;
 
@@ -115,7 +127,10 @@ const AppContent: React.FC = () => {
           backgroundColor: "background.default",
         }}
       >
-        <AppHeader onOpenOptionPopup={handleOpenOptionPopup} />
+        <AppHeader
+          onOpenOptionPopup={handleOpenOptionPopup}
+          onNavigateToSpot={handleNavigateToSpot}
+        />
         
         <Box
           component="main"

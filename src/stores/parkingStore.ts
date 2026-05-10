@@ -2,7 +2,9 @@ import { create } from "zustand";
 import { ParkingSpotWithStatus } from "../Types/parking";
 import { ParkingService } from "../Services/parkingService";
 import { RouteService, Coordinates } from "../Services/routeService";
-import { debounce } from "../utils/debounceThrottle";
+import { notificationService } from "../Services/notificationService";
+import { useFavoritesStore } from "./favoritesStore";
+import { useNotificationStore } from "./notificationStore";
 
 export interface ParkingState {
   // Data
@@ -78,11 +80,23 @@ export const useParkingStore = create<ParkingState>((set, get) => ({
         throw new Error("No valid parking spots found");
       }
 
+      const allSpots = [...combinedAhuzatHahofData, ...combinedPrivateData];
+
       set({
-        parkingSpots: [...combinedAhuzatHahofData, ...combinedPrivateData],
+        parkingSpots: allSpots,
         error: null,
         lastUpdated: new Date(),
       });
+
+      // Trigger notification checks after data update
+      try {
+        const { settings } = useNotificationStore.getState();
+        if (settings.enabled && Notification.permission === 'granted') {
+          const { favorites } = useFavoritesStore.getState();
+          const favoriteRefs = favorites.map(f => ({ id: f.id, nickname: f.nickname }));
+          notificationService.updateParkingStatuses(allSpots, favoriteRefs);
+        }
+      } catch {}
 
       console.log(
         `Successfully loaded ${

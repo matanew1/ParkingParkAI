@@ -20,25 +20,19 @@ import {
 import {
   Notifications as NotificationsIcon,
   NotificationsOff as NotificationsOffIcon,
-  VolumeUp as VolumeUpIcon,
-  Vibration as VibrationIcon,
   Schedule as ScheduleIcon,
   Star as StarIcon,
   LocationOn as LocationIcon,
-  TrendingDown as TrendingDownIcon,
 } from "@mui/icons-material";
-import { useNotificationStore } from "../../stores/notificationStore";
-import { NotificationSettingsType } from "../../stores/notificationStore";
+import { useNotificationStore, NotificationSettingsType } from "../../stores/notificationStore";
+import { notificationService } from "../../Services/notificationService";
 
 interface NotificationSettingsProps {
   open: boolean;
   onClose: () => void;
 }
 
-const NotificationSettings: React.FC<NotificationSettingsProps> = ({
-  open,
-  onClose,
-}) => {
+const NotificationSettings: React.FC<NotificationSettingsProps> = ({ open, onClose }) => {
   const {
     settings,
     notifications,
@@ -46,18 +40,15 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     permissionGranted,
     updateSettings,
     requestPermission,
+    clearNotifications,
   } = useNotificationStore();
 
-  const [localSettings, setLocalSettings] =
-    useState<NotificationSettingsType>(settings);
+  const [localSettings, setLocalSettings] = useState<NotificationSettingsType>(settings);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
 
-  // Detect if running on mobile device
   const isMobileDevice =
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
-    );
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   const handleSave = () => {
     updateSettings(localSettings);
@@ -68,60 +59,38 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     setIsRequestingPermission(true);
     setPermissionError(null);
     try {
-      await requestPermission();
+      const granted = await notificationService.requestPermission();
+      if (granted) {
+        await requestPermission();
+      } else {
+        setPermissionError(
+          'Notification permission denied. Please enable it in your browser settings.'
+        );
+      }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to request notification permission";
-      setPermissionError(errorMessage);
+      setPermissionError(
+        error instanceof Error ? error.message : 'Failed to request notification permission'
+      );
     } finally {
       setIsRequestingPermission(false);
     }
   };
 
   const updateLocalSettings = (updates: Partial<NotificationSettingsType>) => {
-    setLocalSettings((prev) => ({ ...prev, ...updates }));
+    setLocalSettings(prev => ({ ...prev, ...updates }));
   };
 
-  const updateNotificationTypes = (
-    type: "favoriteAlerts" | "statusChangeAlerts",
-    enabled: boolean
-  ) => {
-    setLocalSettings((prev) => ({
+  const updateQuietHours = (field: 'enabled' | 'start' | 'end', value: boolean | string) => {
+    setLocalSettings(prev => ({
       ...prev,
-      [type]: enabled,
+      quietHours: { ...prev.quietHours, [field]: value },
     }));
   };
 
-  const updateQuietHours = (
-    field: "enabled" | "start" | "end",
-    value: boolean | string
-  ) => {
-    setLocalSettings((prev) => ({
-      ...prev,
-      quietHours: {
-        ...prev.quietHours,
-        [field]: value,
-      },
-    }));
-  };
-
-  const getRecentNotificationStats = () => {
-    const recent = notifications.filter((notif) => {
-      const age = Date.now() - notif.timestamp.getTime();
-      return age < 24 * 60 * 60 * 1000; // Last 24 hours
-    });
-
-    const byType = recent.reduce((acc, notif) => {
-      acc[notif.type] = (acc[notif.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return { total: recent.length, byType };
-  };
-
-  const stats = getRecentNotificationStats();
+  const recentCount = notifications.filter(n => {
+    const age = Date.now() - new Date(n.timestamp).getTime();
+    return age < 24 * 60 * 60 * 1000;
+  }).length;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -130,12 +99,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
           <NotificationsIcon />
           Notification Settings
           {unreadCount > 0 && (
-            <Chip
-              label={unreadCount}
-              size="small"
-              color="primary"
-              sx={{ ml: "auto" }}
-            />
+            <Chip label={unreadCount} size="small" color="primary" sx={{ ml: "auto" }} />
           )}
         </Box>
       </DialogTitle>
@@ -151,27 +115,21 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               {!permissionGranted ? (
                 <Box>
                   <Alert severity="warning" sx={{ mb: 2 }}>
-                    Notifications are disabled. Enable them to receive parking
-                    alerts.
+                    Notifications are disabled. Enable them to receive parking alerts.
                     {isMobileDevice && (
                       <Box sx={{ mt: 1, fontSize: "0.875rem" }}>
-                        <strong>Mobile users:</strong> After clicking "Enable
-                        Notifications", make sure to allow notifications when
-                        your browser asks.
+                        <strong>Mobile users:</strong> Allow notifications when your browser prompts.
                       </Box>
                     )}
                   </Alert>
                   {permissionError && (
                     <Alert severity="error" sx={{ mb: 2 }}>
                       {permissionError}
-                      {isMobileDevice &&
-                        permissionError.includes("blocked") && (
-                          <Box sx={{ mt: 1, fontSize: "0.875rem" }}>
-                            <strong>To fix this:</strong> Go to your browser
-                            settings → Site permissions → Notifications → Allow
-                            for this site.
-                          </Box>
-                        )}
+                      {isMobileDevice && permissionError.includes("denied") && (
+                        <Box sx={{ mt: 1, fontSize: "0.875rem" }}>
+                          Go to browser settings → Site permissions → Notifications → Allow.
+                        </Box>
+                      )}
                     </Alert>
                   )}
                   <Button
@@ -181,36 +139,31 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                     startIcon={<NotificationsIcon />}
                     fullWidth
                   >
-                    {isRequestingPermission
-                      ? "Requesting..."
-                      : "Enable Notifications"}
+                    {isRequestingPermission ? "Requesting..." : "Enable Notifications"}
                   </Button>
                 </Box>
               ) : (
-                <Alert severity="success">
-                  Notifications are enabled and working!
-                </Alert>
+                <Alert severity="success">Notifications are enabled and working!</Alert>
               )}
             </CardContent>
           </Card>
 
-          {/* Statistics */}
-          {stats.total > 0 && (
+          {/* Stats */}
+          {recentCount > 0 && (
             <Card variant="outlined">
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Recent Activity (24h)
-                </Typography>
-                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                  <Chip label={`${stats.total} notifications`} size="small" />
-                  {Object.entries(stats.byType).map(([type, count]) => (
-                    <Chip
-                      key={type}
-                      label={`${count} ${type.replace("_", " ")}`}
-                      size="small"
-                      variant="outlined"
-                    />
-                  ))}
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="h6" gutterBottom>
+                      Recent Activity (24h)
+                    </Typography>
+                    <Chip label={`${recentCount} notification${recentCount !== 1 ? "s" : ""}`} size="small" />
+                  </Box>
+                  {notifications.length > 0 && (
+                    <Button size="small" color="error" onClick={clearNotifications}>
+                      Clear all
+                    </Button>
+                  )}
                 </Box>
               </CardContent>
             </Card>
@@ -221,19 +174,13 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
             control={
               <Switch
                 checked={localSettings.enabled}
-                onChange={(e) =>
-                  updateLocalSettings({ enabled: e.target.checked })
-                }
+                onChange={e => updateLocalSettings({ enabled: e.target.checked })}
                 disabled={!permissionGranted}
               />
             }
             label={
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                {localSettings.enabled ? (
-                  <NotificationsIcon />
-                ) : (
-                  <NotificationsOffIcon />
-                )}
+                {localSettings.enabled ? <NotificationsIcon /> : <NotificationsOffIcon />}
                 <Typography variant="body1">Enable Notifications</Typography>
               </Box>
             }
@@ -244,31 +191,26 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
           {/* Notification Types */}
           <Box>
             <Typography variant="h6" gutterBottom>
-              Notification Types
+              Alert Types
             </Typography>
-            <FormGroup>
+            <FormGroup sx={{ gap: 1 }}>
               <FormControlLabel
                 control={
                   <Switch
                     checked={localSettings.statusChangeAlerts}
-                    onChange={(e) =>
-                      updateNotificationTypes(
-                        "statusChangeAlerts",
-                        e.target.checked
-                      )
+                    onChange={e =>
+                      updateLocalSettings({ statusChangeAlerts: e.target.checked })
                     }
-                    disabled={!localSettings.enabled}
+                    disabled={!localSettings.enabled || !permissionGranted}
                   />
                 }
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <LocationIcon fontSize="small" />
                     <Box>
-                      <Typography variant="body2">
-                        Availability Alerts
-                      </Typography>
+                      <Typography variant="body2">Availability Alerts</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Get notified when parking spots become available
+                        Notify when any parking spot becomes available
                       </Typography>
                     </Box>
                   </Box>
@@ -279,76 +221,19 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                 control={
                   <Switch
                     checked={localSettings.favoriteAlerts}
-                    onChange={(e) =>
-                      updateNotificationTypes(
-                        "favoriteAlerts",
-                        e.target.checked
-                      )
+                    onChange={e =>
+                      updateLocalSettings({ favoriteAlerts: e.target.checked })
                     }
-                    disabled={!localSettings.enabled}
+                    disabled={!localSettings.enabled || !permissionGranted}
                   />
                 }
                 label={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <StarIcon fontSize="small" />
+                    <StarIcon fontSize="small" color="warning" />
                     <Box>
-                      <Typography variant="body2">
-                        Favorite Spot Updates
-                      </Typography>
+                      <Typography variant="body2">Favorite Spot Alerts</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Priority alerts for your favorite parking locations
-                      </Typography>
-                    </Box>
-                  </Box>
-                }
-              />
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={localSettings.statusChangeAlerts}
-                    onChange={(e) =>
-                      updateNotificationTypes(
-                        "statusChangeAlerts",
-                        e.target.checked
-                      )
-                    }
-                    disabled={!localSettings.enabled}
-                  />
-                }
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <NotificationsIcon fontSize="small" />
-                    <Box>
-                      <Typography variant="body2">Status Changes</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        General parking status change notifications
-                      </Typography>
-                    </Box>
-                  </Box>
-                }
-              />
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={localSettings.favoriteAlerts}
-                    onChange={(e) =>
-                      updateNotificationTypes(
-                        "favoriteAlerts",
-                        e.target.checked
-                      )
-                    }
-                    disabled={!localSettings.enabled}
-                  />
-                }
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <TrendingDownIcon fontSize="small" />
-                    <Box>
-                      <Typography variant="body2">Price Drop Alerts</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Get notified about parking price decreases
+                        Priority alerts when your favorite spots open up
                       </Typography>
                     </Box>
                   </Box>
@@ -373,15 +258,12 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               control={
                 <Switch
                   checked={localSettings.quietHours.enabled}
-                  onChange={(e) =>
+                  onChange={e =>
                     updateLocalSettings({
-                      quietHours: {
-                        ...localSettings.quietHours,
-                        enabled: e.target.checked,
-                      },
+                      quietHours: { ...localSettings.quietHours, enabled: e.target.checked },
                     })
                   }
-                  disabled={!localSettings.enabled}
+                  disabled={!localSettings.enabled || !permissionGranted}
                 />
               }
               label="Enable quiet hours"
@@ -389,37 +271,33 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
             />
 
             {localSettings.quietHours.enabled && (
-              <Box sx={{ display: "flex", gap: 2 }}>
-                <TextField
-                  label="Start Time"
-                  type="time"
-                  value={localSettings.quietHours.start}
-                  onChange={(e) => updateQuietHours("start", e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  inputProps={{ step: 300 }}
-                  size="small"
-                  disabled={!localSettings.enabled}
-                />
-                <TextField
-                  label="End Time"
-                  type="time"
-                  value={localSettings.quietHours.end}
-                  onChange={(e) => updateQuietHours("end", e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  inputProps={{ step: 300 }}
-                  size="small"
-                  disabled={!localSettings.enabled}
-                />
-              </Box>
-            )}
-            {localSettings.quietHours.enabled && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ mt: 1, display: "block" }}
-              >
-                No notifications will be sent during quiet hours
-              </Typography>
+              <>
+                <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
+                  <TextField
+                    label="Start Time"
+                    type="time"
+                    value={localSettings.quietHours.start}
+                    onChange={e => updateQuietHours("start", e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    inputProps={{ step: 300 }}
+                    size="small"
+                    disabled={!localSettings.enabled || !permissionGranted}
+                  />
+                  <TextField
+                    label="End Time"
+                    type="time"
+                    value={localSettings.quietHours.end}
+                    onChange={e => updateQuietHours("end", e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    inputProps={{ step: 300 }}
+                    size="small"
+                    disabled={!localSettings.enabled || !permissionGranted}
+                  />
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  No notifications will be sent during quiet hours
+                </Typography>
+              </>
             )}
           </Box>
         </Box>
