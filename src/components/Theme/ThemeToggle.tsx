@@ -2,6 +2,7 @@ import React from "react";
 import { Sun, Moon } from "lucide-react";
 import { IconButton, Tooltip, alpha, useMediaQuery } from "@mui/material";
 import { useThemeStore } from "../../stores/themeStore";
+import { motion } from "framer-motion";
 
 const ThemeToggle: React.FC = () => {
   const { isDarkMode, toggleTheme } = useThemeStore();
@@ -11,26 +12,34 @@ const ThemeToggle: React.FC = () => {
     <Tooltip title={`Switch to ${isDarkMode ? "light" : "dark"} mode`} arrow>
       <IconButton
         onClick={toggleTheme}
-        color="default"
         aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
         sx={{
-          p: { xs: 1, sm: 1.5 },
-          minWidth: { xs: 40, sm: 48 },
-          minHeight: { xs: 40, sm: 48 },
-          backgroundColor: (theme) => alpha(theme.palette.action.hover, 0.1),
-          border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+          width: { xs: 36, sm: 40 },
+          height: { xs: 36, sm: 40 },
+          borderRadius: 2,
+          backgroundColor: (theme) =>
+            alpha(isDarkMode ? "#fbbf24" : "#3b82f6", 0.1),
+          color: isDarkMode ? "#fbbf24" : "#3b82f6",
           "&:hover": {
-            backgroundColor: (theme) => alpha(theme.palette.action.hover, 0.2),
-            transform: "scale(1.05)",
+            backgroundColor: (theme) =>
+              alpha(isDarkMode ? "#fbbf24" : "#3b82f6", 0.2),
           },
           transition: "all 0.2s ease-in-out",
         }}
       >
-        {isDarkMode ? (
-          <Sun size={isMobile ? 16 : 18} style={{ color: "#FFD700" }} />
-        ) : (
-          <Moon size={isMobile ? 16 : 18} />
-        )}
+        <motion.div
+          key={isDarkMode ? "sun" : "moon"}
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          exit={{ scale: 0, rotate: 180 }}
+          transition={{ duration: 0.3, type: "spring" }}
+        >
+          {isDarkMode ? (
+            <Sun size={isMobile ? 18 : 20} />
+          ) : (
+            <Moon size={isMobile ? 18 : 20} />
+          )}
+        </motion.div>
       </IconButton>
     </Tooltip>
   );

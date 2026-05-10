@@ -5,95 +5,93 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Modern dark theme - Primary colors */
+  --background: 12 12 12;
+  --foreground: 250 250 250;
+  --card: 18 18 18;
+  --card-foreground: 250 250 250;
+  --popover: 18 18 18;
+  --popover-foreground: 250 250 250;
+  --primary: 59 130 246;
+  --primary-foreground: 255 255 255;
+  --secondary: 38 38 38;
+  --secondary-foreground: 250 250 250;
+  --muted: 38 38 38;
+  --muted-foreground: 163 163 163;
+  --accent: 16 185 129;
+  --accent-foreground: 255 255 255;
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+  --border: 38 38 38;
+  --input: 38 38 38;
+  --ring: 59 130 246;
+  --radius: 0.75rem;
+  
+  /* Status colors */
+  --status-available: 16 185 129;
+  --status-limited: 245 158 11;
+  --status-full: 239 68 68;
+  --status-closed: 107 114 128;
+}
+
+.light {
+  --background: 255 255 255;
+  --foreground: 12 12 12;
+  --card: 255 255 255;
+  --card-foreground: 12 12 12;
+  --popover: 255 255 255;
+  --popover-foreground: 12 12 12;
+  --primary: 37 99 235;
+  --primary-foreground: 255 255 255;
+  --secondary: 245 245 245;
+  --secondary-foreground: 12 12 12;
+  --muted: 245 245 245;
+  --muted-foreground: 115 115 115;
+  --accent: 16 185 129;
+  --accent-foreground: 255 255 255;
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+  --border: 229 229 229;
+  --input: 229 229 229;
+  --ring: 37 99 235;
+}
+
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
-  transition: background-color 0.3s ease;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* iOS Safari specific fixes */
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
   padding: 0;
   line-height: 1.6;
-  /* iOS Safari viewport fix */
   min-height: 100vh;
   min-height: -webkit-fill-available;
+  background: rgb(var(--background));
+  color: rgb(var(--foreground));
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.dark {
-  color-scheme: dark;
+/* Modern glass morphism effect */
+.glass {
+  background: rgba(var(--card), 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(var(--border), 0.2);
 }
 
-/* Smooth animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.custom-popup .leaflet-popup-content-wrapper {
-  @apply rounded-lg shadow-lg;
-}
-
-.custom-popup .leaflet-popup-tip {
-  @apply bg-white dark:bg-gray-800;
-}
-
-.leaflet-control-zoom {
-  bottom: 20px;
-  right: 20px;
-  position: absolute !important;
-}
-
-/* Ensure popups stay visible during map animations */
-.leaflet-popup-pane {
-  z-index: 700 !important;
-}
-
-.leaflet-popup {
-  pointer-events: auto !important;
-}
-
-/* Prevent popup from closing during map transitions */
-.leaflet-map-pane {
-  transition: none !important;
-}
-
-/* Keep popups stable during zoom and pan operations */
-.leaflet-popup-content-wrapper {
-  position: relative !important;
-}
-
-/* Make popup close button more prominent but don't auto-close */
-.leaflet-popup-close-button {
-  display: block !important;
-}
-
-/* Scrollbar styling */
+/* Custom scrollbar - sleek and minimal */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -104,135 +102,308 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.5);
+  background: rgba(var(--muted-foreground), 0.3);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.8);
+  background: rgba(var(--muted-foreground), 0.5);
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(75, 85, 99, 0.5);
+/* Leaflet map styles */
+.leaflet-container {
+  background: rgb(var(--background)) !important;
+  font-family: 'Inter', sans-serif !important;
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(75, 85, 99, 0.8);
+.leaflet-control-container {
+  z-index: 800 !important;
 }
 
-/* Mobile-specific optimizations */
+/* Custom popup styling */
+.leaflet-popup-content-wrapper {
+  background: rgba(var(--card), 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(var(--border), 0.3) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  color: rgb(var(--foreground)) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(var(--card), 0.95) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.leaflet-popup-close-button {
+  color: rgb(var(--muted-foreground)) !important;
+  font-size: 20px !important;
+  font-weight: 400 !important;
+  padding: 8px !important;
+  top: 4px !important;
+  right: 4px !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.leaflet-popup-close-button:hover {
+  background: rgba(var(--muted), 0.5) !important;
+  color: rgb(var(--foreground)) !important;
+}
+
+/* Zoom controls */
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(var(--card), 0.95) !important;
+  backdrop-filter: blur(10px) !important;
+  color: rgb(var(--foreground)) !important;
+  border: none !important;
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: rgba(var(--primary), 0.2) !important;
+  color: rgb(var(--primary)) !important;
+}
+
+.leaflet-control-zoom-in {
+  border-bottom: 1px solid rgba(var(--border), 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.leaflet-control-zoom-out {
+  border-radius: 0 0 12px 12px !important;
+}
+
+/* Attribution */
+.leaflet-control-attribution {
+  background: rgba(var(--card), 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  color: rgb(var(--muted-foreground)) !important;
+  font-size: 10px !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  margin: 8px !important;
+}
+
+.leaflet-control-attribution a {
+  color: rgb(var(--primary)) !important;
+}
+
+/* Cluster markers */
+.marker-cluster {
+  background: transparent !important;
+}
+
+.marker-cluster div {
+  background: linear-gradient(135deg, rgb(var(--primary)), rgb(var(--accent))) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 15px rgba(var(--primary), 0.4) !important;
+  border: 3px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.marker-cluster-small {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.marker-cluster-small div {
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  margin-left: 4px !important;
+  margin-top: 4px !important;
+}
+
+.marker-cluster-medium {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.marker-cluster-medium div {
+  width: 40px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  margin-left: 4px !important;
+  margin-top: 4px !important;
+  font-size: 13px !important;
+}
+
+.marker-cluster-large {
+  width: 56px !important;
+  height: 56px !important;
+}
+
+.marker-cluster-large div {
+  width: 48px !important;
+  height: 48px !important;
+  line-height: 48px !important;
+  margin-left: 4px !important;
+  margin-top: 4px !important;
+  font-size: 14px !important;
+}
+
+/* Mobile optimizations */
 @media (max-width: 768px) {
   .leaflet-popup-content-wrapper {
-    font-size: 13px !important;
-    max-width: 260px !important;
-    min-width: 220px !important;
+    border-radius: 12px !important;
+    max-width: calc(100vw - 48px) !important;
   }
 
-  .leaflet-popup-content {
-    margin: 6px 10px !important;
-    line-height: 1.4 !important;
-  }
-
-  .leaflet-popup-close-button {
-    width: 24px !important;
-    height: 24px !important;
-    font-size: 14px !important;
-    line-height: 22px !important;
-    top: 4px !important;
-    right: 4px !important;
-  }
-
-  .leaflet-popup-tip-container {
-    width: 16px !important;
-    height: 8px !important;
-  }
-
-  .leaflet-popup-tip {
-    width: 12px !important;
-    height: 12px !important;
-  }
-
-  /* Improve touch targets for mobile */
   .leaflet-control-zoom a {
     width: 40px !important;
     height: 40px !important;
-    line-height: 38px !important;
+    line-height: 40px !important;
     font-size: 16px !important;
   }
 
-  /* Adjust cluster icons for mobile */
-  .marker-cluster {
+  .marker-cluster-small {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .marker-cluster-small div {
+    width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    margin-left: 4px !important;
+    margin-top: 4px !important;
     font-size: 11px !important;
   }
 
-  .marker-cluster-small {
-    width: 36px !important;
-    height: 36px !important;
+  .marker-cluster-medium {
+    width: 42px !important;
+    height: 42px !important;
   }
 
-  .marker-cluster-medium {
+  .marker-cluster-medium div {
+    width: 34px !important;
+    height: 34px !important;
+    line-height: 34px !important;
+    margin-left: 4px !important;
+    margin-top: 4px !important;
+    font-size: 12px !important;
+  }
+
+  .marker-cluster-large {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .marker-cluster-large div {
     width: 40px !important;
     height: 40px !important;
+    line-height: 40px !important;
+    margin-left: 4px !important;
+    margin-top: 4px !important;
     font-size: 13px !important;
   }
+}
 
-  .marker-cluster-large {
-    width: 44px !important;
-    height: 44px !important;
-    font-size: 15px !important;
+/* Smooth animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Small mobile optimizations */
-@media (max-width: 480px) {
-  .leaflet-popup-content-wrapper {
-    font-size: 12px !important;
-    max-width: 240px !important;
-    min-width: 200px !important;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
-
-  .leaflet-popup-content {
-    margin: 4px 8px !important;
-  }
-
-  .leaflet-control-zoom a {
-    width: 36px !important;
-    height: 36px !important;
-    line-height: 34px !important;
-    font-size: 14px !important;
-  }
-
-  .marker-cluster-small {
-    width: 32px !important;
-    height: 32px !important;
-  }
-
-  .marker-cluster-medium {
-    width: 36px !important;
-    height: 36px !important;
-    font-size: 12px !important;
-  }
-
-  .marker-cluster-large {
-    width: 40px !important;
-    height: 40px !important;
-    font-size: 14px !important;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Tablet optimizations */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .leaflet-popup-content-wrapper {
-    max-width: 320px !important;
-    min-width: 280px !important;
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid rgb(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: rgba(var(--primary), 0.3);
+  color: rgb(var(--foreground));
 }

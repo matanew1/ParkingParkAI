@@ -1,6 +1,6 @@
 import React from "react";
-import { TextField, InputAdornment, alpha, useMediaQuery } from "@mui/material";
-import { Search } from "lucide-react";
+import { Box, InputBase, alpha, useMediaQuery, IconButton } from "@mui/material";
+import { Search, X } from "lucide-react";
 
 interface ParkingSearchProps {
   searchTerm: string;
@@ -9,43 +9,60 @@ interface ParkingSearchProps {
 
 const ParkingSearch: React.FC<ParkingSearchProps> = ({ searchTerm, setSearchTerm }) => {
   const isMobile = useMediaQuery("(max-width:768px)");
-  
+
   return (
-    <TextField
-      fullWidth
-      size="small"
-      placeholder="Search parking spots..."
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-      variant="outlined"
-      InputProps={{
-        startAdornment: (
-          <InputAdornment position="start">
-            <Search size={isMobile ? 16 : 18} />
-          </InputAdornment>
-        ),
-      }}
-      sx={{ 
-        '& .MuiOutlinedInput-root': {
-          backgroundColor: (theme) => alpha(theme.palette.background.paper, 0.8),
-          borderRadius: 3,
-          fontSize: { xs: '0.875rem', sm: '1rem' },
-          '& input': {
-            py: { xs: 1, sm: 1.5 },
-          },
-          '&:hover': {
-            backgroundColor: (theme) => alpha(theme.palette.background.paper, 1),
-          },
-          '&.Mui-focused': {
-            backgroundColor: (theme) => alpha(theme.palette.background.paper, 1),
-            boxShadow: (theme) => `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
-          },
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        px: 1.5,
+        py: 1,
+        borderRadius: 3,
+        backgroundColor: (theme) => alpha(theme.palette.action.hover, 0.5),
+        border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+        transition: "all 0.2s ease",
+        "&:focus-within": {
+          backgroundColor: (theme) => alpha(theme.palette.action.hover, 0.8),
+          borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
+          boxShadow: (theme) => `0 0 0 3px ${alpha(theme.palette.primary.main, 0.1)}`,
         },
-        '& .MuiOutlinedInput-input': {
+      }}
+    >
+      <Search size={18} color="inherit" style={{ opacity: 0.5, flexShrink: 0 }} />
+      <InputBase
+        fullWidth
+        placeholder="Search by name or address..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        sx={{
+          fontSize: "0.875rem",
           fontWeight: 500,
-        },
-      }}
-    />
+          "& input": {
+            padding: 0,
+            "&::placeholder": {
+              opacity: 0.6,
+            },
+          },
+        }}
+      />
+      {searchTerm && (
+        <IconButton
+          size="small"
+          onClick={() => setSearchTerm("")}
+          sx={{
+            width: 24,
+            height: 24,
+            opacity: 0.5,
+            "&:hover": {
+              opacity: 1,
+            },
+          }}
+        >
+          <X size={14} />
+        </IconButton>
+      )}
+    </Box>
   );
 };
 
