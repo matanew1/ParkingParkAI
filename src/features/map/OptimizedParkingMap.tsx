@@ -17,7 +17,7 @@ import {
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { Clock, RefreshCw, Navigation, Play, Pause } from "lucide-react";
-import type { ParkingMapProps } from "../../types/location";
+import type { ParkingMapProps } from "../../Types/location";
 import {
   Box,
   Typography,

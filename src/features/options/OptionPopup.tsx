@@ -14,8 +14,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useParkingStore } from "../../stores/parkingStore";
-import type { OptionPopupProps, Option } from "../../types/opt";
-import type { Coordinates } from "../../services/routeService";
+import type { OptionPopupProps, Option } from "../../Types/opt";
+import type { Coordinates } from "../../Services/routeService";
 
 const OptionPopup: React.FC<OptionPopupProps> = ({ isOpen, onClose }) => {
   // State management

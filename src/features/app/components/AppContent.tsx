@@ -1,16 +1,18 @@
 import React, { lazy, Suspense, useCallback, useState } from "react";
-import { Menu } from "lucide-react";
+import { Menu, X, List, Map as MapIcon } from "lucide-react";
 import {
   Box,
   IconButton,
   useMediaQuery,
-  CircularProgress,
   Drawer,
   ThemeProvider as MuiThemeProvider,
   CssBaseline,
-  Fade,
-  Typography,
   alpha,
+  Fab,
+  Zoom,
+  useTheme,
+  SwipeableDrawer,
+  Typography,
 } from "@mui/material";
 import { useThemeStore } from "../../../stores/themeStore";
 import { useParkingStore } from "../../../stores/parkingStore";
@@ -21,7 +23,7 @@ import AppHeader from "./AppHeader";
 import { Sidebar } from "../../sidebar";
 import { OptionDialog } from "../../options";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
-import type { ParkingSpotWithStatus } from "../../../types/parking";
+import type { ParkingSpotWithStatus } from "../../../Types/parking";
 
 const OptimizedParkingMap = lazy(() => import("../../map/OptimizedParkingMap"));
 
@@ -33,11 +35,12 @@ const AppContent: React.FC = () => {
   const theme = isDarkMode ? darkTheme : lightTheme;
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<"map" | "list">("map");
 
   const {
     parkingSpots,
     loading,
-    statusError,
+    error,
     lastUpdated,
     refreshing,
     fetchParkingData,
@@ -47,9 +50,7 @@ const AppContent: React.FC = () => {
     handleResetMap,
   } = useParkingStore();
 
-  const { isMonitoring } = useNotificationStore();
-
-  const drawerWidth = isMobile ? "85%" : isTablet ? "40%" : 360;
+  const drawerWidth = isMobile ? "100%" : isTablet ? "360px" : "380px";
 
   const handleResetMapApp = useCallback((): void => {
     setSelectedSpotId(null);
@@ -71,86 +72,82 @@ const AppContent: React.FC = () => {
 
   const handleSpotClick = useCallback(
     (spot: ParkingSpotWithStatus) => {
-      // When clicking a marker, we want the popup to open immediately
       setSelectedSpotId(spot.code_achoza.toString());
       setSelectedSpot(`${spot.lat},${spot.lon}`);
+      if (isMobile) {
+        setMobileView("map");
+        setIsSidebarOpen(false);
+      }
     },
-    [setSelectedSpot]
+    [setSelectedSpot, isMobile]
   );
 
   const handleSpotSelectFromSidebar = useCallback(
     (spot: ParkingSpotWithStatus) => {
-      // When selecting from sidebar, move the map and ensure popup opens
       setMapCenter([spot.lat, spot.lon]);
       setSelectedSpotId(spot.code_achoza.toString());
       setSelectedSpot(`${spot.lat},${spot.lon}`);
+      if (isMobile) {
+        setMobileView("map");
+        setIsSidebarOpen(false);
+      }
     },
-    [setMapCenter, setSelectedSpot]
+    [setMapCenter, setSelectedSpot, isMobile]
   );
 
   const handleSpotSelect = useCallback((spotId: string | null) => {
     setSelectedSpotId(spotId);
   }, []);
 
+  // Mobile bottom sheet drawer
+  const MobileDrawer = isMobile ? SwipeableDrawer : Drawer;
+
   return (
     <MuiThemeProvider theme={theme}>
       <CssBaseline />
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "100vh",
+          height: "100vh",
+          overflow: "hidden",
+          backgroundColor: "background.default",
+        }}
       >
+        <AppHeader onOpenOptionPopup={handleOpenOptionPopup} />
+        
         <Box
+          component="main"
           sx={{
+            flexGrow: 1,
+            pt: { xs: "64px", sm: "70px" },
             display: "flex",
-            flexDirection: "column",
-            minHeight: "100vh",
-            background:
-              theme.palette.mode === "dark"
-                ? "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)"
-                : "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-            transition: "background 0.3s ease",
+            height: "100%",
+            overflow: "hidden",
+            position: "relative",
           }}
         >
-          <AppHeader onOpenOptionPopup={handleOpenOptionPopup} />
-          <Box
-            component="main"
-            sx={{
-              flexGrow: 1,
-              pt: { xs: 7, sm: 8, md: 9 },
-              display: "flex",
-              height: "calc(100vh - 64px)",
-              overflow: "hidden", // Prevent main container from scrolling
-            }}
-          >
+          {/* Desktop/Tablet Sidebar */}
+          {!isMobile && (
             <Drawer
-              variant={isMobile ? "temporary" : "persistent"}
+              variant="persistent"
               anchor="left"
               open={isSidebarOpen}
-              onClose={toggleSidebar}
               sx={{
                 width: isSidebarOpen ? drawerWidth : 0,
                 flexShrink: 0,
                 "& .MuiDrawer-paper": {
                   width: drawerWidth,
                   boxSizing: "border-box",
-                  zIndex: 1000,
-                  position: "relative",
-                  height: "100%",
-                  overflow: "hidden",
-                  background:
-                    theme.palette.mode === "dark"
-                      ? "linear-gradient(180deg, #2d2d2d 0%, #1a1a1a 100%)"
-                      : "linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%)",
-                  borderRight: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                  boxShadow:
-                    theme.palette.mode === "dark"
-                      ? "4px 0 20px rgba(0,0,0,0.3)"
-                      : "4px 0 20px rgba(0,0,0,0.1)",
-                  transition: theme.transitions.create(["width", "margin"], {
-                    easing: theme.transitions.easing.sharp,
-                    duration: theme.transitions.duration.enteringScreen,
-                  }),
+                  top: { xs: "64px", sm: "70px" },
+                  height: { xs: "calc(100% - 64px)", sm: "calc(100% - 70px)" },
+                  borderRight: (theme) =>
+                    `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+                  backgroundColor: (theme) =>
+                    alpha(theme.palette.background.paper, 0.95),
+                  backdropFilter: "blur(20px)",
+                  transition: "width 0.3s ease",
                 },
               }}
             >
@@ -158,7 +155,7 @@ const AppContent: React.FC = () => {
                 spots={parkingSpots}
                 onSpotClick={handleSpotSelectFromSidebar}
                 onSpotSelect={handleSpotSelect}
-                statusError={statusError}
+                statusError={error}
                 lastUpdated={lastUpdated}
                 onRefresh={() => fetchParkingData(true)}
                 isRefreshing={refreshing}
@@ -166,60 +163,149 @@ const AppContent: React.FC = () => {
                 isMobile={isMobile}
               />
             </Drawer>
+          )}
 
-            <Box
-              sx={{
-                flexGrow: 1,
-                position: "relative",
-                transition: theme.transitions.create(["margin"], {
-                  easing: theme.transitions.easing.sharp,
-                  duration: theme.transitions.duration.enteringScreen,
-                }),
+          {/* Mobile Bottom Sheet */}
+          {isMobile && (
+            <MobileDrawer
+              anchor="bottom"
+              open={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+              onOpen={() => setIsSidebarOpen(true)}
+              disableSwipeToOpen={false}
+              swipeAreaWidth={20}
+              ModalProps={{
+                keepMounted: true,
+              }}
+              PaperProps={{
+                sx: {
+                  height: "85vh",
+                  borderRadius: "24px 24px 0 0",
+                  backgroundColor: (theme) =>
+                    alpha(theme.palette.background.paper, 0.98),
+                  backdropFilter: "blur(20px)",
+                  overflow: "hidden",
+                },
               }}
             >
-              <Fade in={!isSidebarOpen}>
-                <IconButton
+              {/* Drag Handle */}
+              <Box
+                sx={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  pt: 1.5,
+                  pb: 1,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: "divider",
+                  }}
+                />
+              </Box>
+              <Sidebar
+                spots={parkingSpots}
+                onSpotClick={handleSpotSelectFromSidebar}
+                onSpotSelect={handleSpotSelect}
+                statusError={error}
+                lastUpdated={lastUpdated}
+                onRefresh={() => fetchParkingData(true)}
+                isRefreshing={refreshing}
+                toggleDrawer={() => setIsSidebarOpen(false)}
+                isMobile={isMobile}
+              />
+            </MobileDrawer>
+          )}
+
+          {/* Map Container */}
+          <Box
+            sx={{
+              flexGrow: 1,
+              position: "relative",
+              height: "100%",
+              transition: "margin 0.3s ease",
+              marginLeft: !isMobile && isSidebarOpen ? 0 : 0,
+            }}
+          >
+            {/* Desktop Toggle Button */}
+            {!isMobile && (
+              <Zoom in={!isSidebarOpen}>
+                <Fab
+                  size="medium"
+                  color="primary"
                   onClick={toggleSidebar}
                   sx={{
-                    position: "fixed",
-                    left: { xs: 12, sm: 16, md: 20 },
-                    top: { xs: 68, sm: 76, md: 88 },
-                    zIndex: 1200,
-                    width: { xs: 48, sm: 56 },
-                    height: { xs: 48, sm: 56 },
-                    backgroundColor: theme.palette.primary.main,
-                    color: theme.palette.primary.contrastText,
-                    boxShadow: theme.shadows[3],
-                    "&:hover": {
-                      backgroundColor: theme.palette.primary.dark,
-                      transform: "scale(1.05)",
-                    },
-                    transition: "all 0.2s ease-in-out",
+                    position: "absolute",
+                    left: 16,
+                    top: 16,
+                    zIndex: 1000,
+                    boxShadow: (theme) =>
+                      `0 4px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
                   }}
                 >
-                  <Menu size={isMobile ? 20 : 24} />
-                </IconButton>
-              </Fade>
+                  <List size={22} />
+                </Fab>
+              </Zoom>
+            )}
 
-              <Suspense fallback={<LoadingSpinner message="Loading map..." />}>
-                <OptimizedParkingMap
-                  parkingSpots={parkingSpots}
-                  loading={loading}
-                  statusError={statusError}
-                  mapCenter={mapCenter}
-                  lastUpdated={lastUpdated}
-                  refreshing={refreshing}
-                  onRefresh={() => fetchParkingData(true)}
-                  setMapCenter={setMapCenter}
-                  selectedSpotId={selectedSpotId}
-                  onResetMap={handleResetMapApp}
-                  onSpotClick={handleSpotClick}
-                />
-              </Suspense>
-            </Box>
+            <Suspense
+              fallback={
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                    backgroundColor: "background.default",
+                  }}
+                >
+                  <LoadingSpinner message="Loading map..." />
+                </Box>
+              }
+            >
+              <OptimizedParkingMap
+                parkingSpots={parkingSpots}
+                loading={loading}
+                statusError={error}
+                mapCenter={mapCenter}
+                lastUpdated={lastUpdated}
+                refreshing={refreshing}
+                onRefresh={() => fetchParkingData(true)}
+                setMapCenter={setMapCenter}
+                selectedSpotId={selectedSpotId}
+                onResetMap={handleResetMapApp}
+                onSpotClick={handleSpotClick}
+              />
+            </Suspense>
           </Box>
         </Box>
-      </motion.div>
+
+        {/* Mobile FAB to open list */}
+        {isMobile && (
+          <Fab
+            color="primary"
+            onClick={() => setIsSidebarOpen(true)}
+            sx={{
+              position: "fixed",
+              bottom: 24,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 1000,
+              width: 56,
+              height: 56,
+              boxShadow: (theme) =>
+                `0 4px 20px ${alpha(theme.palette.primary.main, 0.5)}`,
+            }}
+          >
+            <List size={24} />
+          </Fab>
+        )}
+      </Box>
+
       <OptionDialog
         isOpen={isOptionPopupOpen}
         onClose={handleCloseOptionPopup}

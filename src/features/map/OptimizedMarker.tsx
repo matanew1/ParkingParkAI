@@ -1,21 +1,31 @@
-import React, { memo, useRef } from 'react';
-import { Marker, Popup, useMap } from 'react-leaflet';
-import { Box, Typography, Paper, Chip, useMediaQuery, useTheme, Button } from '@mui/material';
-import { Clock } from 'lucide-react';
-import { ParkingSpotWithStatus } from '../../Types/parking';
-import { getMarkerIcon, selectedMarkerIcon } from './utils/MarkerUtils';
-import { getStatusColor, getTypeColor } from '../../utils/colorUtils';
-import { useAutoPopup } from '../../hooks/useAutoPopup';
-import FavoriteToggleButton from '../Favorites/FavoriteToggleButton';
+import React, { memo, useRef } from "react";
+import { Marker, Popup } from "react-leaflet";
+import {
+  Box,
+  Typography,
+  Chip,
+  useMediaQuery,
+  useTheme,
+  Button,
+  IconButton,
+  alpha,
+  Divider,
+} from "@mui/material";
+import { Clock, MapPin, Navigation, ExternalLink, DollarSign } from "lucide-react";
+import { ParkingSpotWithStatus } from "../../Types/parking";
+import { getMarkerIcon, selectedMarkerIcon } from "./utils/MarkerUtils";
+import { getStatusColor } from "../../utils/colorUtils";
+import { useAutoPopup } from "../../hooks/useAutoPopup";
+import FavoriteToggleButton from "../favorites/FavoriteToggleButton";
 
-// Waze Icon Component using the SVG from public folder
-const WazeIcon: React.FC<{ size?: number }> = ({ size = 32 }) => (
+// Waze Icon Component
+const WazeIcon: React.FC<{ size?: number }> = ({ size = 24 }) => (
   <img
     src="/waze-icon.svg"
     alt="Waze"
     width={size}
     height={size}
-    style={{ display: 'block' }}
+    style={{ display: "block" }}
   />
 );
 
@@ -28,191 +38,236 @@ interface OptimizedMarkerProps {
   forceShowPopup?: boolean;
 }
 
-const OptimizedMarker = memo<OptimizedMarkerProps>(({ 
-  spot, 
-  isSelected, 
-  onSpotClick, 
-  zoomLevel, 
-  showDetails,
-  forceShowPopup = false
-}) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const markerRef = useRef<any>(null);
-  const popupRef = useRef<any>(null);
-  const lat = spot.lat;
-  const lng = spot.lon;
+const OptimizedMarker = memo<OptimizedMarkerProps>(
+  ({ spot, isSelected, onSpotClick, zoomLevel, showDetails, forceShowPopup = false }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+    const markerRef = useRef<any>(null);
+    const lat = spot.lat;
+    const lng = spot.lon;
 
-  // Function to handle Waze navigation
-  const handleWazeNavigation = () => {
-    // Check if user is on mobile device
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (isMobileDevice) {
-      // Mobile: Use deep link to open Waze app
-      const wazeUrl = `waze://?ll=${lat},${lng}&navigate=yes`;
-      window.open(wazeUrl, '_blank');
-    } else {
-      // PC: Use web URL to open Waze in browser
-      const url = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
-      window.open(url, '_blank');
-    }
-  };
+    const handleWazeNavigation = () => {
+      const isMobileDevice =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
+      const url = isMobileDevice
+        ? `waze://?ll=${lat},${lng}&navigate=yes`
+        : `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+      window.open(url, "_blank");
+    };
 
-  // Use the auto popup hook
-  useAutoPopup(lat, lng, isSelected, showDetails || forceShowPopup, spot.shem_chenyon || spot.Name || 'Parking Spot');
+    const handleGoogleMaps = () => {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+      window.open(url, "_blank");
+    };
 
-  if (isNaN(lat) || isNaN(lng)) {
-    return null;
-  }
+    useAutoPopup(
+      lat,
+      lng,
+      isSelected,
+      showDetails || forceShowPopup,
+      spot.shem_chenyon || spot.Name || "Parking Spot"
+    );
 
-  return (
-    <Marker
-      ref={markerRef}
-      position={[lat, lng]}
-      icon={isSelected ? selectedMarkerIcon : getMarkerIcon(spot.status_chenyon)}
-      eventHandlers={{
-        click: () => {
-          if (onSpotClick) {
-            onSpotClick(spot);
-          }
-        }
-      }}
-    >
-      {(showDetails || forceShowPopup) && (
-        <Popup 
-          ref={popupRef}
-          closeOnClick={false}
-          autoClose={false}
-          keepInView={true}
-          closeButton={true}
-          autoPan={isMobile ? true : false}
-          maxWidth={isMobile ? 280 : 300}
-          minWidth={isMobile ? 250 : 200}
-        >
-          <Box sx={{ p: 0 }}>
-            <Paper elevation={0} sx={{ 
-              p: isMobile ? 1.5 : 2, 
-              minWidth: isMobile ? 250 : 200,
-              maxWidth: isMobile ? 280 : 300,
-            }}>
-              <Typography 
-                variant={isMobile ? "subtitle1" : "h6"} 
-                gutterBottom 
-                fontWeight="bold"
-                sx={{ fontSize: isMobile ? "1rem" : "1.25rem" }}
+    if (isNaN(lat) || isNaN(lng)) return null;
+
+    const getStatusStyles = (status: string) => {
+      switch (status?.toLowerCase()) {
+        case "פנוי":
+          return { bg: theme.palette.success.main, label: "Available" };
+        case "מעט":
+          return { bg: theme.palette.warning.main, label: "Limited" };
+        case "מלא":
+          return { bg: theme.palette.error.main, label: "Full" };
+        case "סגור":
+          return { bg: theme.palette.grey[500], label: "Closed" };
+        default:
+          return { bg: theme.palette.info.main, label: status || "Unknown" };
+      }
+    };
+
+    const statusStyles = getStatusStyles(spot.status_chenyon);
+
+    return (
+      <Marker
+        ref={markerRef}
+        position={[lat, lng]}
+        icon={isSelected ? selectedMarkerIcon : getMarkerIcon(spot.status_chenyon)}
+        eventHandlers={{
+          click: () => onSpotClick?.(spot),
+        }}
+      >
+        {(showDetails || forceShowPopup) && (
+          <Popup
+            closeOnClick={false}
+            autoClose={false}
+            keepInView={true}
+            closeButton={true}
+            autoPan={isMobile}
+            maxWidth={isMobile ? 300 : 320}
+            minWidth={isMobile ? 280 : 280}
+          >
+            <Box sx={{ p: 0 }}>
+              {/* Header */}
+              <Box
+                sx={{
+                  p: 2,
+                  pb: 1.5,
+                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                }}
               >
-                {spot.shem_chenyon || spot.Name || 'Parking Spot'}
-              </Typography>
-              
-              {(forceShowPopup || zoomLevel >= (isMobile ? 14 : 15)) && (
-                <Typography 
-                  variant="body2" 
-                  color="textSecondary" 
-                  paragraph
-                  sx={{ fontSize: isMobile ? "0.75rem" : "0.875rem" }}
-                >
-                  {lat.toFixed(6)}, {lng.toFixed(6)}
-                </Typography>
-              )}
-              
-              <Typography 
-                variant="body2" 
-                color="textSecondary" 
-                paragraph
-                sx={{ fontSize: isMobile ? "0.875rem" : "0.875rem" }}
-              >
-                {spot.ktovet}
-              </Typography>
-
-              {spot.status_chenyon && (
-                <Paper variant="outlined" sx={{ p: isMobile ? 1.5 : 2, mb: isMobile ? 1.5 : 2 }}>
-                  <Typography 
-                    variant="subtitle2" 
-                    gutterBottom
-                    sx={{ fontSize: isMobile ? "0.875rem" : "1rem" }}
+                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2,
+                      backgroundColor: alpha(statusStyles.bg, 0.15),
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
                   >
-                    Status
-                  </Typography>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: isMobile ? 1 : 0 }}>
-                    <Chip
-                      label={spot.status_chenyon}
-                      color={getStatusColor(spot.status_chenyon)}
-                      size={isMobile ? "small" : "small"}
-                      sx={{ fontSize: isMobile ? "0.75rem" : "0.875rem" }}
-                    />
+                    <MapPin size={20} color={statusStyles.bg} />
                   </Box>
-                </Paper>
-              )}
-
-              {(forceShowPopup || zoomLevel >= (isMobile ? 15 : 16)) && spot.taarif_yom && (
-                <Paper variant="outlined" sx={{ p: isMobile ? 1.5 : 2, mb: isMobile ? 1.5 : 2 }}>
-                  <Typography 
-                    variant="subtitle2" 
-                    gutterBottom
-                    sx={{ fontSize: isMobile ? "0.875rem" : "1rem" }}
-                  >
-                    Pricing
-                  </Typography>
-                  <Typography 
-                    variant="body2" 
-                    paragraph
-                    sx={{ fontSize: isMobile ? "0.875rem" : "0.875rem" }}
-                  >
-                    {spot.taarif_yom}
-                  </Typography>
-                  {spot.hearot_taarif && (
-                    <Typography 
-                      variant="caption" 
-                      color="textSecondary"
-                      sx={{ fontSize: isMobile ? "0.7rem" : "0.75rem" }}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: "0.95rem",
+                        lineHeight: 1.3,
+                        color: theme.palette.text.primary,
+                        mb: 0.25,
+                      }}
                     >
-                      {spot.hearot_taarif}
+                      {spot.shem_chenyon || "Parking Spot"}
                     </Typography>
-                  )}
-                </Paper>
-              )}
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: theme.palette.text.secondary,
+                        fontSize: "0.75rem",
+                        display: "block",
+                      }}
+                    >
+                      {spot.ktovet}
+                    </Typography>
+                  </Box>
+                  <FavoriteToggleButton spot={spot} size="small" />
+                </Box>
+              </Box>
 
-              {/* Action Buttons */}
-              <Box sx={{ display: 'flex', gap: 1, mt: isMobile ? 1 : 1.5 }}>
-                {/* Favorite Toggle Button */}
-                <FavoriteToggleButton 
-                  spot={spot} 
-                  size={isMobile ? "small" : "medium"}
-                />
-                
-                {/* Waze Navigation Button */}
+              {/* Status */}
+              <Box sx={{ p: 2, py: 1.5 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                  <Chip
+                    label={spot.status_chenyon || "Unknown"}
+                    size="small"
+                    sx={{
+                      height: 26,
+                      backgroundColor: alpha(statusStyles.bg, 0.15),
+                      color: statusStyles.bg,
+                      fontWeight: 600,
+                      fontSize: "0.75rem",
+                    }}
+                  />
+                  {spot.tr_status_chenyon && spot.tr_status_chenyon > 0 && (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, ml: "auto" }}>
+                      <Clock size={12} color={theme.palette.text.secondary} />
+                      <Typography
+                        variant="caption"
+                        sx={{ color: theme.palette.text.secondary, fontSize: "0.7rem" }}
+                      >
+                        {new Date(spot.tr_status_chenyon).toLocaleTimeString()}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Pricing Info */}
+                {spot.taarif_yom && (
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      backgroundColor: alpha(theme.palette.background.default, 0.5),
+                      mb: 1.5,
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5 }}>
+                      <DollarSign size={14} color={theme.palette.text.secondary} />
+                      <Typography
+                        variant="caption"
+                        sx={{ fontWeight: 600, color: theme.palette.text.primary, fontSize: "0.75rem" }}
+                      >
+                        Pricing
+                      </Typography>
+                    </Box>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: "0.8rem", color: theme.palette.text.secondary }}
+                    >
+                      {spot.taarif_yom}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
+              {/* Navigation Buttons */}
+              <Box
+                sx={{
+                  p: 2,
+                  pt: 0,
+                  display: "flex",
+                  gap: 1,
+                }}
+              >
                 <Button
                   variant="contained"
-                  color="primary"
                   fullWidth
-                  startIcon={<WazeIcon size={isMobile ? 24 : 28} />}
+                  startIcon={<WazeIcon size={20} />}
                   onClick={handleWazeNavigation}
                   sx={{
-                    py: isMobile ? 1 : 1.2,
-                    fontSize: isMobile ? "0.875rem" : "1rem",
-                    fontWeight: 600,
-                    textTransform: 'none',
+                    py: 1.25,
                     borderRadius: 2,
-                    backgroundColor: '#00D4FF', // Waze brand color
-                    '&:hover': {
-                      backgroundColor: '#00B8E6',
-                      transform: 'translateY(-1px)',
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                    textTransform: "none",
+                    backgroundColor: "#33ccff",
+                    "&:hover": {
+                      backgroundColor: "#00b8e6",
                     },
-                    transition: 'all 0.2s ease-in-out',
                   }}
                 >
-                  Navigate with Waze
+                  Waze
+                </Button>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<Navigation size={18} />}
+                  onClick={handleGoogleMaps}
+                  sx={{
+                    py: 1.25,
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                    textTransform: "none",
+                  }}
+                >
+                  Maps
                 </Button>
               </Box>
-            </Paper>
-          </Box>
-        </Popup>
-      )}
-    </Marker>
-  );
-});
+            </Box>
+          </Popup>
+        )}
+      </Marker>
+    );
+  }
+);
 
-OptimizedMarker.displayName = 'OptimizedMarker';
+OptimizedMarker.displayName = "OptimizedMarker";
 
 export default OptimizedMarker;
