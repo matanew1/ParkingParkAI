@@ -17,7 +17,7 @@ import { useNotificationStore } from "../../../stores/notificationStore";
 import ThemeToggle from "../../../components/Theme/ThemeToggle";
 import OptionButton from "../../options/OptionButton";
 import { NotificationBadge, NotificationPanel } from "../../notifications";
-import { AppHeaderProps } from "../../../types/app";
+import { AppHeaderProps } from "../../../Types/app";
 
 const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup }) => {
   const isMobile = useMediaQuery("(max-width:768px)");

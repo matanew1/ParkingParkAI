@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import { ChevronRight, Clock, MapPin, Car } from "lucide-react";
 import { getStatusColor } from "../../utils/colorUtils";
-import FavoriteToggleButton from "../Favorites/FavoriteToggleButton";
+import FavoriteToggleButton from "../favorites/FavoriteToggleButton";
 
 // Waze Icon Component using the SVG from public folder
 const WazeIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (

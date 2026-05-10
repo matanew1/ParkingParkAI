@@ -21,7 +21,7 @@ import AppHeader from "./AppHeader";
 import { Sidebar } from "../../sidebar";
 import { OptionDialog } from "../../options";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
-import type { ParkingSpotWithStatus } from "../../../types/parking";
+import type { ParkingSpotWithStatus } from "../../../Types/parking";
 
 const OptimizedParkingMap = lazy(() => import("../../map/OptimizedParkingMap"));
 
@@ -37,7 +37,7 @@ const AppContent: React.FC = () => {
   const {
     parkingSpots,
     loading,
-    statusError,
+    error,
     lastUpdated,
     refreshing,
     fetchParkingData,
@@ -158,7 +158,7 @@ const AppContent: React.FC = () => {
                 spots={parkingSpots}
                 onSpotClick={handleSpotSelectFromSidebar}
                 onSpotSelect={handleSpotSelect}
-                statusError={statusError}
+                statusError={error}
                 lastUpdated={lastUpdated}
                 onRefresh={() => fetchParkingData(true)}
                 isRefreshing={refreshing}
@@ -205,7 +205,7 @@ const AppContent: React.FC = () => {
                 <OptimizedParkingMap
                   parkingSpots={parkingSpots}
                   loading={loading}
-                  statusError={statusError}
+                  statusError={error}
                   mapCenter={mapCenter}
                   lastUpdated={lastUpdated}
                   refreshing={refreshing}

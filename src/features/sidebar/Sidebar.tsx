@@ -1,6 +1,6 @@
 // components/Sidebar/index.tsx
 import React from "react";
-import { SidebarProps } from "../../types/parking";
+import { SidebarProps } from "../../Types/parking";
 import {
   Box,
   Typography,

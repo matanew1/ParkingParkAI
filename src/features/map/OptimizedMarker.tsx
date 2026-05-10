@@ -6,7 +6,7 @@ import { ParkingSpotWithStatus } from '../../Types/parking';
 import { getMarkerIcon, selectedMarkerIcon } from './utils/MarkerUtils';
 import { getStatusColor, getTypeColor } from '../../utils/colorUtils';
 import { useAutoPopup } from '../../hooks/useAutoPopup';
-import FavoriteToggleButton from '../Favorites/FavoriteToggleButton';
+import FavoriteToggleButton from '../favorites/FavoriteToggleButton';
 
 // Waze Icon Component using the SVG from public folder
 const WazeIcon: React.FC<{ size?: number }> = ({ size = 32 }) => (

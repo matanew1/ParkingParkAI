@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import { ParkingSpotWithStatus } from "../types/parking";
-import { ParkingService } from "../services/parkingService";
-import { RouteService, Coordinates } from "../services/routeService";
+import { ParkingSpotWithStatus } from "../Types/parking";
+import { ParkingService } from "../Services/parkingService";
+import { RouteService, Coordinates } from "../Services/routeService";
 import { debounce } from "../utils/debounceThrottle";
 
 export interface ParkingState {

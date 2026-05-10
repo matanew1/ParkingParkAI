@@ -1,7 +1,7 @@
 import React from "react";
 import { Button, useMediaQuery, alpha } from "@mui/material";
 import { Settings } from "lucide-react";
-import { OptionButtonProps } from "../../types/opt";
+import { OptionButtonProps } from "../../Types/opt";
 
 const OptionButton: React.FC<OptionButtonProps> = ({ onClick }) => {
   const isMobile = useMediaQuery("(max-width:768px)");
