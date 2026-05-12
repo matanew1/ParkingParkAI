@@ -21,11 +21,26 @@ import { AppHeaderProps } from "../../../Types/app";
 import { motion } from "framer-motion";
 import { useParkingStore } from "../../../stores/parkingStore";
 
-const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup, onNavigateToSpot }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({
+  onOpenOptionPopup,
+  onNavigateToSpot,
+  onOpenNotifications,
+  notificationPanelOpen: externalPanelOpen,
+  onCloseNotifications,
+}) => {
   const isMobile = useMediaQuery("(max-width:768px)");
   const isSmallMobile = useMediaQuery("(max-width:480px)");
   const { favoritesCount } = useFavoritesStore();
-  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+  const [internalPanelOpen, setInternalPanelOpen] = useState(false);
+
+  // Support both controlled (from parent) and uncontrolled modes
+  const notificationPanelOpen = externalPanelOpen ?? internalPanelOpen;
+  const openNotificationPanel = () => {
+    onOpenNotifications ? onOpenNotifications() : setInternalPanelOpen(true);
+  };
+  const closeNotificationPanel = () => {
+    onCloseNotifications ? onCloseNotifications() : setInternalPanelOpen(false);
+  };
   const theme = useTheme();
 
   const parkingSpots = useParkingStore((s) => s.parkingSpots);
@@ -194,7 +209,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup, onNavigateToSp
         >
           {/* Notifications */}
           <NotificationBadge
-            onClick={() => setNotificationPanelOpen(true)}
+            onClick={openNotificationPanel}
             size={isMobile ? "small" : "medium"}
           />
 
@@ -240,7 +255,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup, onNavigateToSp
       {/* Notification Panel */}
       <NotificationPanel
         open={notificationPanelOpen}
-        onClose={() => setNotificationPanelOpen(false)}
+        onClose={closeNotificationPanel}
         onNavigateToSpot={onNavigateToSpot}
       />
     </AppBar>
