@@ -24,7 +24,6 @@ import AppHeader from "./AppHeader";
 import { Sidebar } from "../../sidebar";
 import { OptionDialog } from "../../options";
 import { LuckySpotWizard } from "../../wizard";
-import { NotificationPanel } from "../../notifications";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import type { ParkingSpotWithStatus } from "../../../Types/parking";
 
@@ -35,7 +34,7 @@ type MobileTab = "map" | "spots" | "lucky" | "alerts";
 
 const AppContent: React.FC = () => {
   const [isOptionPopupOpen, setIsOptionPopupOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 768);
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("map");
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -170,6 +169,9 @@ const AppContent: React.FC = () => {
         <AppHeader
           onOpenOptionPopup={handleOpenOptionPopup}
           onNavigateToSpot={handleNavigateToSpot}
+          onOpenNotifications={() => setNotificationPanelOpen(true)}
+          notificationPanelOpen={notificationPanelOpen}
+          onCloseNotifications={() => setNotificationPanelOpen(false)}
         />
 
         <Box
@@ -418,13 +420,6 @@ const AppContent: React.FC = () => {
           open={wizardOpen}
           onClose={() => setWizardOpen(false)}
           onSpotSelected={handleWizardSpotSelected}
-        />
-
-        {/* Mobile notification panel (triggered from bottom nav) */}
-        <NotificationPanel
-          open={notificationPanelOpen}
-          onClose={() => setNotificationPanelOpen(false)}
-          onNavigateToSpot={handleNavigateToSpot}
         />
 
         <OptionDialog isOpen={isOptionPopupOpen} onClose={handleCloseOptionPopup} />

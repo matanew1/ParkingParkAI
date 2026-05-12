@@ -40,11 +40,9 @@ const DEFAULT_COORDINATES: Coordinates = [32.0853, 34.7818];
 const parkingService = new ParkingService();
 const routeService = new RouteService();
 
-const isDevelopment = import.meta?.env?.DEV === true;
-
-const baseUrl = isDevelopment ? "/api" : "https://gisn.tel-aviv.gov.il";
-const AHUZAT_HAHOF_URL = `${baseUrl}/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json`;
-const PRIVATE_URL = `${baseUrl}/arcgis/rest/services/IView2/MapServer/555/query?where=1%3D1&outFields=*&f=json`;
+// Always use /api path — proxied to gisn.tel-aviv.gov.il by both Vite dev server and vercel.json rewrites
+const AHUZAT_HAHOF_URL = `/api/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json`;
+const PRIVATE_URL = `/api/arcgis/rest/services/IView2/MapServer/555/query?where=1%3D1&outFields=*&f=json`;
 
 export const useParkingStore = create<ParkingState>((set, get) => ({
   // Initial state
