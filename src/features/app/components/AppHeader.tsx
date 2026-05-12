@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Car, Star, Bell, Settings, Menu } from "lucide-react";
+import { Car, Star } from "lucide-react";
 import {
   AppBar,
   Toolbar,
@@ -11,34 +11,58 @@ import {
   Tooltip,
   alpha,
   Chip,
+  useTheme,
 } from "@mui/material";
-import { useThemeStore } from "../../../stores/themeStore";
 import { useFavoritesStore } from "../../../stores/favoritesStore";
-import { useNotificationStore } from "../../../stores/notificationStore";
 import ThemeToggle from "../../../components/Theme/ThemeToggle";
 import OptionButton from "../../options/OptionButton";
 import { NotificationBadge, NotificationPanel } from "../../notifications";
 import { AppHeaderProps } from "../../../Types/app";
 import { motion } from "framer-motion";
+import { useParkingStore } from "../../../stores/parkingStore";
 
 const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup, onNavigateToSpot }) => {
   const isMobile = useMediaQuery("(max-width:768px)");
   const isSmallMobile = useMediaQuery("(max-width:480px)");
   const { favoritesCount } = useFavoritesStore();
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+  const theme = useTheme();
+
+  const parkingSpots = useParkingStore((s) => s.parkingSpots);
+  const availableCount = parkingSpots.filter(
+    (s) => s.status_chenyon === "פנוי"
+  ).length;
 
   return (
     <AppBar
       position="fixed"
       elevation={0}
       sx={{
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        backgroundColor: (theme) =>
-          alpha(theme.palette.background.default, 0.85),
-        borderBottom: (theme) =>
-          `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-        zIndex: (theme) => theme.zIndex.appBar,
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        backgroundColor:
+          theme.palette.mode === "dark"
+            ? alpha("#0d1117", 0.92)
+            : alpha("#111827", 0.88),
+        borderBottom: "none",
+        zIndex: theme.zIndex.appBar,
+        // Gradient accent line at the bottom
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "2px",
+          background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main}, ${theme.palette.primary.main})`,
+          backgroundSize: "200% 100%",
+          animation: "gradientShift 4s ease infinite",
+        },
+        "@keyframes gradientShift": {
+          "0%": { backgroundPosition: "0% 0%" },
+          "50%": { backgroundPosition: "100% 0%" },
+          "100%": { backgroundPosition: "0% 0%" },
+        },
       }}
     >
       <Toolbar
@@ -60,16 +84,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup, onNavigateToSp
                 width: { xs: 40, sm: 44 },
                 height: { xs: 40, sm: 44 },
                 borderRadius: "12px",
-                background: (theme) =>
-                  `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${alpha(theme.palette.primary.dark, 0.8)})`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: (theme) =>
-                  `0 4px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
+                boxShadow: `0 0 16px ${alpha(theme.palette.primary.main, 0.6)}, 0 4px 20px ${alpha(theme.palette.primary.main, 0.35)}`,
               }}
             >
-              <Car size={isSmallMobile ? 20 : 24} color="white" strokeWidth={2.5} />
+              <Car size={isSmallMobile ? 20 : 24} color="#ffffff" strokeWidth={2.5} />
             </Box>
           </motion.div>
 
@@ -78,11 +100,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup, onNavigateToSp
               variant="h6"
               component="h1"
               sx={{
-                fontWeight: 700,
-                fontSize: { xs: "1.1rem", sm: "1.25rem" },
-                color: "text.primary",
-                letterSpacing: "-0.02em",
-                lineHeight: 1.2,
+                fontWeight: 800,
+                fontSize: { xs: "1.1rem", sm: "1.3rem" },
+                color: "#ffffff",
+                letterSpacing: "-0.03em",
+                lineHeight: 1.15,
               }}
             >
               {isSmallMobile ? "ParkAI" : "ParkingParkAI"}
@@ -91,46 +113,72 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup, onNavigateToSp
               <Typography
                 variant="caption"
                 sx={{
-                  color: "text.secondary",
-                  fontSize: "0.75rem",
+                  color: alpha("#ffffff", 0.55),
+                  fontSize: "0.7rem",
                   fontWeight: 500,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
                 }}
               >
                 Tel Aviv Smart Parking
               </Typography>
             )}
           </Box>
+
+          {/* Live available count chip */}
+          {availableCount > 0 && !isSmallMobile && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+            >
+              <Chip
+                label={`${availableCount} available`}
+                size="small"
+                sx={{
+                  height: 22,
+                  backgroundColor: alpha(theme.palette.success.main, 0.18),
+                  color: theme.palette.success.main,
+                  fontWeight: 700,
+                  fontSize: "0.68rem",
+                  border: `1px solid ${alpha(theme.palette.success.main, 0.35)}`,
+                  boxShadow: `0 0 8px ${alpha(theme.palette.success.main, 0.25)}`,
+                  "& .MuiChip-label": { px: 1 },
+                }}
+              />
+            </motion.div>
+          )}
         </Box>
 
         {/* Spacer */}
         <Box sx={{ flexGrow: 1 }} />
 
-        {/* Status Badge - Only on larger screens */}
+        {/* Live indicator — desktop only */}
         {!isMobile && (
           <Chip
             label="Live"
             size="small"
             sx={{
               height: 24,
-              backgroundColor: (theme) => alpha(theme.palette.success.main, 0.15),
-              color: "success.main",
-              fontWeight: 600,
+              backgroundColor: alpha(theme.palette.success.main, 0.15),
+              color: theme.palette.success.main,
+              fontWeight: 700,
               fontSize: "0.7rem",
-              "& .MuiChip-label": {
-                px: 1,
-              },
+              border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
+              "& .MuiChip-label": { px: 1 },
               "&::before": {
                 content: '""',
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                backgroundColor: "success.main",
-                marginRight: 6,
+                backgroundColor: "currentColor",
+                marginRight: "6px",
+                display: "inline-block",
                 animation: "pulse 2s ease-in-out infinite",
               },
               "@keyframes pulse": {
                 "0%, 100%": { opacity: 1 },
-                "50%": { opacity: 0.5 },
+                "50%": { opacity: 0.4 },
               },
             }}
           />
@@ -156,15 +204,15 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onOpenOptionPopup, onNavigateToSp
               <IconButton
                 size={isMobile ? "small" : "medium"}
                 sx={{
-                  color: "warning.main",
-                  backgroundColor: (theme) =>
-                    alpha(theme.palette.warning.main, 0.1),
+                  color: theme.palette.warning.main,
+                  backgroundColor: alpha(theme.palette.warning.main, 0.12),
                   "&:hover": {
-                    backgroundColor: (theme) =>
-                      alpha(theme.palette.warning.main, 0.2),
+                    backgroundColor: alpha(theme.palette.warning.main, 0.22),
+                    boxShadow: `0 0 12px ${alpha(theme.palette.warning.main, 0.4)}`,
                   },
                   width: { xs: 36, sm: 40 },
                   height: { xs: 36, sm: 40 },
+                  transition: "all 0.2s ease",
                 }}
               >
                 <Badge

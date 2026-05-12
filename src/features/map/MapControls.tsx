@@ -1,6 +1,6 @@
 import React from "react";
-import { Box, IconButton, Tooltip, alpha, Paper } from "@mui/material";
-import { RefreshCw, Navigation, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { Box, IconButton, Tooltip, Typography, alpha, Paper } from "@mui/material";
+import { RefreshCw, Navigation, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface MapControlsProps {
@@ -20,26 +20,32 @@ const MapControls: React.FC<MapControlsProps> = ({
   showLocationMarker,
   isMobile,
 }) => {
+  const btnSize = isMobile ? 44 : 48;
+  const iconSize = isMobile ? 18 : 20;
+
   const controls = [
     {
-      icon: <RefreshCw size={isMobile ? 18 : 20} className={refreshing ? "animate-spin" : ""} />,
-      label: "Refresh parking data",
+      icon: <RefreshCw size={iconSize} className={refreshing ? "animate-spin" : ""} />,
+      label: "Refresh",
+      tooltip: "Refresh parking data",
       onClick: onRefresh,
-      color: "primary" as const,
+      colorKey: "primary" as const,
       active: refreshing,
     },
     {
-      icon: <Navigation size={isMobile ? 18 : 20} />,
-      label: "My location",
+      icon: <Navigation size={iconSize} />,
+      label: "Locate",
+      tooltip: "My location",
       onClick: onCenterUser,
-      color: "secondary" as const,
+      colorKey: "secondary" as const,
       active: showLocationMarker,
     },
     {
-      icon: <RotateCcw size={isMobile ? 18 : 20} />,
-      label: "Reset view",
+      icon: <RotateCcw size={iconSize} />,
+      label: "Reset",
+      tooltip: "Reset view",
       onClick: onResetMap,
-      color: "default" as const,
+      colorKey: "default" as const,
       active: false,
     },
   ];
@@ -54,16 +60,20 @@ const MapControls: React.FC<MapControlsProps> = ({
         zIndex: 1000,
         display: "flex",
         flexDirection: "column",
-        gap: 0.5,
-        p: 0.75,
-        borderRadius: 3,
+        gap: 0,
+        p: "6px",
+        borderRadius: "50px",
         backgroundColor: (theme) =>
-          alpha(theme.palette.background.paper, 0.9),
-        backdropFilter: "blur(12px)",
+          theme.palette.mode === "dark"
+            ? alpha("#0d1117", 0.88)
+            : alpha("#111827", 0.82),
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
         border: (theme) =>
-          `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
         boxShadow: (theme) =>
-          `0 4px 20px ${alpha(theme.palette.common.black, 0.15)}`,
+          `0 4px 24px ${alpha(theme.palette.common.black, 0.35)}, 0 0 0 1px ${alpha(theme.palette.primary.main, 0.08)}`,
+        overflow: "hidden",
       }}
     >
       {controls.map((control, index) => (
@@ -71,56 +81,117 @@ const MapControls: React.FC<MapControlsProps> = ({
           key={control.label}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: index * 0.05, duration: 0.2 }}
+          transition={{ delay: index * 0.06, duration: 0.22 }}
         >
-          <Tooltip title={control.label} placement="left" arrow>
-            <IconButton
-              onClick={control.onClick}
-              size={isMobile ? "small" : "medium"}
+          {/* Divider between buttons (not before the first) */}
+          {index > 0 && (
+            <Box
               sx={{
-                width: { xs: 40, sm: 44 },
-                height: { xs: 40, sm: 44 },
-                borderRadius: 2.5,
-                color: control.active
-                  ? control.color === "primary"
-                    ? "primary.main"
-                    : control.color === "secondary"
-                    ? "secondary.main"
-                    : "text.primary"
-                  : "text.secondary",
-                backgroundColor: control.active
-                  ? (theme) =>
-                      alpha(
-                        control.color === "primary"
-                          ? theme.palette.primary.main
-                          : control.color === "secondary"
-                          ? theme.palette.secondary.main
-                          : theme.palette.action.selected,
-                        0.15
-                      )
-                  : "transparent",
-                "&:hover": {
-                  backgroundColor: (theme) =>
-                    alpha(
-                      control.color === "primary"
-                        ? theme.palette.primary.main
-                        : control.color === "secondary"
-                        ? theme.palette.secondary.main
-                        : theme.palette.action.hover,
-                      0.2
-                    ),
-                  color:
-                    control.color === "primary"
-                      ? "primary.main"
-                      : control.color === "secondary"
-                      ? "secondary.main"
-                      : "text.primary",
-                },
-                transition: "all 0.2s ease",
+                height: "1px",
+                mx: "8px",
+                backgroundColor: (theme) => alpha(theme.palette.common.white, 0.06),
+              }}
+            />
+          )}
+
+          <Tooltip title={control.tooltip} placement="left" arrow>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "2px",
+                py: "4px",
               }}
             >
-              {control.icon}
-            </IconButton>
+              <IconButton
+                onClick={control.onClick}
+                disableRipple={false}
+                sx={{
+                  width: btnSize,
+                  height: btnSize,
+                  borderRadius: "50%",
+                  color: control.active
+                    ? control.colorKey === "primary"
+                      ? "primary.main"
+                      : control.colorKey === "secondary"
+                      ? "secondary.main"
+                      : "#ffffff"
+                    : alpha("#ffffff", 0.7),
+                  backgroundColor: control.active
+                    ? (theme) =>
+                        alpha(
+                          control.colorKey === "primary"
+                            ? theme.palette.primary.main
+                            : control.colorKey === "secondary"
+                            ? theme.palette.secondary.main
+                            : theme.palette.action.selected,
+                          0.18
+                        )
+                    : "transparent",
+                  boxShadow: control.active
+                    ? (theme) =>
+                        `0 0 14px ${alpha(
+                          control.colorKey === "primary"
+                            ? theme.palette.primary.main
+                            : control.colorKey === "secondary"
+                            ? theme.palette.secondary.main
+                            : theme.palette.common.white,
+                          0.45
+                        )}`
+                    : "none",
+                  "&:hover": {
+                    backgroundColor: (theme) =>
+                      alpha(
+                        control.colorKey === "primary"
+                          ? theme.palette.primary.main
+                          : control.colorKey === "secondary"
+                          ? theme.palette.secondary.main
+                          : theme.palette.common.white,
+                        0.18
+                      ),
+                    color:
+                      control.colorKey === "primary"
+                        ? "primary.main"
+                        : control.colorKey === "secondary"
+                        ? "secondary.main"
+                        : "#ffffff",
+                    boxShadow: (theme) =>
+                      `0 0 16px ${alpha(
+                        control.colorKey === "primary"
+                          ? theme.palette.primary.main
+                          : control.colorKey === "secondary"
+                          ? theme.palette.secondary.main
+                          : theme.palette.common.white,
+                        0.5
+                      )}`,
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {control.icon}
+              </IconButton>
+              <Typography
+                sx={{
+                  fontSize: "9px",
+                  fontWeight: 600,
+                  letterSpacing: "0.03em",
+                  textTransform: "uppercase",
+                  color: control.active
+                    ? control.colorKey === "primary"
+                      ? "primary.main"
+                      : control.colorKey === "secondary"
+                      ? "secondary.main"
+                      : alpha("#ffffff", 0.9)
+                    : alpha("#ffffff", 0.45),
+                  lineHeight: 1,
+                  userSelect: "none",
+                  transition: "color 0.2s ease",
+                }}
+              >
+                {control.label}
+              </Typography>
+            </Box>
           </Tooltip>
         </motion.div>
       ))}

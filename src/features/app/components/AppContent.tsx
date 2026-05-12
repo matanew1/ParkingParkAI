@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useCallback, useState } from "react";
-import { List } from "lucide-react";
+import { Map, List, Zap, Bell } from "lucide-react";
 import {
   Box,
   useMediaQuery,
@@ -11,27 +11,43 @@ import {
   Zoom,
   useTheme,
   SwipeableDrawer,
+  BottomNavigation,
+  BottomNavigationAction,
+  Badge,
+  Paper,
 } from "@mui/material";
 import { useThemeStore } from "../../../stores/themeStore";
 import { useParkingStore } from "../../../stores/parkingStore";
+import { useNotificationStore } from "../../../stores/notificationStore";
 import { lightTheme, darkTheme } from "../../../components/Theme/ThemeConfig";
 import AppHeader from "./AppHeader";
 import { Sidebar } from "../../sidebar";
 import { OptionDialog } from "../../options";
+import { LuckySpotWizard } from "../../wizard";
+import { NotificationPanel } from "../../notifications";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import type { ParkingSpotWithStatus } from "../../../Types/parking";
 
 const OptimizedParkingMap = lazy(() => import("../../map/OptimizedParkingMap"));
 
+// Mobile bottom nav items
+type MobileTab = "map" | "spots" | "lucky" | "alerts";
+
 const AppContent: React.FC = () => {
-  const [isOptionPopupOpen, setIsOptionPopupOpen] = useState<boolean>(false);
+  const [isOptionPopupOpen, setIsOptionPopupOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
+  const [mobileTab, setMobileTab] = useState<MobileTab>("map");
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+
   const { isDarkMode } = useThemeStore();
+  const theme = isDarkMode ? darkTheme : lightTheme;
+
   const isMobile = useMediaQuery("(max-width:768px)");
   const isTablet = useMediaQuery("(max-width:1024px)");
-  const theme = isDarkMode ? darkTheme : lightTheme;
-  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
-  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
-  const [mobileView, setMobileView] = useState<"map" | "list">("map");
+
+  const { unreadCount } = useNotificationStore();
 
   const {
     parkingSpots,
@@ -48,21 +64,16 @@ const AppContent: React.FC = () => {
 
   const drawerWidth = isMobile ? "100%" : isTablet ? "360px" : "380px";
 
-  const handleResetMapApp = useCallback((): void => {
+  const handleResetMapApp = useCallback(() => {
     setSelectedSpotId(null);
     setSelectedSpot(null);
     handleResetMap();
   }, [setSelectedSpot, handleResetMap]);
 
-  const handleOpenOptionPopup = useCallback((): void => {
-    setIsOptionPopupOpen(true);
-  }, []);
+  const handleOpenOptionPopup = useCallback(() => setIsOptionPopupOpen(true), []);
+  const handleCloseOptionPopup = useCallback(() => setIsOptionPopupOpen(false), []);
 
-  const handleCloseOptionPopup = useCallback((): void => {
-    setIsOptionPopupOpen(false);
-  }, []);
-
-  const toggleSidebar = useCallback((): void => {
+  const toggleSidebar = useCallback(() => {
     setIsSidebarOpen((prev) => !prev);
   }, []);
 
@@ -71,7 +82,7 @@ const AppContent: React.FC = () => {
       setSelectedSpotId(spot.code_achoza.toString());
       setSelectedSpot(`${spot.lat},${spot.lon}`);
       if (isMobile) {
-        setMobileView("map");
+        setMobileTab("map");
         setIsSidebarOpen(false);
       }
     },
@@ -84,7 +95,7 @@ const AppContent: React.FC = () => {
       setSelectedSpotId(spot.code_achoza.toString());
       setSelectedSpot(`${spot.lat},${spot.lon}`);
       if (isMobile) {
-        setMobileView("map");
+        setMobileTab("map");
         setIsSidebarOpen(false);
       }
     },
@@ -97,13 +108,13 @@ const AppContent: React.FC = () => {
 
   const handleNavigateToSpot = useCallback(
     (spotId: string) => {
-      const spot = parkingSpots.find(s => s.code_achoza.toString() === spotId);
+      const spot = parkingSpots.find((s) => s.code_achoza.toString() === spotId);
       if (spot) {
         setMapCenter([spot.lat, spot.lon]);
         setSelectedSpotId(spotId);
         setSelectedSpot(`${spot.lat},${spot.lon}`);
         if (isMobile) {
-          setMobileView("map");
+          setMobileTab("map");
           setIsSidebarOpen(false);
         }
       }
@@ -111,8 +122,37 @@ const AppContent: React.FC = () => {
     [parkingSpots, setMapCenter, setSelectedSpot, isMobile]
   );
 
-  // Mobile bottom sheet drawer
-  const MobileDrawer = isMobile ? SwipeableDrawer : Drawer;
+  // Lucky Spot wizard handler — selects spot and opens route on map
+  const handleWizardSpotSelected = useCallback(
+    (spot: ParkingSpotWithStatus) => {
+      handleSpotSelectFromSidebar(spot);
+    },
+    [handleSpotSelectFromSidebar]
+  );
+
+  // Mobile bottom nav tab change
+  const handleMobileTabChange = useCallback(
+    (_: React.SyntheticEvent, value: MobileTab) => {
+      if (value === "lucky") {
+        setWizardOpen(true);
+        return;
+      }
+      if (value === "alerts") {
+        setNotificationPanelOpen(true);
+        return;
+      }
+      setMobileTab(value);
+      if (value === "spots") {
+        setIsSidebarOpen(true);
+      } else {
+        setIsSidebarOpen(false);
+      }
+    },
+    []
+  );
+
+  // Bottom nav safe area padding (iOS home bar)
+  const BOTTOM_NAV_HEIGHT = 64;
 
   return (
     <MuiThemeProvider theme={theme}>
@@ -131,7 +171,7 @@ const AppContent: React.FC = () => {
           onOpenOptionPopup={handleOpenOptionPopup}
           onNavigateToSpot={handleNavigateToSpot}
         />
-        
+
         <Box
           component="main"
           sx={{
@@ -141,6 +181,7 @@ const AppContent: React.FC = () => {
             height: "100%",
             overflow: "hidden",
             position: "relative",
+            pb: isMobile ? `${BOTTOM_NAV_HEIGHT}px` : 0,
           }}
         >
           {/* Desktop/Tablet Sidebar */}
@@ -157,10 +198,8 @@ const AppContent: React.FC = () => {
                   boxSizing: "border-box",
                   top: { xs: "64px", sm: "70px" },
                   height: { xs: "calc(100% - 64px)", sm: "calc(100% - 70px)" },
-                  borderRight: (theme) =>
-                    `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-                  backgroundColor: (theme) =>
-                    alpha(theme.palette.background.paper, 0.95),
+                  borderRight: (t) => `1px solid ${alpha(t.palette.divider, 0.08)}`,
+                  backgroundColor: (t) => alpha(t.palette.background.paper, 0.97),
                   backdropFilter: "blur(20px)",
                   transition: "width 0.3s ease",
                 },
@@ -175,52 +214,35 @@ const AppContent: React.FC = () => {
                 onRefresh={() => fetchParkingData(true)}
                 isRefreshing={refreshing}
                 toggleDrawer={toggleSidebar}
-                isMobile={isMobile}
+                isMobile={false}
               />
             </Drawer>
           )}
 
-          {/* Mobile Bottom Sheet */}
+          {/* Mobile Bottom Sheet for Spots */}
           {isMobile && (
-            <MobileDrawer
+            <SwipeableDrawer
               anchor="bottom"
               open={isSidebarOpen}
-              onClose={() => setIsSidebarOpen(false)}
-              onOpen={() => setIsSidebarOpen(true)}
+              onClose={() => { setIsSidebarOpen(false); setMobileTab("map"); }}
+              onOpen={() => { setIsSidebarOpen(true); setMobileTab("spots"); }}
               disableSwipeToOpen={false}
               swipeAreaWidth={20}
-              ModalProps={{
-                keepMounted: true,
-              }}
+              ModalProps={{ keepMounted: true }}
               PaperProps={{
                 sx: {
                   height: "85vh",
                   borderRadius: "24px 24px 0 0",
-                  backgroundColor: (theme) =>
-                    alpha(theme.palette.background.paper, 0.98),
+                  backgroundColor: (t) => alpha(t.palette.background.paper, 0.98),
                   backdropFilter: "blur(20px)",
                   overflow: "hidden",
+                  pb: `${BOTTOM_NAV_HEIGHT}px`,
                 },
               }}
             >
               {/* Drag Handle */}
-              <Box
-                sx={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                  pt: 1.5,
-                  pb: 1,
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 40,
-                    height: 4,
-                    borderRadius: 2,
-                    backgroundColor: "divider",
-                  }}
-                />
+              <Box sx={{ display: "flex", justifyContent: "center", pt: 1.5, pb: 1 }}>
+                <Box sx={{ width: 40, height: 4, borderRadius: 2, backgroundColor: "divider" }} />
               </Box>
               <Sidebar
                 spots={parkingSpots}
@@ -230,10 +252,10 @@ const AppContent: React.FC = () => {
                 lastUpdated={lastUpdated}
                 onRefresh={() => fetchParkingData(true)}
                 isRefreshing={refreshing}
-                toggleDrawer={() => setIsSidebarOpen(false)}
-                isMobile={isMobile}
+                toggleDrawer={() => { setIsSidebarOpen(false); setMobileTab("map"); }}
+                isMobile={true}
               />
-            </MobileDrawer>
+            </SwipeableDrawer>
           )}
 
           {/* Map Container */}
@@ -243,7 +265,6 @@ const AppContent: React.FC = () => {
               position: "relative",
               height: "100%",
               transition: "margin 0.3s ease",
-              marginLeft: !isMobile && isSidebarOpen ? 0 : 0,
             }}
           >
             {/* Desktop Toggle Button */}
@@ -258,8 +279,8 @@ const AppContent: React.FC = () => {
                     left: 16,
                     top: 16,
                     zIndex: 1000,
-                    boxShadow: (theme) =>
-                      `0 4px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
+                    boxShadow: (t) =>
+                      `0 0 20px ${alpha(t.palette.primary.main, 0.5)}, 0 4px 20px ${alpha(t.palette.primary.main, 0.3)}`,
                   }}
                 >
                   <List size={22} />
@@ -299,32 +320,115 @@ const AppContent: React.FC = () => {
           </Box>
         </Box>
 
-        {/* Mobile FAB to open list */}
+        {/* Mobile Bottom Navigation */}
         {isMobile && (
-          <Fab
-            color="primary"
-            onClick={() => setIsSidebarOpen(true)}
+          <Paper
+            elevation={0}
             sx={{
               position: "fixed",
-              bottom: 24,
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 1000,
-              width: 56,
-              height: 56,
-              boxShadow: (theme) =>
-                `0 4px 20px ${alpha(theme.palette.primary.main, 0.5)}`,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 1300,
+              borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.1)}`,
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              backgroundColor: (t) => alpha(t.palette.background.paper, 0.95),
             }}
           >
-            <List size={24} />
-          </Fab>
+            <BottomNavigation
+              value={mobileTab}
+              onChange={handleMobileTabChange}
+              sx={{
+                height: BOTTOM_NAV_HEIGHT,
+                backgroundColor: "transparent",
+                "& .MuiBottomNavigationAction-root": {
+                  minWidth: 0,
+                  color: "text.secondary",
+                  transition: "all 0.2s ease",
+                  "&.Mui-selected": {
+                    color: "primary.main",
+                  },
+                },
+              }}
+            >
+              <BottomNavigationAction
+                value="map"
+                label="Map"
+                icon={<Map size={22} />}
+              />
+              <BottomNavigationAction
+                value="spots"
+                label="Spots"
+                icon={<List size={22} />}
+              />
+              {/* Lucky Spot — the unicorn feature with a glowing center button */}
+              <BottomNavigationAction
+                value="lucky"
+                label="Lucky"
+                icon={
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      mt: -2,
+                      boxShadow: "0 0 20px rgba(124,58,237,0.6), 0 4px 16px rgba(236,72,153,0.4)",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        transform: "scale(1.1)",
+                        boxShadow: "0 0 28px rgba(124,58,237,0.8), 0 6px 20px rgba(236,72,153,0.6)",
+                      },
+                    }}
+                  >
+                    <Zap size={22} color="#ffffff" />
+                  </Box>
+                }
+                sx={{
+                  "& .MuiBottomNavigationAction-label": {
+                    color: "#ec4899",
+                    fontWeight: 700,
+                    fontSize: "0.65rem !important",
+                  },
+                }}
+              />
+              <BottomNavigationAction
+                value="alerts"
+                label="Alerts"
+                icon={
+                  <Badge
+                    badgeContent={unreadCount}
+                    color="error"
+                    sx={{ "& .MuiBadge-badge": { fontSize: "0.6rem", height: 14, minWidth: 14 } }}
+                  >
+                    <Bell size={22} />
+                  </Badge>
+                }
+              />
+            </BottomNavigation>
+          </Paper>
         )}
-      </Box>
 
-      <OptionDialog
-        isOpen={isOptionPopupOpen}
-        onClose={handleCloseOptionPopup}
-      />
+        {/* Lucky Spot Wizard */}
+        <LuckySpotWizard
+          open={wizardOpen}
+          onClose={() => setWizardOpen(false)}
+          onSpotSelected={handleWizardSpotSelected}
+        />
+
+        {/* Mobile notification panel (triggered from bottom nav) */}
+        <NotificationPanel
+          open={notificationPanelOpen}
+          onClose={() => setNotificationPanelOpen(false)}
+          onNavigateToSpot={handleNavigateToSpot}
+        />
+
+        <OptionDialog isOpen={isOptionPopupOpen} onClose={handleCloseOptionPopup} />
+      </Box>
     </MuiThemeProvider>
   );
 };
