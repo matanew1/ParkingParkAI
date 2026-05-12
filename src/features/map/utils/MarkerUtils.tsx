@@ -7,15 +7,15 @@ import { useMediaQuery, useTheme } from "@mui/material";
 import type { ParkingSpotWithStatus } from "../../Types/parking";
 import type { Coordinates } from "../../Services/routeService";
 
-// ─── Status colours ────────────────────────────────────────────────────────────
+// ─── Status colours (Waze-inspired vibrant palette) ───────────────────────────
 const STATUS_COLORS: Record<string, string> = {
-  "פנוי": "#10b981",   // available – emerald
-  "מעט": "#f59e0b",    // limited   – amber
-  "מלא": "#ef4444",    // full      – red
-  "סגור": "#6b7280",   // closed    – gray
-  "פעיל": "#3b82f6",   // active    – blue
+  "פנוי": "#2ed573",   // available – bright lime green
+  "מעט": "#ffd32a",    // limited   – bright amber
+  "מלא": "#ff4757",    // full      – vivid red
+  "סגור": "#57606f",   // closed    – dark gray
+  "פעיל": "#00c8ff",   // active    – cyan
 };
-const DEFAULT_COLOR = "#3b82f6";
+const DEFAULT_COLOR = "#00c8ff";
 
 const getStatusColor = (status?: string) =>
   STATUS_COLORS[status ?? ""] ?? DEFAULT_COLOR;
@@ -53,37 +53,38 @@ export const getMarkerIcon = (status?: string) => {
   return iconCache.get(key)!;
 };
 
-export const selectedMarkerIcon = makePMarker("#f59e0b", true); // gold selected
+export const selectedMarkerIcon = makePMarker("#00c8ff", true); // Waze cyan selected
 
 // ─── User location marker ──────────────────────────────────────────────────────
 export const userLocationIcon = divIcon({
-  html: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="12" cy="12" r="11" fill="#3b82f6" opacity="0.18"/>
-  <circle cx="12" cy="12" r="7" fill="#3b82f6" stroke="white" stroke-width="2.5"/>
-  <circle cx="12" cy="12" r="3" fill="white"/>
+  html: `<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="14" cy="14" r="13" fill="#00c8ff" opacity="0.2"/>
+  <circle cx="14" cy="14" r="9" fill="#00c8ff" stroke="white" stroke-width="2.5"/>
+  <circle cx="14" cy="14" r="4" fill="white"/>
 </svg>`,
   className: "",
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-  popupAnchor: [0, -16],
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+  popupAnchor: [0, -18],
 });
 
 // ─── Route start / end markers ─────────────────────────────────────────────────
 const makeLetterMarker = (letter: string, color: string) =>
   divIcon({
-    html: `<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="14" cy="14" r="12" fill="${color}" stroke="white" stroke-width="2.5"/>
-  <text x="14" y="18.5" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11" font-weight="800" fill="white" text-anchor="middle">${letter}</text>
+    html: `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="16" cy="16" r="15" fill="${color}" opacity="0.25"/>
+  <circle cx="16" cy="16" r="11" fill="${color}" stroke="white" stroke-width="2.5"/>
+  <text x="16" y="20.5" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12" font-weight="800" fill="white" text-anchor="middle">${letter}</text>
 </svg>`,
     className: "",
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -20],
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -22],
   });
 
 export const routeIcons = {
-  start: makeLetterMarker("A", "#10b981"),
-  end: makeLetterMarker("B", "#ef4444"),
+  start: makeLetterMarker("A", "#2ed573"),
+  end: makeLetterMarker("B", "#ff4757"),
 };
 
 // ─── MapZoomController ─────────────────────────────────────────────────────────
