@@ -1,40 +1,63 @@
 import React from "react";
-import { Button, useMediaQuery, alpha } from "@mui/material";
+import { IconButton, Tooltip, useMediaQuery, alpha, Button } from "@mui/material";
 import { Settings } from "lucide-react";
 import { OptionButtonProps } from "../../Types/opt";
 
 const OptionButton: React.FC<OptionButtonProps> = ({ onClick }) => {
   const isMobile = useMediaQuery("(max-width:768px)");
-  const isSmallMobile = useMediaQuery("(max-width:480px)");
+
+  // On mobile/tablet: icon-only button so the header stays clean and the
+  // "Options" label can't overflow the available width.
+  if (isMobile) {
+    return (
+      <Tooltip title="Options" arrow>
+        <IconButton
+          onClick={onClick}
+          aria-label="Options"
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: 2,
+            color: "primary.main",
+            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+            "&:hover": {
+              backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+            },
+            transition: "all 0.2s ease-in-out",
+          }}
+        >
+          <Settings size={18} />
+        </IconButton>
+      </Tooltip>
+    );
+  }
 
   return (
     <Button
       onClick={onClick}
       variant="contained"
       color="primary"
-      size={isSmallMobile ? "small" : "medium"}
-      startIcon={!isSmallMobile && <Settings size={isMobile ? 14 : 16} />}
+      startIcon={<Settings size={16} />}
       sx={{
-        borderRadius: 3,
+        borderRadius: 2,
         whiteSpace: "nowrap",
-        ml: { xs: 0.5, sm: 1 },
-        px: { xs: 1.5, sm: 2 },
-        py: { xs: 0.75, sm: 1 },
-        minHeight: { xs: 36, sm: 40 },
+        ml: 1,
+        px: 2,
+        py: 0.75,
+        minHeight: 40,
         fontWeight: 600,
         textTransform: "none",
-        fontSize: { xs: "0.75rem", sm: "0.875rem" },
+        fontSize: "0.875rem",
         boxShadow: (theme) =>
-          `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
+          `0 2px 8px ${alpha(theme.palette.primary.main, 0.25)}`,
         "&:hover": {
           boxShadow: (theme) =>
-            `0 6px 16px ${alpha(theme.palette.primary.main, 0.4)}`,
-          transform: "translateY(-1px)",
+            `0 4px 12px ${alpha(theme.palette.primary.main, 0.35)}`,
         },
         transition: "all 0.2s ease-in-out",
       }}
     >
-      {"Options"}
+      Options
     </Button>
   );
 };

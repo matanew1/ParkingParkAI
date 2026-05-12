@@ -178,7 +178,7 @@ const AppContent: React.FC = () => {
           component="main"
           sx={{
             flexGrow: 1,
-            pt: { xs: "64px", sm: "70px" },
+            pt: { xs: "56px", sm: "64px" },
             display: "flex",
             height: "100%",
             overflow: "hidden",
@@ -198,8 +198,8 @@ const AppContent: React.FC = () => {
                 "& .MuiDrawer-paper": {
                   width: drawerWidth,
                   boxSizing: "border-box",
-                  top: { xs: "64px", sm: "70px" },
-                  height: { xs: "calc(100% - 64px)", sm: "calc(100% - 70px)" },
+                  top: { xs: "56px", sm: "64px" },
+                  height: { xs: "calc(100% - 56px)", sm: "calc(100% - 64px)" },
                   borderRight: (t) => `1px solid ${alpha(t.palette.divider, 0.08)}`,
                   backgroundColor: (t) => alpha(t.palette.background.paper, 0.97),
                   backdropFilter: "blur(20px)",

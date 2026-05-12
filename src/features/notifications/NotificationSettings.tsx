@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -23,9 +23,23 @@ import {
   Schedule as ScheduleIcon,
   Star as StarIcon,
   LocationOn as LocationIcon,
+  Send as SendIcon,
 } from "@mui/icons-material";
 import { useNotificationStore, NotificationSettingsType } from "../../stores/notificationStore";
 import { notificationService } from "../../Services/notificationService";
+
+// iOS Safari only supports Web Notifications when the site is installed as
+// a home-screen PWA (iOS 16.4+). Detect that to surface accurate guidance
+// instead of silently failing.
+const isIOS = () =>
+  typeof navigator !== "undefined" &&
+  /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+  !(window as unknown as { MSStream?: unknown }).MSStream;
+
+const isStandalone = () =>
+  typeof window !== "undefined" &&
+  (window.matchMedia?.("(display-mode: standalone)").matches ||
+    (window.navigator as { standalone?: boolean }).standalone === true);
 
 interface NotificationSettingsProps {
   open: boolean;
@@ -46,9 +60,23 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ open, onClo
   const [localSettings, setLocalSettings] = useState<NotificationSettingsType>(settings);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [testStatus, setTestStatus] = useState<null | {
+    ok: boolean;
+    message: string;
+  }>(null);
+
+  // Keep local form state in sync if the store updates while the dialog is open
+  // (e.g. after the user grants permission and we auto-enable settings).
+  useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings, open]);
 
   const isMobileDevice =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const onIOS = isIOS();
+  const iOSNeedsPWA = onIOS && !isStandalone();
+  const supportsNotifications =
+    typeof window !== "undefined" && "Notification" in window;
 
   const handleSave = () => {
     updateSettings(localSettings);
@@ -59,12 +87,13 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ open, onClo
     setIsRequestingPermission(true);
     setPermissionError(null);
     try {
-      const granted = await notificationService.requestPermission();
+      // requestPermission on the store also auto-enables settings.enabled.
+      const granted = await requestPermission();
       if (granted) {
-        await requestPermission();
+        setLocalSettings((prev) => ({ ...prev, enabled: true }));
       } else {
         setPermissionError(
-          'Notification permission denied. Please enable it in your browser settings.'
+          'Notification permission denied. Enable it in your browser settings to receive alerts.'
         );
       }
     } catch (error) {
@@ -73,6 +102,21 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ open, onClo
       );
     } finally {
       setIsRequestingPermission(false);
+    }
+  };
+
+  const handleSendTest = async () => {
+    setTestStatus(null);
+    // Persist any pending changes so the test reflects the current toggles.
+    updateSettings(localSettings);
+    const result = await notificationService.sendTestNotification();
+    if (result.ok) {
+      setTestStatus({ ok: true, message: 'Test sent! Check your notifications.' });
+    } else {
+      setTestStatus({
+        ok: false,
+        message: result.reason || 'Could not send the test notification.',
+      });
     }
   };
 
@@ -112,11 +156,29 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ open, onClo
               <Typography variant="h6" gutterBottom>
                 Permission Status
               </Typography>
-              {!permissionGranted ? (
+
+              {!supportsNotifications && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  This browser does not support web notifications.
+                </Alert>
+              )}
+
+              {supportsNotifications && iOSNeedsPWA && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <strong>iPhone / iPad:</strong> Safari only delivers notifications
+                  when the site is added to your Home Screen.
+                  <Box sx={{ mt: 1, fontSize: "0.875rem" }}>
+                    Tap the Share button → <em>Add to Home Screen</em>, then open
+                    ParkAI from the home screen icon and enable notifications.
+                  </Box>
+                </Alert>
+              )}
+
+              {supportsNotifications && !permissionGranted ? (
                 <Box>
                   <Alert severity="warning" sx={{ mb: 2 }}>
                     Notifications are disabled. Enable them to receive parking alerts.
-                    {isMobileDevice && (
+                    {isMobileDevice && !onIOS && (
                       <Box sx={{ mt: 1, fontSize: "0.875rem" }}>
                         <strong>Mobile users:</strong> Allow notifications when your browser prompts.
                       </Box>
@@ -135,16 +197,36 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ open, onClo
                   <Button
                     variant="contained"
                     onClick={handleRequestPermission}
-                    disabled={isRequestingPermission}
+                    disabled={isRequestingPermission || iOSNeedsPWA}
                     startIcon={<NotificationsIcon />}
                     fullWidth
                   >
                     {isRequestingPermission ? "Requesting..." : "Enable Notifications"}
                   </Button>
                 </Box>
-              ) : (
-                <Alert severity="success">Notifications are enabled and working!</Alert>
-              )}
+              ) : supportsNotifications ? (
+                <Box>
+                  <Alert severity="success" sx={{ mb: 2 }}>
+                    Notifications are enabled.
+                  </Alert>
+                  {testStatus && (
+                    <Alert
+                      severity={testStatus.ok ? "success" : "error"}
+                      sx={{ mb: 2 }}
+                    >
+                      {testStatus.message}
+                    </Alert>
+                  )}
+                  <Button
+                    variant="outlined"
+                    onClick={handleSendTest}
+                    startIcon={<SendIcon />}
+                    fullWidth
+                  >
+                    Send test notification
+                  </Button>
+                </Box>
+              ) : null}
             </CardContent>
           </Card>
 

@@ -1,19 +1,14 @@
 import React, { useState } from "react";
-import { Car, Star } from "lucide-react";
+import { Car } from "lucide-react";
 import {
   AppBar,
   Toolbar,
   Typography,
   Box,
-  IconButton,
   useMediaQuery,
-  Badge,
-  Tooltip,
   alpha,
-  Chip,
   useTheme,
 } from "@mui/material";
-import { useFavoritesStore } from "../../../stores/favoritesStore";
 import ThemeToggle from "../../../components/Theme/ThemeToggle";
 import OptionButton from "../../options/OptionButton";
 import { NotificationBadge, NotificationPanel } from "../../notifications";
@@ -30,7 +25,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 }) => {
   const isMobile = useMediaQuery("(max-width:768px)");
   const isSmallMobile = useMediaQuery("(max-width:480px)");
-  const { favoritesCount } = useFavoritesStore();
   const [internalPanelOpen, setInternalPanelOpen] = useState(false);
 
   // Support both controlled (from parent) and uncontrolled modes
@@ -48,47 +42,36 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     (s) => s.status_chenyon === "פנוי"
   ).length;
 
+  const headerBg =
+    theme.palette.mode === "dark"
+      ? alpha(theme.palette.background.paper, 0.85)
+      : alpha("#ffffff", 0.9);
+  const headerBorder = alpha(theme.palette.divider, 0.12);
+  const textPrimary = theme.palette.text.primary;
+  const textSecondary = theme.palette.text.secondary;
+
   return (
     <AppBar
       position="fixed"
       elevation={0}
       sx={{
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        backgroundColor:
-          theme.palette.mode === "dark"
-            ? alpha("#0d1117", 0.92)
-            : alpha("#111827", 0.88),
-        borderBottom: "none",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        backgroundColor: headerBg,
+        borderBottom: `1px solid ${headerBorder}`,
         zIndex: theme.zIndex.appBar,
-        // Gradient accent line at the bottom
-        "&::after": {
-          content: '""',
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: "2px",
-          background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main}, ${theme.palette.primary.main})`,
-          backgroundSize: "200% 100%",
-          animation: "gradientShift 4s ease infinite",
-        },
-        "@keyframes gradientShift": {
-          "0%": { backgroundPosition: "0% 0%" },
-          "50%": { backgroundPosition: "100% 0%" },
-          "100%": { backgroundPosition: "0% 0%" },
-        },
+        color: textPrimary,
       }}
     >
       <Toolbar
         sx={{
-          minHeight: { xs: 64, sm: 70 },
-          px: { xs: 2, sm: 3 },
-          gap: { xs: 1.5, sm: 2 },
+          minHeight: { xs: 56, sm: 64 },
+          px: { xs: 1.5, sm: 2.5 },
+          gap: { xs: 1, sm: 1.5 },
         }}
       >
         {/* Logo & Brand */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0 }}>
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -96,157 +79,101 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           >
             <Box
               sx={{
-                width: { xs: 40, sm: 44 },
-                height: { xs: 40, sm: 44 },
-                borderRadius: "12px",
-                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${alpha(theme.palette.primary.dark, 0.8)})`,
+                width: { xs: 36, sm: 40 },
+                height: { xs: 36, sm: 40 },
+                borderRadius: "10px",
+                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${alpha(theme.palette.primary.dark, 0.85)})`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: `0 0 16px ${alpha(theme.palette.primary.main, 0.6)}, 0 4px 20px ${alpha(theme.palette.primary.main, 0.35)}`,
+                boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
+                flexShrink: 0,
               }}
             >
-              <Car size={isSmallMobile ? 20 : 24} color="#ffffff" strokeWidth={2.5} />
+              <Car size={isSmallMobile ? 18 : 22} color="#ffffff" strokeWidth={2.5} />
             </Box>
           </motion.div>
 
-          <Box>
+          <Box sx={{ minWidth: 0 }}>
             <Typography
               variant="h6"
               component="h1"
               sx={{
                 fontWeight: 800,
-                fontSize: { xs: "1.1rem", sm: "1.3rem" },
-                color: "#ffffff",
-                letterSpacing: "-0.03em",
-                lineHeight: 1.15,
+                fontSize: { xs: "1rem", sm: "1.15rem" },
+                color: textPrimary,
+                letterSpacing: "-0.02em",
+                lineHeight: 1.1,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
-              {isSmallMobile ? "ParkAI" : "ParkingParkAI"}
+              {isSmallMobile ? "ParkAI" : "ParkAI"}
             </Typography>
-            {!isSmallMobile && (
+            {availableCount > 0 ? (
               <Typography
                 variant="caption"
                 sx={{
-                  color: alpha("#ffffff", 0.55),
-                  fontSize: "0.7rem",
-                  fontWeight: 500,
-                  letterSpacing: "0.04em",
-                  textTransform: "uppercase",
+                  color: theme.palette.success.main,
+                  fontSize: "0.68rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.02em",
+                  lineHeight: 1.2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
                 }}
               >
-                Tel Aviv Smart Parking
+                <Box
+                  component="span"
+                  sx={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    backgroundColor: "currentColor",
+                    display: "inline-block",
+                    animation: "headerPulse 2s ease-in-out infinite",
+                    "@keyframes headerPulse": {
+                      "0%, 100%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                    },
+                  }}
+                />
+                {availableCount} available now
+              </Typography>
+            ) : (
+              <Typography
+                variant="caption"
+                sx={{
+                  color: textSecondary,
+                  fontSize: "0.68rem",
+                  fontWeight: 500,
+                  lineHeight: 1.2,
+                }}
+              >
+                Tel Aviv parking
               </Typography>
             )}
           </Box>
-
-          {/* Live available count chip */}
-          {availableCount > 0 && !isSmallMobile && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-            >
-              <Chip
-                label={`${availableCount} available`}
-                size="small"
-                sx={{
-                  height: 22,
-                  backgroundColor: alpha(theme.palette.success.main, 0.18),
-                  color: theme.palette.success.main,
-                  fontWeight: 700,
-                  fontSize: "0.68rem",
-                  border: `1px solid ${alpha(theme.palette.success.main, 0.35)}`,
-                  boxShadow: `0 0 8px ${alpha(theme.palette.success.main, 0.25)}`,
-                  "& .MuiChip-label": { px: 1 },
-                }}
-              />
-            </motion.div>
-          )}
         </Box>
 
         {/* Spacer */}
         <Box sx={{ flexGrow: 1 }} />
 
-        {/* Live indicator — desktop only */}
-        {!isMobile && (
-          <Chip
-            label="Live"
-            size="small"
-            sx={{
-              height: 24,
-              backgroundColor: alpha(theme.palette.success.main, 0.15),
-              color: theme.palette.success.main,
-              fontWeight: 700,
-              fontSize: "0.7rem",
-              border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
-              "& .MuiChip-label": { px: 1 },
-              "&::before": {
-                content: '""',
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                backgroundColor: "currentColor",
-                marginRight: "6px",
-                display: "inline-block",
-                animation: "pulse 2s ease-in-out infinite",
-              },
-              "@keyframes pulse": {
-                "0%, 100%": { opacity: 1 },
-                "50%": { opacity: 0.4 },
-              },
-            }}
-          />
-        )}
-
-        {/* Action Buttons */}
+        {/* Action Buttons — keep this lean.
+            Notifications live in the mobile bottom-nav so they're hidden here
+            on mobile to avoid the duplicate bell that was on screen before. */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: { xs: 0.5, sm: 1 },
+            gap: { xs: 0.25, sm: 0.5 },
           }}
         >
-          {/* Notifications */}
-          <NotificationBadge
-            onClick={openNotificationPanel}
-            size={isMobile ? "small" : "medium"}
-          />
-
-          {/* Favorites Badge */}
-          {favoritesCount > 0 && (
-            <Tooltip title={`${favoritesCount} saved spots`}>
-              <IconButton
-                size={isMobile ? "small" : "medium"}
-                sx={{
-                  color: theme.palette.warning.main,
-                  backgroundColor: alpha(theme.palette.warning.main, 0.12),
-                  "&:hover": {
-                    backgroundColor: alpha(theme.palette.warning.main, 0.22),
-                    boxShadow: `0 0 12px ${alpha(theme.palette.warning.main, 0.4)}`,
-                  },
-                  width: { xs: 36, sm: 40 },
-                  height: { xs: 36, sm: 40 },
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <Badge
-                  badgeContent={favoritesCount}
-                  color="warning"
-                  sx={{
-                    "& .MuiBadge-badge": {
-                      fontSize: "0.65rem",
-                      height: 16,
-                      minWidth: 16,
-                    },
-                  }}
-                >
-                  <Star size={isMobile ? 18 : 20} fill="currentColor" />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+          {!isMobile && (
+            <NotificationBadge onClick={openNotificationPanel} size="medium" />
           )}
-
           <ThemeToggle />
           <OptionButton onClick={onOpenOptionPopup} />
         </Box>

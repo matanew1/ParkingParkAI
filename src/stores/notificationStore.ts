@@ -176,7 +176,14 @@ export const useNotificationStore = create<NotificationState>()(
         try {
           const permission = await Notification.requestPermission();
           const granted = permission === "granted";
-          set({ permissionGranted: granted });
+          set((state) => ({
+            permissionGranted: granted,
+            // Auto-enable when the user grants permission so they don't have
+            // to hunt for a second toggle to start receiving alerts.
+            settings: granted
+              ? { ...state.settings, enabled: true }
+              : state.settings,
+          }));
           return granted;
         } catch (error) {
           console.error("Error requesting notification permission:", error);
@@ -186,6 +193,30 @@ export const useNotificationStore = create<NotificationState>()(
     }),
     {
       name: "notifications-storage",
+      onRehydrateStorage: () => (state) => {
+        // Resync permission state with the browser on every app load.
+        // Otherwise a previously-granted permission stays as `false` in the
+        // persisted store and the rest of the app thinks notifications are off.
+        if (!state) return;
+        if (typeof window !== "undefined" && "Notification" in window) {
+          state.permissionGranted = Notification.permission === "granted";
+        }
+      },
     }
   )
 );
+
+// Also resync on tab focus — the user may have toggled the OS-level permission
+// from another tab or from browser settings.
+if (typeof window !== "undefined" && "Notification" in window) {
+  const sync = () => {
+    const granted = Notification.permission === "granted";
+    const current = useNotificationStore.getState().permissionGranted;
+    if (granted !== current) {
+      useNotificationStore.setState({ permissionGranted: granted });
+    }
+  };
+  window.addEventListener("focus", sync);
+  // Initial sync (in case rehydrate ran before this module finished evaluating).
+  sync();
+}
