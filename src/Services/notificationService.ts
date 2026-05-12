@@ -208,6 +208,36 @@ export class NotificationService {
       if (pref.vibration && 'vibrate' in navigator) {
         navigator.vibrate([200, 100, 200]);
       }
+      // Prefer the service worker registration if available — on mobile,
+      // foreground `new Notification(...)` is blocked by some browsers.
+      if (
+        'serviceWorker' in navigator &&
+        navigator.serviceWorker.controller
+      ) {
+        navigator.serviceWorker.ready
+          .then((reg) =>
+            reg.showNotification(title, {
+              body,
+              icon: '/me.png',
+              badge: '/me.png',
+              tag,
+              requireInteraction: priority === 'high',
+            })
+          )
+          .catch(() => this.showFallbackNotification(title, body, tag, priority));
+        return;
+      }
+      this.showFallbackNotification(title, body, tag, priority);
+    } catch {}
+  }
+
+  private showFallbackNotification(
+    title: string,
+    body: string,
+    tag: string,
+    priority: 'low' | 'medium' | 'high'
+  ): void {
+    try {
       const n = new Notification(title, {
         body,
         icon: '/me.png',
@@ -215,7 +245,10 @@ export class NotificationService {
         tag,
         requireInteraction: priority === 'high',
       });
-      n.onclick = () => { window.focus(); n.close(); };
+      n.onclick = () => {
+        window.focus();
+        n.close();
+      };
       if (priority !== 'high') setTimeout(() => n.close(), 10000);
     } catch {}
   }
@@ -225,6 +258,43 @@ export class NotificationService {
     try {
       localStorage.removeItem(this.STATUS_HISTORY_KEY);
     } catch {}
+  }
+
+  async sendTestNotification(): Promise<{ ok: boolean; reason?: string }> {
+    if (!('Notification' in window)) {
+      return { ok: false, reason: 'This browser does not support notifications.' };
+    }
+    if (Notification.permission !== 'granted') {
+      const granted = await this.requestPermission();
+      if (!granted) {
+        return {
+          ok: false,
+          reason:
+            'Notification permission denied. Enable notifications in your browser settings.',
+        };
+      }
+    }
+    try {
+      const notifStore = useNotificationStore.getState();
+      notifStore.addNotification({
+        title: '🅿️ Test notification',
+        message: 'Great — notifications are working! You will be alerted when spots open up.',
+        type: 'info',
+        priority: 'medium',
+      });
+      this.showBrowserNotification(
+        '🅿️ Test notification',
+        'Great — notifications are working!',
+        'test-notification',
+        'medium'
+      );
+      return { ok: true };
+    } catch (e) {
+      return {
+        ok: false,
+        reason: e instanceof Error ? e.message : 'Failed to show test notification.',
+      };
+    }
   }
 }
 
@@ -244,6 +314,8 @@ export const notificationService = (() => {
       updateParkingStatuses: () => [],
       showBrowserNotification: () => {},
       clearStatusHistory: () => {},
+      sendTestNotification: () =>
+        Promise.resolve({ ok: false, reason: 'Notifications unavailable.' }),
     } as unknown as NotificationService;
   }
 })();
