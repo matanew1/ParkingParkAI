@@ -34,9 +34,13 @@ const DEFAULT_COORDINATES: Coordinates = [32.0853, 34.7818];
 
 const parkingService = new ParkingService();
 
-// Always use /api path — proxied to gisn.tel-aviv.gov.il by both Vite dev server and vercel.json rewrites
+// Proxied URLs (via Vercel rewrite) - primary
 const AHUZAT_HAHOF_URL = `/api/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json`;
 const PRIVATE_URL = `/api/arcgis/rest/services/IView2/MapServer/555/query?where=1%3D1&outFields=*&f=json`;
+
+// Direct GIS URLs as fallback for Safari/mobile
+const AHUZAT_HAHOF_URL_DIRECT = `https://gisn.tel-aviv.gov.il/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json`;
+const PRIVATE_URL_DIRECT = `https://gisn.tel-aviv.gov.il/arcgis/rest/services/IView2/MapServer/555/query?where=1%3D1&outFields=*&f=json`;
 
 export const useParkingStore = create<ParkingState>((set, get) => ({
   // Initial state
@@ -63,8 +67,8 @@ export const useParkingStore = create<ParkingState>((set, get) => ({
 
       console.log("Fetching parking data...");
       const [combinedAhuzatHahofData, combinedPrivateData] = await Promise.all([
-        parkingService.fetchParkingSpots(AHUZAT_HAHOF_URL, "public", isManualRefresh),
-        parkingService.fetchParkingSpots(PRIVATE_URL, "private", isManualRefresh),
+        parkingService.fetchParkingSpots(AHUZAT_HAHOF_URL, "public", isManualRefresh, AHUZAT_HAHOF_URL_DIRECT),
+        parkingService.fetchParkingSpots(PRIVATE_URL, "private", isManualRefresh, PRIVATE_URL_DIRECT),
       ]);
 
       if (
