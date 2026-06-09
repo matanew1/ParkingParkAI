@@ -199,12 +199,20 @@ export class ParkingService {
 
       if (axios.isAxiosError(error)) {
         if (error.response) {
-          errorMessage = `Tel Aviv GIS API returned error ${error.response.status}: ${error.response.statusText}`;
+          // Server responded with error status
+          errorMessage = `API Error ${error.response.status}: Please try again later`;
+          if (error.response.status === 429) {
+            errorMessage = "Too many requests. Please wait a moment and try again.";
+          } else if (error.response.status >= 500) {
+            errorMessage = "Server is temporarily unavailable. Please try again later.";
+          }
         } else if (error.request) {
+          // Request was made but no response received
           errorMessage =
-            "Unable to connect to Tel Aviv GIS API - please check your internet connection";
+            "Unable to connect to the GIS server. Check your internet connection.";
         } else {
-          errorMessage = `Request to Tel Aviv GIS API failed: ${error.message}`;
+          // Error in request setup
+          errorMessage = `Network error: ${error.message}`;
         }
       }
 

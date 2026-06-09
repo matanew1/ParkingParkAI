@@ -80,6 +80,37 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
     );
   }
 
+  // If there's an error and no parking spots loaded yet, show error state
+  if (statusError && parkingSpots.length === 0) {
+    return (
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        height="100%"
+        flexDirection="column"
+        gap={2}
+        sx={{ p: 3, color: theme.palette.text.secondary }}
+      >
+        <Typography variant="h6" sx={{ textAlign: "center" }}>
+          Unable to Load Map
+        </Typography>
+        <Typography variant="body2" sx={{ textAlign: "center", maxWidth: "80%" }}>
+          {statusError}
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={onRefresh}
+          disabled={refreshing}
+          startIcon={refreshing ? <CircularProgress size={20} /> : <RefreshCw size={20} />}
+        >
+          Retry
+        </Button>
+      </Box>
+    );
+  }
+
   return (
     <Box position="relative" height="100%" width="100%" sx={{ overflow: "hidden" }}>
       {statusError && (

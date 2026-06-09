@@ -4,6 +4,15 @@ import ReactDOM from "react-dom/client";
 import "./index.css"; // Add this line
 import App from "./App";
 
+// Log device and browser info for debugging mobile issues
+console.log("App initializing...", {
+  userAgent: navigator.userAgent,
+  platform: navigator.platform,
+  mobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+  standalone: (window.navigator as any).standalone,
+  isSecureContext: window.isSecureContext,
+});
+
 // Global error handling for uncaught errors and promise rejections
 window.addEventListener('error', (event) => {
   console.error('Global error caught:', event.error);

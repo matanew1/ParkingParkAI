@@ -41,6 +41,14 @@ const AppContent: React.FC = () => {
     document.documentElement.dataset.theme = isDarkMode ? "dark" : "light";
   }, [isDarkMode]);
 
+  // Trigger initial parking data fetch on component mount
+  useEffect(() => {
+    if (!lastUpdated && !error && loading) {
+      // Only fetch if we haven't already and we're still in loading state
+      fetchParkingData();
+    }
+  }, []); // Only run once on mount
+
   const isMobile = useMediaQuery("(max-width:768px)");
   const isTablet = useMediaQuery("(max-width:1024px)");
 

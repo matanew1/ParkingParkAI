@@ -56,19 +56,22 @@ export const useParkingStore = create<ParkingState>((set, get) => ({
     try {
       if (isManualRefresh) {
         set({ refreshing: true });
+      } else if (!get().lastUpdated) {
+        // First load - set loading state
+        set({ loading: true, error: null });
       }
 
       console.log("Fetching parking data...");
       const [combinedAhuzatHahofData, combinedPrivateData] = await Promise.all([
-        parkingService.fetchParkingSpots(AHUZAT_HAHOF_URL, "public"),
-        parkingService.fetchParkingSpots(PRIVATE_URL, "private"),
+        parkingService.fetchParkingSpots(AHUZAT_HAHOF_URL, "public", isManualRefresh),
+        parkingService.fetchParkingSpots(PRIVATE_URL, "private", isManualRefresh),
       ]);
 
       if (
         combinedAhuzatHahofData.length === 0 &&
         combinedPrivateData.length === 0
       ) {
-        throw new Error("No valid parking spots found");
+        throw new Error("No parking spots found. The server may be temporarily unavailable.");
       }
 
       const allSpots = [...combinedAhuzatHahofData, ...combinedPrivateData];
@@ -82,11 +85,21 @@ export const useParkingStore = create<ParkingState>((set, get) => ({
       console.log(`Successfully loaded ${allSpots.length} parking spots`);
     } catch (err) {
       console.error("Error fetching parking data:", err);
+      
+      // Generate user-friendly error message
+      let errorMessage = "Failed to load parking data.";
+      if (err instanceof Error) {
+        if (err.message.includes("Network") || err.message.includes("CORS")) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else if (err.message.includes("timeout")) {
+          errorMessage = "Request timed out. The server is not responding. Try again?";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       set({
-        error:
-          err instanceof Error
-            ? err.message
-            : "Failed to load parking data. Please try again later.",
+        error: errorMessage,
       });
     } finally {
       set({ loading: false, refreshing: false });
@@ -113,7 +126,8 @@ export const useParkingStore = create<ParkingState>((set, get) => ({
 
   fetchUserLocation: async () => {
     if (!navigator.geolocation) {
-      console.error("Geolocation is not supported by this browser.");
+      console.warn("Geolocation is not supported by this browser.");
+      set({ showLocationMarker: false });
       return;
     }
 
@@ -139,8 +153,10 @@ export const useParkingStore = create<ParkingState>((set, get) => ({
 
       console.log("User location fetched:", userCoords);
     } catch (error) {
-      console.error("Error getting user location:", error);
-      set({ showLocationMarker: false });
+      console.warn("Error getting user location:", error instanceof Error ? error.message : String(error));
+      // Don't show error to user - geolocation is optional
+      // Permission denied or timeout - silently fail
+      set({ showLocationMarker: false, userLocation: null });
     }
   },
 
@@ -155,5 +171,6 @@ export const useParkingStore = create<ParkingState>((set, get) => ({
   },
 }));
 
-// Auto-fetch on store creation
-useParkingStore.getState().fetchParkingData();
+// Don't auto-fetch on store creation - let the app mount first.
+// Initial fetch will be triggered from AppContent useEffect.
+// This ensures errors are properly handled and displayed to users.
