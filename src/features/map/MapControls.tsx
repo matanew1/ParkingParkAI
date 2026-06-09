@@ -65,12 +65,12 @@ const MapControls: React.FC<MapControlsProps> = ({
     <Box
       sx={{
         position: "absolute",
-        top: { xs: 10, sm: 16 },
-        right: { xs: 10, sm: 16 },
+        top: { xs: 12, sm: 16 },
+        right: { xs: 12, sm: 16 },
         zIndex: 1000,
         display: "flex",
         flexDirection: "column",
-        gap: { xs: 1, sm: 1.25 },
+        gap: { xs: 1.2, sm: 1.4 },
         // Let map gestures pass through the gaps between buttons.
         pointerEvents: "none",
       }}
@@ -80,13 +80,15 @@ const MapControls: React.FC<MapControlsProps> = ({
           key={control.key}
           component={motion.div}
           style={{ pointerEvents: "auto" }}
-          initial={{ opacity: 0, scale: 0.6, x: 12 }}
+          initial={{ opacity: 0, scale: 0.5, x: 16 }}
           animate={{ opacity: 1, scale: 1, x: 0 }}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
           transition={{
-            delay: index * 0.06,
+            delay: index * 0.08,
             type: "spring",
-            stiffness: 320,
-            damping: 22,
+            stiffness: 340,
+            damping: 24,
           }}
         >
           <Tooltip title={control.tooltip} placement="left" arrow>
@@ -94,9 +96,9 @@ const MapControls: React.FC<MapControlsProps> = ({
               aria-label={control.tooltip}
               onClick={control.onClick}
               sx={{
-                width: { xs: 48, sm: 50 },
-                height: { xs: 48, sm: 50 },
-                borderRadius: "14px",
+                width: { xs: 52, sm: 56 },
+                height: { xs: 52, sm: 56 },
+                borderRadius: "16px",
                 color: (theme) =>
                   control.active
                     ? accentColor(theme, control.accent)
@@ -105,49 +107,49 @@ const MapControls: React.FC<MapControlsProps> = ({
                   control.active
                     ? alpha(
                         accentColor(theme, control.accent),
-                        theme.palette.mode === "dark" ? 0.2 : 0.12
+                        theme.palette.mode === "dark" ? 0.18 : 0.11
                       )
                     : alpha(
                         theme.palette.background.paper,
-                        theme.palette.mode === "dark" ? 0.88 : 0.94
+                        theme.palette.mode === "dark" ? 0.86 : 0.92
                       ),
-                backdropFilter: "blur(18px) saturate(1.12)",
-                WebkitBackdropFilter: "blur(18px) saturate(1.12)",
+                backdropFilter: "blur(20px) saturate(1.15)",
+                WebkitBackdropFilter: "blur(20px) saturate(1.15)",
                 border: (theme) =>
-                  `1px solid ${
+                  `1.5px solid ${
                     control.active
-                      ? alpha(accentColor(theme, control.accent), 0.5)
+                      ? alpha(accentColor(theme, control.accent), 0.48)
                       : alpha(
                           theme.palette.divider,
-                          theme.palette.mode === "dark" ? 0.42 : 0.72
+                          theme.palette.mode === "dark" ? 0.38 : 0.68
                         )
                   }`,
                 boxShadow: (theme) =>
                   control.active
-                    ? `0 14px 34px ${alpha(
+                    ? `0 16px 40px ${alpha(
                         accentColor(theme, control.accent),
-                        theme.palette.mode === "dark" ? 0.28 : 0.24
-                      )}`
-                    : `0 14px 34px ${alpha(
+                        theme.palette.mode === "dark" ? 0.3 : 0.26
+                      )}, 0 0 1px ${alpha(accentColor(theme, control.accent), 0.2)}`
+                    : `0 14px 36px ${alpha(
                         theme.palette.common.black,
-                        theme.palette.mode === "dark" ? 0.34 : 0.12
-                      )}`,
+                        theme.palette.mode === "dark" ? 0.32 : 0.14
+                      )}, 0 0 1px ${alpha(theme.palette.divider, 0.1)}`,
                 transition:
-                  "background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease",
+                  "background-color 0.24s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.24s ease, box-shadow 0.24s ease, transform 0.24s ease",
                 "&:hover": {
                   color: (theme) => accentColor(theme, control.accent),
                   backgroundColor: (theme) =>
                     alpha(
                       accentColor(theme, control.accent),
-                      theme.palette.mode === "dark" ? 0.24 : 0.12
+                      theme.palette.mode === "dark" ? 0.26 : 0.14
                     ),
                   borderColor: (theme) =>
-                    alpha(accentColor(theme, control.accent), 0.5),
-                  transform: "translateY(-1px)",
+                    alpha(accentColor(theme, control.accent), 0.6),
+                  transform: "translateY(-2px) scale(1.04)",
                   boxShadow: (theme) =>
-                    `0 16px 36px ${alpha(
+                    `0 18px 44px ${alpha(
                       accentColor(theme, control.accent),
-                      theme.palette.mode === "dark" ? 0.34 : 0.26
+                      theme.palette.mode === "dark" ? 0.36 : 0.28
                     )}`,
                 },
                 "&:active": {

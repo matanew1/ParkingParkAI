@@ -340,23 +340,23 @@ const AppContent: React.FC = () => {
             elevation={0}
             sx={{
               position: "fixed",
-              bottom: "max(10px, env(safe-area-inset-bottom))",
+              bottom: "max(12px, env(safe-area-inset-bottom))",
               left: "50%",
-              width: "min(340px, calc(100% - 32px))",
+              width: "min(360px, calc(100% - 28px))",
               transform: "translateX(-50%)",
               zIndex: 1300,
-              border: (t) => `1px solid ${alpha(t.palette.divider, 0.16)}`,
-              borderRadius: "16px",
+              border: (t) => `1px solid ${alpha(t.palette.divider, 0.18)}`,
+              borderRadius: "18px",
               overflow: "visible",
-              backdropFilter: "blur(24px) saturate(1.12)",
-              WebkitBackdropFilter: "blur(24px) saturate(1.12)",
+              backdropFilter: "blur(28px) saturate(1.2)",
+              WebkitBackdropFilter: "blur(28px) saturate(1.2)",
               backgroundColor: (t) =>
-                alpha(t.palette.background.paper, t.palette.mode === "dark" ? 0.9 : 0.92),
+                alpha(t.palette.background.paper, t.palette.mode === "dark" ? 0.88 : 0.90),
               boxShadow: (t) =>
-                `0 14px 34px ${alpha(
+                `0 16px 40px ${alpha(
                   t.palette.common.black,
-                  t.palette.mode === "dark" ? 0.34 : 0.16
-                )}`,
+                  t.palette.mode === "dark" ? 0.36 : 0.18
+                )}, 0 0 1px ${alpha(t.palette.primary.main, 0.1)}`,
             }}
           >
             <BottomNavigation
@@ -365,75 +365,102 @@ const AppContent: React.FC = () => {
               sx={{
                 height: BOTTOM_NAV_HEIGHT,
                 backgroundColor: "transparent",
-                px: 0.65,
+                px: 1.2,
+                py: 0.6,
+                display: "flex",
+                justifyContent: "center",
+                gap: 1.4,
                 "& .MuiBottomNavigationAction-root": {
                   minWidth: 0,
-                  px: 0.5,
-                  color: (t) => alpha(t.palette.primary.main, 0.7),
+                  padding: 0,
+                  color: (t) => alpha(t.palette.text.secondary, 0.5),
                   borderRadius: "12px",
-                  transition:
-                    "background-color 0.18s ease, color 0.18s ease, transform 0.18s ease",
+                  transition: "all 0.24s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                  position: "relative",
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "12px",
+                    background: "transparent",
+                    transition: "background 0.24s ease",
+                  },
                   "&.Mui-selected": {
                     color: "primary.main",
-                    backgroundColor: (t) => alpha(t.palette.primary.main, 0.09),
+                    "& svg": {
+                      animation: "popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                    },
+                    "&::before": {
+                      background: (t) => alpha(t.palette.primary.main, 0.12),
+                    },
                   },
                   "&:active": {
-                    transform: "scale(0.98)",
+                    transform: "scale(0.94)",
+                  },
+                  "&:hover:not(.Mui-selected)": {
+                    color: (t) => alpha(t.palette.primary.main, 0.8),
+                    backgroundColor: (t) => alpha(t.palette.primary.main, 0.04),
                   },
                 },
                 "& .MuiBottomNavigationAction-label": {
-                  fontWeight: 750,
-                  fontSize: "0.66rem",
-                  mt: 0.2,
+                  display: "none",
+                },
+                "@keyframes popIn": {
+                  "0%": { transform: "scale(1)" },
+                  "50%": { transform: "scale(1.2)" },
+                  "100%": { transform: "scale(1)" },
                 },
               }}
             >
               <BottomNavigationAction
                 value="map"
-                label="Map"
-                icon={<MapPinned size={20} strokeWidth={2.2} />}
+                icon={<MapPinned size={24} strokeWidth={2} />}
               />
               <BottomNavigationAction
                 value="lucky"
-                label="Best"
                 icon={
                   <Box
                     sx={{
-                      width: 44,
-                      height: 44,
+                      width: 50,
+                      height: 50,
                       borderRadius: "50%",
                       background: (t) =>
                         `linear-gradient(135deg, ${t.palette.primary.main}, ${t.palette.secondary.main})`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      mt: -2.4,
-                      border: (t) => `3px solid ${alpha(t.palette.background.paper, 0.96)}`,
+                      mt: -2.8,
+                      border: (t) => `2.5px solid ${alpha(t.palette.background.paper, 0.98)}`,
                       boxShadow: (t) =>
-                        `0 12px 28px ${alpha(t.palette.primary.main, 0.34)}`,
-                      transition: "all 0.2s ease",
+                        `0 10px 28px ${alpha(t.palette.primary.main, 0.3)}, 0 0 1px ${alpha(t.palette.primary.main, 0.2)}`,
+                      transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                      position: "relative",
+                      "&::after": {
+                        content: '""',
+                        position: "absolute",
+                        inset: "-3px",
+                        borderRadius: "50%",
+                        border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.2)}`,
+                        opacity: 0,
+                        transition: "opacity 0.3s ease",
+                      },
                       "&:hover": {
-                        transform: "translateY(-1px) scale(1.04)",
+                        transform: "translateY(-2px) scale(1.08)",
                         boxShadow: (t) =>
-                          `0 15px 32px ${alpha(t.palette.primary.main, 0.4)}`,
+                          `0 14px 36px ${alpha(t.palette.primary.main, 0.4)}, 0 0 1px ${alpha(t.palette.primary.main, 0.3)}`,
+                        "&::after": {
+                          opacity: 1,
+                        },
                       },
                     }}
                   >
-                    <Navigation2 size={21} color="#ffffff" strokeWidth={2.6} />
+                    <Navigation2 size={23} color="#ffffff" strokeWidth={2.4} />
                   </Box>
                 }
-                sx={{
-                  "& .MuiBottomNavigationAction-label": {
-                    color: "primary.main",
-                    fontWeight: 800,
-                    fontSize: "0.62rem !important",
-                  },
-                }}
               />
               <BottomNavigationAction
                 value="spots"
-                label="Spots"
-                icon={<ParkingCircle size={20} strokeWidth={2.2} />}
+                icon={<ParkingCircle size={24} strokeWidth={2} />}
               />
             </BottomNavigation>
           </Paper>

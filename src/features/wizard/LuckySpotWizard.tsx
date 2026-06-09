@@ -196,73 +196,121 @@ function ResultCard({
       <Paper
         elevation={0}
         sx={{
-          p: 2,
-          mb: 1.5,
-          background: alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.12 : 0.08),
-          border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
-          borderRadius: "10px",
+          p: 2.2,
+          mb: 1.8,
+          background: (t) =>
+            index === 0
+              ? `linear-gradient(135deg, ${alpha(t.palette.success.main, 0.12)}, ${alpha(t.palette.primary.main, 0.08)})`
+              : alpha(t.palette.background.default, 0.5),
+          border: (t) =>
+            `1.5px solid ${
+              index === 0
+                ? alpha(t.palette.success.main, 0.28)
+                : alpha(t.palette.divider, 0.12)
+            }`,
+          borderRadius: "14px",
           display: "flex",
-          alignItems: "center",
-          gap: 2,
+          alignItems: "flex-start",
+          gap: 2.2,
+          transition: "all 0.24s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          "&:hover": {
+            border: (t) =>
+              `1.5px solid ${
+                index === 0
+                  ? alpha(t.palette.success.main, 0.4)
+                  : alpha(t.palette.divider, 0.2)
+              }`,
+            background: (t) =>
+              index === 0
+                ? `linear-gradient(135deg, ${alpha(t.palette.success.main, 0.14)}, ${alpha(t.palette.primary.main, 0.1)})`
+                : alpha(t.palette.background.default, 0.7),
+            boxShadow: (t) =>
+              `0 12px 32px ${alpha(
+                index === 0 ? t.palette.success.main : t.palette.primary.main,
+                0.12
+              )}`,
+          },
+          boxShadow: (t) =>
+            `0 6px 20px ${alpha(
+              index === 0 ? t.palette.success.main : t.palette.common.black,
+              index === 0 ? 0.08 : 0.06
+            )}`,
         }}
       >
         {/* Rank badge */}
         <Avatar
           sx={{
-            width: 36,
-            height: 36,
+            width: 44,
+            height: 44,
             background:
               index === 0
-                ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`
-                : alpha(theme.palette.success.main, 0.15),
-            color: index === 0 ? "#ffffff" : theme.palette.success.main,
-            fontSize: 14,
+                ? `linear-gradient(135deg, ${theme.palette.success.main}, ${theme.palette.primary.main})`
+                : alpha(theme.palette.primary.main, 0.1),
+            color: index === 0 ? "#ffffff" : theme.palette.primary.main,
+            fontSize: 13,
             fontWeight: 800,
             flexShrink: 0,
+            boxShadow: (t) =>
+              index === 0
+                ? `0 8px 20px ${alpha(t.palette.success.main, 0.28)}`
+                : "none",
           }}
         >
-          {index === 0 ? <Star size={16} /> : `#${index + 1}`}
+          {index === 0 ? <Star size={18} /> : `#${index + 1}`}
         </Avatar>
 
         {/* Info */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.25 }}>
-            <Typography
-              variant="body2"
-              fontWeight={700}
-              noWrap
-              sx={{ flex: 1 }}
-            >
-              {spot.shem_chenyon || "Parking Lot"}
-            </Typography>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.2, mb: 0.8 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography
+                variant="body2"
+                fontWeight={700}
+                noWrap
+                sx={{
+                  fontSize: "0.925rem",
+                  color: "text.primary",
+                }}
+              >
+                {spot.shem_chenyon || "Parking Lot"}
+              </Typography>
+            </Box>
             <Chip
               label={distanceLabel}
               size="small"
               sx={{
                 fontWeight: 700,
-                fontSize: 11,
-                height: 22,
-                bgcolor: alpha(theme.palette.success.main, 0.15),
-                color: theme.palette.success.main,
-                border: "none",
+                fontSize: 12,
+                height: 24,
+                bgcolor: (t) =>
+                  index === 0
+                    ? alpha(t.palette.success.main, 0.18)
+                    : alpha(t.palette.primary.main, 0.1),
+                color: index === 0 ? "success.main" : "primary.main",
+                border: (t) =>
+                  `1px solid ${
+                    index === 0
+                      ? alpha(t.palette.success.main, 0.3)
+                      : alpha(t.palette.primary.main, 0.2)
+                  }`,
                 flexShrink: 0,
               }}
             />
           </Box>
 
           <Box
-            sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}
+            sx={{ display: "flex", alignItems: "center", gap: 2.2, mb: 1.4 }}
           >
             <Box
               sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: 0.5,
+                gap: 0.6,
                 color: "text.secondary",
               }}
             >
-              <MapPin size={11} />
-              <Typography variant="caption" noWrap>
+              <MapPin size={13} strokeWidth={2.2} />
+              <Typography variant="caption" noWrap sx={{ fontSize: "0.8rem" }}>
                 {spot.ktovet || "Tel Aviv"}
               </Typography>
             </Box>
@@ -270,13 +318,13 @@ function ResultCard({
               sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: 0.5,
+                gap: 0.6,
                 color: "text.secondary",
               }}
             >
-              <Clock size={11} />
-              <Typography variant="caption">
-                ~{walkingMinutes} min walk
+              <Clock size={13} strokeWidth={2.2} />
+              <Typography variant="caption" sx={{ fontSize: "0.8rem" }}>
+                ~{walkingMinutes} min
               </Typography>
             </Box>
           </Box>
@@ -284,14 +332,34 @@ function ResultCard({
           <Button
             variant="contained"
             size="small"
-            endIcon={<Navigation size={14} />}
+            endIcon={<Navigation size={16} />}
             onClick={() => onSelect(spot)}
             sx={{
               borderRadius: "10px",
-              fontSize: 12,
-              py: 0.5,
-              px: 1.5,
+              fontSize: "0.84rem",
+              py: 0.7,
+              px: 1.8,
               fontWeight: 700,
+              background: index === 0 ? "success.main" : "primary.main",
+              boxShadow: (t) =>
+                `0 8px 20px ${alpha(
+                  index === 0 ? t.palette.success.main : t.palette.primary.main,
+                  0.28
+                )}`,
+              transition: "all 0.24s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              "&:hover": {
+                boxShadow: (t) =>
+                  `0 12px 28px ${alpha(
+                    index === 0
+                      ? t.palette.success.main
+                      : t.palette.primary.main,
+                    0.36
+                  )}`,
+                transform: "translateY(-2px)",
+              },
+              "&:active": {
+                transform: "translateY(0px)",
+              },
             }}
           >
             Take me there
@@ -327,11 +395,11 @@ function ResultsContent({
   return (
     <Box sx={{ pb: 1 }}>
       {/* Header */}
-      <Box sx={{ mb: 2.5 }}>
-        <Typography variant="h6" fontWeight={750} gutterBottom>
+      <Box sx={{ mb: 2.8 }}>
+        <Typography variant="h6" fontWeight={800} gutterBottom sx={{ fontSize: "1.05rem" }}>
           Lucky Spot Found
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.9rem" }}>
           Nearest available parking
         </Typography>
       </Box>
@@ -496,9 +564,9 @@ function LuckySpotWizardInner({
           position: "fixed",
           inset: 0,
           zIndex: 2000,
-          background: alpha(theme.palette.common.black, theme.palette.mode === "dark" ? 0.62 : 0.46),
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
+          background: alpha(theme.palette.common.black, theme.palette.mode === "dark" ? 0.68 : 0.52),
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
         }}
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
@@ -506,7 +574,7 @@ function LuckySpotWizardInner({
       >
         <Slide direction="up" in={open} timeout={300} mountOnEnter unmountOnExit>
           <Paper
-            elevation={8}
+            elevation={12}
             sx={{
               position: "absolute",
               bottom: 0,
@@ -514,11 +582,15 @@ function LuckySpotWizardInner({
               right: 0,
               maxHeight: "85vh",
               overflowY: "auto",
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
               borderBottomLeftRadius: 0,
               borderBottomRightRadius: 0,
               pb: { xs: 4, sm: 2 },
+              backgroundColor: (t) =>
+                t.palette.mode === "dark"
+                  ? alpha(t.palette.background.paper, 0.98)
+                  : t.palette.background.paper,
             }}
           >
             {/* Drag handle */}
@@ -526,16 +598,16 @@ function LuckySpotWizardInner({
               sx={{
                 display: "flex",
                 justifyContent: "center",
-                pt: 1.5,
-                pb: 0.5,
+                pt: 1.8,
+                pb: 0.8,
               }}
             >
               <Box
                 sx={{
-                  width: 40,
-                  height: 4,
+                  width: 44,
+                  height: 4.5,
                   borderRadius: 999,
-                  bgcolor: alpha(theme.palette.text.secondary, 0.28),
+                  bgcolor: (t) => alpha(t.palette.text.secondary, 0.22),
                 }}
               />
             </Box>
@@ -544,28 +616,32 @@ function LuckySpotWizardInner({
             <Box
               sx={{
                 mx: 2,
-                mb: 2,
-                p: 2,
-                borderRadius: "12px",
-                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                mb: 2.5,
+                p: 2.4,
+                borderRadius: "14px",
+                background: (t) =>
+                  `linear-gradient(135deg, ${t.palette.primary.main}, ${t.palette.secondary.main})`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
+                boxShadow: (t) =>
+                  `0 12px 32px ${alpha(t.palette.primary.main, 0.28)}, 0 0 1px ${alpha(t.palette.primary.main, 0.2)}`,
               }}
             >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.6 }}>
                 <Box
                   sx={{
-                    width: 36,
-                    height: 36,
+                    width: 40,
+                    height: 40,
                     borderRadius: "50%",
-                    bgcolor: "rgba(255,255,255,0.2)",
+                    bgcolor: "rgba(255,255,255,0.18)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    backdropFilter: "blur(8px)",
                   }}
                 >
-                  <Zap size={18} color="#ffffff" />
+                  <Zap size={20} color="#ffffff" strokeWidth={2.2} />
                 </Box>
                 <Box>
                   <Typography
@@ -573,12 +649,13 @@ function LuckySpotWizardInner({
                     fontWeight={800}
                     color="#ffffff"
                     lineHeight={1.2}
+                    sx={{ fontSize: "1rem" }}
                   >
                     Lucky Spot
                   </Typography>
                   <Typography
                     variant="caption"
-                    sx={{ color: "rgba(255,255,255,0.75)" }}
+                    sx={{ color: "rgba(255,255,255,0.8)", fontSize: "0.8rem" }}
                   >
                     Best nearby match
                   </Typography>
@@ -589,13 +666,19 @@ function LuckySpotWizardInner({
                 onClick={onClose}
                 size="small"
                 sx={{
-                  color: "rgba(255,255,255,0.85)",
+                  color: "rgba(255,255,255,0.9)",
                   borderRadius: "10px",
-                  bgcolor: "rgba(255,255,255,0.15)",
-                  "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
+                  bgcolor: "rgba(255,255,255,0.12)",
+                  width: 36,
+                  height: 36,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.22)",
+                    transform: "scale(1.08)",
+                  },
                 }}
               >
-                <X size={16} />
+                <X size={18} strokeWidth={2.2} />
               </IconButton>
             </Box>
 
