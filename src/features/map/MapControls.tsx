@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, IconButton, Tooltip, Typography, alpha, Paper } from "@mui/material";
+import { Box, IconButton, Tooltip, alpha, Theme } from "@mui/material";
 import { RefreshCw, Navigation, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -12,6 +12,8 @@ interface MapControlsProps {
   isMobile: boolean;
 }
 
+type Accent = "primary" | "secondary" | "neutral";
+
 const MapControls: React.FC<MapControlsProps> = ({
   onRefresh,
   onCenterUser,
@@ -20,182 +22,145 @@ const MapControls: React.FC<MapControlsProps> = ({
   showLocationMarker,
   isMobile,
 }) => {
-  const btnSize = isMobile ? 44 : 48;
-  const iconSize = isMobile ? 18 : 20;
+  const iconSize = isMobile ? 19 : 20;
+
+  // Resolve the accent color for a control from the active theme.
+  const accentColor = (theme: Theme, accent: Accent): string =>
+    accent === "primary"
+      ? theme.palette.primary.main
+      : accent === "secondary"
+      ? theme.palette.secondary.main
+      : theme.palette.text.primary;
 
   const controls = [
     {
-      icon: <RefreshCw size={iconSize} className={refreshing ? "animate-spin" : ""} />,
-      label: "Refresh",
+      key: "refresh",
+      icon: (
+        <RefreshCw size={iconSize} className={refreshing ? "animate-spin" : ""} />
+      ),
       tooltip: "Refresh parking data",
       onClick: onRefresh,
-      colorKey: "primary" as const,
+      accent: "primary" as Accent,
       active: refreshing,
     },
     {
+      key: "locate",
       icon: <Navigation size={iconSize} />,
-      label: "Locate",
-      tooltip: "My location",
+      tooltip: "Center on my location",
       onClick: onCenterUser,
-      colorKey: "secondary" as const,
+      accent: "secondary" as Accent,
       active: showLocationMarker,
     },
     {
+      key: "reset",
       icon: <RotateCcw size={iconSize} />,
-      label: "Reset",
-      tooltip: "Reset view",
+      tooltip: "Reset map view",
       onClick: onResetMap,
-      colorKey: "default" as const,
+      accent: "neutral" as Accent,
       active: false,
     },
   ];
 
   return (
-    <Paper
-      elevation={0}
+    <Box
       sx={{
         position: "absolute",
-        top: { xs: 12, sm: 16 },
-        right: { xs: 12, sm: 16 },
+        top: { xs: 10, sm: 16 },
+        right: { xs: 10, sm: 16 },
         zIndex: 1000,
         display: "flex",
         flexDirection: "column",
-        gap: 0,
-        p: "6px",
-        borderRadius: "50px",
-        backgroundColor: (theme) =>
-          theme.palette.mode === "dark"
-            ? alpha("#0d1117", 0.88)
-            : alpha("#111827", 0.82),
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        border: (theme) =>
-          `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-        boxShadow: (theme) =>
-          `0 4px 24px ${alpha(theme.palette.common.black, 0.35)}, 0 0 0 1px ${alpha(theme.palette.primary.main, 0.08)}`,
-        overflow: "hidden",
+        gap: { xs: 1, sm: 1.25 },
+        // Let map gestures pass through the gaps between buttons.
+        pointerEvents: "none",
       }}
     >
       {controls.map((control, index) => (
-        <motion.div
-          key={control.label}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: index * 0.06, duration: 0.22 }}
+        <Box
+          key={control.key}
+          component={motion.div}
+          style={{ pointerEvents: "auto" }}
+          initial={{ opacity: 0, scale: 0.6, x: 12 }}
+          animate={{ opacity: 1, scale: 1, x: 0 }}
+          transition={{
+            delay: index * 0.06,
+            type: "spring",
+            stiffness: 320,
+            damping: 22,
+          }}
         >
-          {/* Divider between buttons (not before the first) */}
-          {index > 0 && (
-            <Box
-              sx={{
-                height: "1px",
-                mx: "8px",
-                backgroundColor: (theme) => alpha(theme.palette.common.white, 0.06),
-              }}
-            />
-          )}
-
           <Tooltip title={control.tooltip} placement="left" arrow>
-            <Box
+            <IconButton
+              aria-label={control.tooltip}
+              onClick={control.onClick}
               sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "2px",
-                py: "4px",
+                width: { xs: 48, sm: 50 },
+                height: { xs: 48, sm: 50 },
+                borderRadius: "14px",
+                color: (theme) =>
+                  control.active
+                    ? accentColor(theme, control.accent)
+                    : theme.palette.text.secondary,
+                backgroundColor: (theme) =>
+                  control.active
+                    ? alpha(
+                        accentColor(theme, control.accent),
+                        theme.palette.mode === "dark" ? 0.2 : 0.12
+                      )
+                    : alpha(
+                        theme.palette.background.paper,
+                        theme.palette.mode === "dark" ? 0.88 : 0.94
+                      ),
+                backdropFilter: "blur(18px) saturate(1.12)",
+                WebkitBackdropFilter: "blur(18px) saturate(1.12)",
+                border: (theme) =>
+                  `1px solid ${
+                    control.active
+                      ? alpha(accentColor(theme, control.accent), 0.5)
+                      : alpha(
+                          theme.palette.divider,
+                          theme.palette.mode === "dark" ? 0.42 : 0.72
+                        )
+                  }`,
+                boxShadow: (theme) =>
+                  control.active
+                    ? `0 14px 34px ${alpha(
+                        accentColor(theme, control.accent),
+                        theme.palette.mode === "dark" ? 0.28 : 0.24
+                      )}`
+                    : `0 14px 34px ${alpha(
+                        theme.palette.common.black,
+                        theme.palette.mode === "dark" ? 0.34 : 0.12
+                      )}`,
+                transition:
+                  "background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease",
+                "&:hover": {
+                  color: (theme) => accentColor(theme, control.accent),
+                  backgroundColor: (theme) =>
+                    alpha(
+                      accentColor(theme, control.accent),
+                      theme.palette.mode === "dark" ? 0.24 : 0.12
+                    ),
+                  borderColor: (theme) =>
+                    alpha(accentColor(theme, control.accent), 0.5),
+                  transform: "translateY(-1px)",
+                  boxShadow: (theme) =>
+                    `0 16px 36px ${alpha(
+                      accentColor(theme, control.accent),
+                      theme.palette.mode === "dark" ? 0.34 : 0.26
+                    )}`,
+                },
+                "&:active": {
+                  transform: "scale(0.98)",
+                },
               }}
             >
-              <IconButton
-                onClick={control.onClick}
-                disableRipple={false}
-                sx={{
-                  width: btnSize,
-                  height: btnSize,
-                  borderRadius: "50%",
-                  color: control.active
-                    ? control.colorKey === "primary"
-                      ? "primary.main"
-                      : control.colorKey === "secondary"
-                      ? "secondary.main"
-                      : "#ffffff"
-                    : alpha("#ffffff", 0.7),
-                  backgroundColor: control.active
-                    ? (theme) =>
-                        alpha(
-                          control.colorKey === "primary"
-                            ? theme.palette.primary.main
-                            : control.colorKey === "secondary"
-                            ? theme.palette.secondary.main
-                            : theme.palette.action.selected,
-                          0.18
-                        )
-                    : "transparent",
-                  boxShadow: control.active
-                    ? (theme) =>
-                        `0 0 14px ${alpha(
-                          control.colorKey === "primary"
-                            ? theme.palette.primary.main
-                            : control.colorKey === "secondary"
-                            ? theme.palette.secondary.main
-                            : theme.palette.common.white,
-                          0.45
-                        )}`
-                    : "none",
-                  "&:hover": {
-                    backgroundColor: (theme) =>
-                      alpha(
-                        control.colorKey === "primary"
-                          ? theme.palette.primary.main
-                          : control.colorKey === "secondary"
-                          ? theme.palette.secondary.main
-                          : theme.palette.common.white,
-                        0.18
-                      ),
-                    color:
-                      control.colorKey === "primary"
-                        ? "primary.main"
-                        : control.colorKey === "secondary"
-                        ? "secondary.main"
-                        : "#ffffff",
-                    boxShadow: (theme) =>
-                      `0 0 16px ${alpha(
-                        control.colorKey === "primary"
-                          ? theme.palette.primary.main
-                          : control.colorKey === "secondary"
-                          ? theme.palette.secondary.main
-                          : theme.palette.common.white,
-                        0.5
-                      )}`,
-                  },
-                  transition: "all 0.2s ease",
-                }}
-              >
-                {control.icon}
-              </IconButton>
-              <Typography
-                sx={{
-                  fontSize: "9px",
-                  fontWeight: 600,
-                  letterSpacing: "0.03em",
-                  textTransform: "uppercase",
-                  color: control.active
-                    ? control.colorKey === "primary"
-                      ? "primary.main"
-                      : control.colorKey === "secondary"
-                      ? "secondary.main"
-                      : alpha("#ffffff", 0.9)
-                    : alpha("#ffffff", 0.45),
-                  lineHeight: 1,
-                  userSelect: "none",
-                  transition: "color 0.2s ease",
-                }}
-              >
-                {control.label}
-              </Typography>
-            </Box>
+              {control.icon}
+            </IconButton>
           </Tooltip>
-        </motion.div>
+        </Box>
       ))}
-    </Paper>
+    </Box>
   );
 };
 

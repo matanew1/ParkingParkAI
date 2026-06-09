@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useMap } from 'react-leaflet';
 import { ParkingSpotWithStatus } from '../Types/parking';
-import { debounce, throttle } from '../utils/debounceThrottle';
+import { throttle } from '../utils/debounceThrottle';
 import { isValidIsraeliCoordinate } from '../utils/coordinateValidation';
 
 export interface ViewportBounds {

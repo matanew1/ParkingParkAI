@@ -4,6 +4,10 @@ import type { ParkingSpotWithStatus } from './parking';
 
 export type Coordinates = [number, number];
 
+export interface LocationMarkerProps {
+  setUserLocation: (coords: Coordinates) => void;
+}
+
 export interface ParkingMapProps {
   parkingSpots: ParkingSpotWithStatus[];
   loading: boolean;

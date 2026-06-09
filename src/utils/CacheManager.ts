@@ -1,5 +1,3 @@
-import { ParkingSpotWithStatus } from '../Types/parking';
-
 interface CacheConfig {
   maxAge: number;
   capacity: number;

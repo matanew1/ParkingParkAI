@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ParkingSpotWithStatus, ParkingListProps } from "../../Types/parking";
 import {
@@ -12,7 +12,7 @@ import {
   Tooltip,
   Skeleton,
 } from "@mui/material";
-import { ChevronRight, MapPin, Car, Sparkles } from "lucide-react";
+import { ChevronRight, MapPin, Car } from "lucide-react";
 import FavoriteToggleButton from "../favorites/FavoriteToggleButton";
 import { motion } from "framer-motion";
 
@@ -35,13 +35,13 @@ const SkeletonCard: React.FC = () => {
         elevation={0}
         sx={{
           p: 2,
-          borderRadius: 3,
-          border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-          backgroundColor: alpha(theme.palette.background.paper, 0.6),
+          borderRadius: "10px",
+          border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+          backgroundColor: alpha(theme.palette.background.paper, 0.72),
         }}
       >
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
-          <Skeleton variant="rounded" width={44} height={44} sx={{ borderRadius: 2.5, flexShrink: 0 }} />
+          <Skeleton variant="rounded" width={44} height={44} sx={{ borderRadius: "10px", flexShrink: 0 }} />
           <Box sx={{ flex: 1 }}>
             <Skeleton variant="text" width="70%" height={20} sx={{ mb: 0.5 }} />
             <Skeleton variant="text" width="90%" height={16} sx={{ mb: 1 }} />
@@ -63,7 +63,6 @@ const VirtualizedParkingList: React.FC<ParkingListProps> = ({
   filteredSpots,
   onSpotClick,
   onSpotSelect,
-  toggleDrawer,
   isMobile,
   loading = false,
 }) => {
@@ -73,15 +72,9 @@ const VirtualizedParkingList: React.FC<ParkingListProps> = ({
   const rowVirtualizer = useVirtualizer({
     count: filteredSpots.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => (isMobile ? 108 : 120),
+    estimateSize: () => (isMobile ? 96 : 108),
     overscan: 8,
   });
-
-  // Count available spots
-  const availableCount = useMemo(
-    () => filteredSpots.filter((s) => s.status_chenyon === "פנוי").length,
-    [filteredSpots]
-  );
 
   if (loading) {
     return (
@@ -132,43 +125,6 @@ const VirtualizedParkingList: React.FC<ParkingListProps> = ({
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      {/* Stats Bar */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          px: 0.5,
-          pb: 2,
-        }}
-      >
-        <Chip
-          icon={<Sparkles size={14} />}
-          label={`${filteredSpots.length} spots`}
-          size="small"
-          sx={{
-            height: 28,
-            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
-            color: "primary.main",
-            fontWeight: 600,
-            fontSize: "0.75rem",
-          }}
-        />
-        {availableCount > 0 && (
-          <Chip
-            label={`${availableCount} available`}
-            size="small"
-            sx={{
-              height: 28,
-              backgroundColor: (theme) => alpha(theme.palette.success.main, 0.1),
-              color: "success.main",
-              fontWeight: 600,
-              fontSize: "0.75rem",
-            }}
-          />
-        )}
-      </Box>
-
       {/* Virtualized List */}
       <Box
         ref={parentRef}
@@ -199,8 +155,6 @@ const VirtualizedParkingList: React.FC<ParkingListProps> = ({
                 spot={spot}
                 onSpotClick={onSpotClick}
                 onSpotSelect={onSpotSelect}
-                toggleDrawer={toggleDrawer}
-                isMobile={isMobile}
                 style={{
                   position: "absolute",
                   top: 0,
@@ -224,11 +178,9 @@ const ParkingSpotCard = React.memo<{
   spot: ParkingSpotWithStatus;
   onSpotClick: (spot: ParkingSpotWithStatus) => void;
   onSpotSelect: (spotId: string) => void;
-  toggleDrawer: () => void;
-  isMobile: boolean;
   style?: React.CSSProperties;
   index: number;
-}>(({ spot, onSpotClick, onSpotSelect, toggleDrawer, isMobile, style, index }) => {
+}>(({ spot, onSpotClick, onSpotSelect, style, index }) => {
   const theme = useTheme();
 
   const handleClick = () => {
@@ -254,31 +206,26 @@ const ParkingSpotCard = React.memo<{
         return {
           bg: alpha(theme.palette.success.main, 0.15),
           color: theme.palette.success.main,
-          icon: "🟢",
         };
       case "מעט":
         return {
           bg: alpha(theme.palette.warning.main, 0.15),
           color: theme.palette.warning.main,
-          icon: "🟡",
         };
       case "מלא":
         return {
           bg: alpha(theme.palette.error.main, 0.15),
           color: theme.palette.error.main,
-          icon: "🔴",
         };
       case "סגור":
         return {
           bg: alpha(theme.palette.grey[500], 0.15),
           color: theme.palette.grey[500],
-          icon: "⚫",
         };
       default:
         return {
           bg: alpha(theme.palette.info.main, 0.15),
           color: theme.palette.info.main,
-          icon: "🔵",
         };
     }
   };
@@ -291,56 +238,64 @@ const ParkingSpotCard = React.memo<{
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: Math.min(index * 0.02, 0.2), duration: 0.2 }}
-        style={{ padding: "0 4px 12px 4px" }}
+        style={{ padding: "0 4px 8px 4px" }}
       >
         <Paper
           elevation={0}
           onClick={handleClick}
           sx={{
-            p: 2,
+            p: 1.35,
             cursor: "pointer",
-            borderRadius: 3,
-            border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-            backgroundColor: alpha(theme.palette.background.paper, 0.6),
-            backdropFilter: "blur(8px)",
+            borderRadius: "10px",
+            border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+            backgroundColor: alpha(
+              theme.palette.background.paper,
+              theme.palette.mode === "dark" ? 0.72 : 0.86
+            ),
+            backdropFilter: "blur(12px)",
             transition: "all 0.2s ease",
             "&:hover": {
-              backgroundColor: alpha(theme.palette.background.paper, 0.9),
-              borderColor: alpha(theme.palette.primary.main, 0.2),
+              backgroundColor: alpha(theme.palette.background.paper, theme.palette.mode === "dark" ? 0.86 : 1),
+              borderColor: alpha(theme.palette.primary.main, 0.28),
               transform: "translateY(-2px)",
-              boxShadow: `0 8px 24px ${alpha(theme.palette.common.black, 0.1)}`,
+              boxShadow: `0 14px 34px ${alpha(
+                theme.palette.common.black,
+                theme.palette.mode === "dark" ? 0.26 : 0.1
+              )}`,
             },
             "&:active": {
               transform: "translateY(0)",
             },
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.15 }}>
             {/* Status Indicator */}
             <Box
               sx={{
-                width: 44,
-                height: 44,
-                borderRadius: 2.5,
+                width: 40,
+                height: 40,
+                borderRadius: "10px",
                 backgroundColor: statusStyles.bg,
+                border: `1px solid ${alpha(statusStyles.color, 0.18)}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
               }}
             >
-              <MapPin size={20} color={statusStyles.color} />
+              <MapPin size={18} color={statusStyles.color} />
             </Box>
 
             {/* Content */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.35 }}>
                 <Typography
                   variant="subtitle2"
                   sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: "0.875rem", sm: "0.9rem" },
+                    fontWeight: 750,
+                    fontSize: { xs: "0.84rem", sm: "0.88rem" },
                     color: "text.primary",
+                    letterSpacing: 0,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -361,8 +316,8 @@ const ParkingSpotCard = React.memo<{
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
-                  mb: 1,
-                  fontSize: "0.75rem",
+                  mb: 0.75,
+                  fontSize: "0.72rem",
                 }}
               >
                 {spot.ktovet}
@@ -374,11 +329,12 @@ const ParkingSpotCard = React.memo<{
                   label={spot.status_chenyon || "Unknown"}
                   size="small"
                   sx={{
-                    height: 24,
+                    height: 22,
                     backgroundColor: statusStyles.bg,
                     color: statusStyles.color,
-                    fontWeight: 600,
-                    fontSize: "0.7rem",
+                    border: `1px solid ${alpha(statusStyles.color, 0.16)}`,
+                    fontWeight: 750,
+                    fontSize: "0.68rem",
                     "& .MuiChip-label": {
                       px: 1,
                     },
@@ -393,15 +349,17 @@ const ParkingSpotCard = React.memo<{
                       size="small"
                       onClick={handleWazeNavigation}
                       sx={{
-                        width: 32,
-                        height: 32,
-                        backgroundColor: alpha("#00D4FF", 0.1),
+                        width: 30,
+                        height: 30,
+                        borderRadius: "10px",
+                        backgroundColor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.18 : 0.1),
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.14)}`,
                         "&:hover": {
-                          backgroundColor: alpha("#00D4FF", 0.2),
+                          backgroundColor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.26 : 0.16),
                         },
                       }}
                     >
-                      <WazeIcon size={16} />
+                      <WazeIcon size={15} />
                     </IconButton>
                   </Tooltip>
                 </Box>

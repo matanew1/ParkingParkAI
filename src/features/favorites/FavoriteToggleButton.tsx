@@ -43,14 +43,21 @@ const FavoriteToggleButton: React.FC<FavoriteToggleButtonProps> = ({
       sx={{
         width: btnSize,
         height: btnSize,
+        borderRadius: "10px",
         color,
-        backgroundColor: isFav ? alpha(theme.palette.warning.main, 0.1) : "transparent",
+        backgroundColor: isFav
+          ? alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.18 : 0.1)
+          : alpha(theme.palette.background.default, theme.palette.mode === "dark" ? 0.28 : 0.42),
+        border: `1px solid ${
+          isFav ? alpha(theme.palette.warning.main, 0.18) : alpha(theme.palette.divider, 0.12)
+        }`,
         "&:hover": {
           color: theme.palette.warning.main,
-          backgroundColor: alpha(theme.palette.warning.main, 0.12),
-          transform: "scale(1.1)",
+          backgroundColor: alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.24 : 0.14),
+          transform: "translateY(-1px)",
         },
-        transition: "all 0.2s ease-in-out",
+        transition:
+          "background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease",
       }}
     >
       <Star size={iconSize} fill={isFav ? "currentColor" : "none"} />

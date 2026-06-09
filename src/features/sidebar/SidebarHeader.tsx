@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography, IconButton, alpha } from "@mui/material";
-import { X, Car, Sparkles } from "lucide-react";
+import { X, ParkingCircle } from "lucide-react";
 
 interface SidebarHeaderProps {
   toggleDrawer: () => void;
@@ -15,43 +15,48 @@ const SidebarHeader: React.FC<SidebarHeaderProps> = ({ toggleDrawer, isMobile })
         justifyContent: "space-between",
         alignItems: "center",
         px: 2,
-        py: 2.5,
+        py: isMobile ? 1.25 : 2,
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.1 }}>
         <Box
           sx={{
-            width: 36,
-            height: 36,
-            borderRadius: 2,
-            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+            width: isMobile ? 32 : 36,
+            height: isMobile ? 32 : 36,
+            borderRadius: "10px",
+            background: (theme) =>
+              `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+            boxShadow: (theme) => `0 10px 22px ${alpha(theme.palette.primary.main, 0.22)}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            color: "#ffffff",
           }}
         >
-          <Car size={20} color="inherit" />
+          <ParkingCircle size={isMobile ? 17 : 20} color="inherit" />
         </Box>
         <Box>
           <Typography
             variant="h6"
             sx={{
-              fontWeight: 700,
-              fontSize: "1rem",
-              lineHeight: 1.2,
-              color: "text.primary",
-            }}
-          >
+            fontWeight: 800,
+            fontSize: isMobile ? "0.98rem" : "1rem",
+            lineHeight: 1.2,
+            color: "text.primary",
+            letterSpacing: 0,
+          }}
+        >
             Find Parking
           </Typography>
           <Typography
             variant="caption"
             sx={{
-              color: "text.secondary",
-              fontSize: "0.7rem",
+              color: (theme) => alpha(theme.palette.primary.main, 0.72),
+              fontSize: "0.72rem",
+              fontWeight: 650,
             }}
           >
-            Real-time availability
+            Live availability
           </Typography>
         </Box>
       </Box>
@@ -63,9 +68,15 @@ const SidebarHeader: React.FC<SidebarHeaderProps> = ({ toggleDrawer, isMobile })
           sx={{
             width: 32,
             height: 32,
-            backgroundColor: (theme) => alpha(theme.palette.action.hover, 0.5),
+            borderRadius: "10px",
+            backgroundColor: (theme) =>
+              alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.2 : 0.1),
+            color: "primary.main",
+            border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.16)}`,
             "&:hover": {
-              backgroundColor: (theme) => alpha(theme.palette.action.hover, 0.8),
+              backgroundColor: (theme) =>
+                alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.28 : 0.16),
+              color: "primary.main",
             },
           }}
         >

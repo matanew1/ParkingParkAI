@@ -1,10 +1,7 @@
 import { create } from "zustand";
 import { ParkingSpotWithStatus } from "../Types/parking";
 import { ParkingService } from "../Services/parkingService";
-import { RouteService, Coordinates } from "../Services/routeService";
-import { notificationService } from "../Services/notificationService";
-import { useFavoritesStore } from "./favoritesStore";
-import { useNotificationStore } from "./notificationStore";
+import type { Coordinates } from "../Types/location";
 
 export interface ParkingState {
   // Data
@@ -16,7 +13,6 @@ export interface ParkingState {
 
   // Map
   mapCenter: Coordinates;
-  routes: Coordinates[][];
   userLocation: Coordinates | null;
   showLocationMarker: boolean;
   selectedSpot: string | null;
@@ -24,7 +20,6 @@ export interface ParkingState {
 
   // Actions
   fetchParkingData: (isManualRefresh?: boolean) => Promise<void>;
-  fetchRoute: (start: Coordinates, end: Coordinates | string) => Promise<void>;
   handleResetMap: () => void;
   setMapCenter: (center: Coordinates) => void;
   setUserLocation: (location: Coordinates | null) => void;
@@ -38,7 +33,6 @@ export interface ParkingState {
 const DEFAULT_COORDINATES: Coordinates = [32.0853, 34.7818];
 
 const parkingService = new ParkingService();
-const routeService = new RouteService();
 
 // Always use /api path — proxied to gisn.tel-aviv.gov.il by both Vite dev server and vercel.json rewrites
 const AHUZAT_HAHOF_URL = `/api/arcgis/rest/services/IView2/MapServer/970/query?where=1%3D1&outFields=*&f=json`;
@@ -52,7 +46,6 @@ export const useParkingStore = create<ParkingState>((set, get) => ({
   lastUpdated: null,
   refreshing: false,
   mapCenter: DEFAULT_COORDINATES,
-  routes: [],
   userLocation: null,
   showLocationMarker: false,
   selectedSpot: null,
@@ -86,21 +79,7 @@ export const useParkingStore = create<ParkingState>((set, get) => ({
         lastUpdated: new Date(),
       });
 
-      // Trigger notification checks after data update
-      try {
-        const { settings } = useNotificationStore.getState();
-        if (settings.enabled && Notification.permission === 'granted') {
-          const { favorites } = useFavoritesStore.getState();
-          const favoriteRefs = favorites.map(f => ({ id: f.id, nickname: f.nickname }));
-          notificationService.updateParkingStatuses(allSpots, favoriteRefs);
-        }
-      } catch {}
-
-      console.log(
-        `Successfully loaded ${
-          combinedAhuzatHahofData.length + combinedPrivateData.length
-        } parking spots`
-      );
+      console.log(`Successfully loaded ${allSpots.length} parking spots`);
     } catch (err) {
       console.error("Error fetching parking data:", err);
       set({
@@ -114,46 +93,12 @@ export const useParkingStore = create<ParkingState>((set, get) => ({
     }
   },
 
-  fetchRoute: async (start: Coordinates, end: Coordinates | string) => {
-    try {
-      const routeData = await routeService.fetchRoute(start, end);
-      console.log("Route data received:", routeData);
-
-      if (routeData && routeData.legs && routeData.legs.length > 0) {
-        const leg = routeData.legs[0];
-
-        if (leg.coordinates && Array.isArray(leg.coordinates)) {
-          console.log(
-            "Setting route with coordinates array, length:",
-            leg.coordinates.length
-          );
-          set({ routes: [leg.coordinates] });
-          return {
-            coordinates: leg.coordinates,
-            summary: routeData.summary,
-          };
-        } else {
-          console.error("No coordinates found in route data");
-          throw new Error("Route data missing coordinates");
-        }
-      } else {
-        console.error("Invalid route data structure:", routeData);
-        throw new Error("Invalid route data structure");
-      }
-    } catch (error) {
-      console.error("Route calculation error:", error);
-      set({ routes: [] });
-      throw error;
-    }
-  },
-
   handleResetMap: () => {
     set({
       mapCenter: DEFAULT_COORDINATES,
       userLocation: null,
       showLocationMarker: false,
       selectedSpot: null,
-      routes: [],
       hasInitiallyLocated: false,
     });
   },

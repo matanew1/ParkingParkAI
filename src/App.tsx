@@ -28,32 +28,32 @@ class ErrorBoundary extends React.Component<
             alignItems: "center",
             justifyContent: "center",
             minHeight: "100vh",
-            backgroundColor: "#0d1117",
+            backgroundColor: "#111315",
             padding: "20px",
             fontFamily: "Inter, -apple-system, sans-serif",
           }}
         >
           <div
             style={{
-              background: "#161b22",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "16px",
+              background: "#191C20",
+              border: "1px solid rgba(248,250,252,0.12)",
+              borderRadius: "10px",
               padding: "32px",
               maxWidth: "400px",
               textAlign: "center",
             }}
           >
             <div style={{ fontSize: "48px", marginBottom: "16px" }}>🅿️</div>
-            <h2 style={{ color: "#e6edf3", marginBottom: "12px", fontSize: "20px" }}>
+            <h2 style={{ color: "#F8FAFC", marginBottom: "12px", fontSize: "20px" }}>
               Something went wrong
             </h2>
-            <p style={{ color: "#7d8590", marginBottom: "24px", fontSize: "14px" }}>
+            <p style={{ color: "#A7B0BE", marginBottom: "24px", fontSize: "14px" }}>
               The parking app encountered an error. Please refresh to try again.
             </p>
             <button
               onClick={() => window.location.reload()}
               style={{
-                background: "linear-gradient(135deg, #00c8ff, #00a3cc)",
+                background: "linear-gradient(135deg, #60A5FA, #34D399)",
                 color: "white",
                 border: "none",
                 borderRadius: "10px",
@@ -67,7 +67,7 @@ class ErrorBoundary extends React.Component<
             </button>
             {this.state.error && (
               <details style={{ marginTop: "16px", textAlign: "left" }}>
-                <summary style={{ color: "#7d8590", fontSize: "12px", cursor: "pointer" }}>
+                <summary style={{ color: "#A7B0BE", fontSize: "12px", cursor: "pointer" }}>
                   Error details
                 </summary>
                 <pre
@@ -75,7 +75,7 @@ class ErrorBoundary extends React.Component<
                     color: "#f85149",
                     fontSize: "11px",
                     marginTop: "8px",
-                    background: "#0d1117",
+                    background: "#111315",
                     padding: "12px",
                     borderRadius: "8px",
                     overflow: "auto",

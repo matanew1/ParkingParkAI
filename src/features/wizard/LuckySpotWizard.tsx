@@ -134,11 +134,11 @@ function ScanningContent(): React.ReactElement {
               width: 56,
               height: 56,
               borderRadius: "50%",
-              background: `linear-gradient(135deg, ${primaryColor}, ${alpha(primaryColor, 0.7)})`,
+              background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: `0 0 24px ${alpha(primaryColor, 0.6)}`,
+              boxShadow: `0 14px 34px ${alpha(theme.palette.primary.main, 0.34)}`,
             }}
           >
             <Zap size={28} color="#ffffff" />
@@ -198,9 +198,9 @@ function ResultCard({
         sx={{
           p: 2,
           mb: 1.5,
-          background: alpha(theme.palette.success.main, 0.08),
+          background: alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.12 : 0.08),
           border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
-          borderRadius: 3,
+          borderRadius: "10px",
           display: "flex",
           alignItems: "center",
           gap: 2,
@@ -213,7 +213,7 @@ function ResultCard({
             height: 36,
             background:
               index === 0
-                ? "linear-gradient(135deg, #7c3aed, #ec4899)"
+                ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`
                 : alpha(theme.palette.success.main, 0.15),
             color: index === 0 ? "#ffffff" : theme.palette.success.main,
             fontSize: 14,
@@ -287,7 +287,7 @@ function ResultCard({
             endIcon={<Navigation size={14} />}
             onClick={() => onSelect(spot)}
             sx={{
-              borderRadius: 2,
+              borderRadius: "10px",
               fontSize: 12,
               py: 0.5,
               px: 1.5,
@@ -328,8 +328,8 @@ function ResultsContent({
     <Box sx={{ pb: 1 }}>
       {/* Header */}
       <Box sx={{ mb: 2.5 }}>
-        <Typography variant="h6" fontWeight={700} gutterBottom>
-          🦄 Lucky Spot Found!
+        <Typography variant="h6" fontWeight={750} gutterBottom>
+          Lucky Spot Found
         </Typography>
         <Typography variant="body2" color="text.secondary">
           Nearest available parking
@@ -385,7 +385,7 @@ function DoneContent({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: `0 0 32px ${alpha(theme.palette.success.main, 0.4)}`,
+            boxShadow: `0 16px 38px ${alpha(theme.palette.success.main, 0.3)}`,
           }}
         >
           <Navigation size={32} color={theme.palette.success.main} />
@@ -397,7 +397,7 @@ function DoneContent({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <Typography variant="h6" fontWeight={700} textAlign="center">
+        <Typography variant="h6" fontWeight={750} textAlign="center">
           Navigating to{" "}
           <Box component="span" sx={{ color: "success.main" }}>
             {spot.shem_chenyon || "your spot"}
@@ -496,9 +496,9 @@ function LuckySpotWizardInner({
           position: "fixed",
           inset: 0,
           zIndex: 2000,
-          background: "rgba(0, 0, 0, 0.5)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
+          background: alpha(theme.palette.common.black, theme.palette.mode === "dark" ? 0.62 : 0.46),
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
         }}
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
@@ -514,8 +514,8 @@ function LuckySpotWizardInner({
               right: 0,
               maxHeight: "85vh",
               overflowY: "auto",
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
               borderBottomLeftRadius: 0,
               borderBottomRightRadius: 0,
               pb: { xs: 4, sm: 2 },
@@ -534,20 +534,20 @@ function LuckySpotWizardInner({
                 sx={{
                   width: 40,
                   height: 4,
-                  borderRadius: 2,
-                  bgcolor: "divider",
+                  borderRadius: 999,
+                  bgcolor: alpha(theme.palette.text.secondary, 0.28),
                 }}
               />
             </Box>
 
-            {/* Title bar with unicorn gradient */}
+            {/* Title bar */}
             <Box
               sx={{
                 mx: 2,
                 mb: 2,
                 p: 2,
-                borderRadius: 3,
-                background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+                borderRadius: "12px",
+                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -580,7 +580,7 @@ function LuckySpotWizardInner({
                     variant="caption"
                     sx={{ color: "rgba(255,255,255,0.75)" }}
                   >
-                    One-tap smart parking
+                    Best nearby match
                   </Typography>
                 </Box>
               </Box>
@@ -590,6 +590,7 @@ function LuckySpotWizardInner({
                 size="small"
                 sx={{
                   color: "rgba(255,255,255,0.85)",
+                  borderRadius: "10px",
                   bgcolor: "rgba(255,255,255,0.15)",
                   "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
                 }}
@@ -649,7 +650,7 @@ function LuckySpotWizardInner({
                   mx: 2,
                   mt: 1,
                   p: 1.5,
-                  borderRadius: 2,
+                  borderRadius: "10px",
                   bgcolor: alpha(theme.palette.primary.main, 0.06),
                   display: "flex",
                   alignItems: "center",

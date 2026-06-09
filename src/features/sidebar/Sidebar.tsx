@@ -11,13 +11,13 @@ import ParkingSearch from "./ParkingSearch";
 import RefreshControl from "./RefreshControl";
 import VirtualizedParkingList from "./VirtualizedParkingList";
 import FavoritesList from "../favorites/FavoritesList";
-import { Clock, Map, Star } from "lucide-react";
+import { Clock, ParkingCircle, Star } from "lucide-react";
 import { useFavoritesStore } from "../../stores/favoritesStore";
 import { motion, AnimatePresence } from "framer-motion";
 
 const STATUS_FILTERS = [
   { label: "All", value: null },
-  { label: "Available", value: "פנוי", color: "success" as const },
+  { label: "Open", value: "פנוי", color: "success" as const },
   { label: "Limited", value: "מעט", color: "warning" as const },
   { label: "Full", value: "מלא", color: "error" as const },
   { label: "Closed", value: "סגור", color: "default" as const },
@@ -58,6 +58,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     [spots, debouncedSearch, statusFilter]
   );
 
+  const availableFilteredCount = React.useMemo(
+    () => filteredSpots.filter((spot) => spot.status_chenyon === "פנוי").length,
+    [filteredSpots]
+  );
+
   const handleTabChange = (_: React.SyntheticEvent | null, newValue: number) => {
     setCurrentTab(newValue);
     if (newValue === 1) {
@@ -78,26 +83,28 @@ const Sidebar: React.FC<SidebarProps> = ({
       <SidebarHeader toggleDrawer={toggleDrawer} isMobile={isMobile} />
 
       {/* Tab Bar */}
-      <Box sx={{ px: 2, pt: 1, pb: 2 }}>
+      <Box sx={{ px: 2, pt: 0.25, pb: 1.25 }}>
         <Box
           sx={{
             display: "flex",
-            backgroundColor: (theme) => alpha(theme.palette.action.hover, 0.5),
-            borderRadius: 3,
+            backgroundColor: (theme) =>
+              alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.2 : 0.1),
+            border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.16)}`,
+            borderRadius: "12px",
             p: 0.5,
           }}
         >
           <TabButton
             active={currentTab === 0}
             onClick={() => handleTabChange(null, 0)}
-            icon={<Map size={16} />}
-            label="All Spots"
+            icon={<ParkingCircle size={15} />}
+            label="Spots"
           />
           <TabButton
             active={currentTab === 1}
             onClick={() => handleTabChange(null, 1)}
-            icon={<Star size={16} />}
-            label={`Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ""}`}
+            icon={<Star size={15} />}
+            label={`Saved${favoritesCount > 0 ? ` ${favoritesCount}` : ""}`}
           />
         </Box>
       </Box>
@@ -111,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           px: 2,
           pb: 2,
           overflow: "hidden",
-          gap: 1.5,
+          gap: 1,
         }}
       >
         {currentTab === 0 && (
@@ -122,7 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <Box
               sx={{
                 display: "flex",
-                gap: 0.75,
+                gap: 0.5,
                 flexWrap: "nowrap",
                 overflowX: "auto",
                 pb: 0.5,
@@ -140,11 +147,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => setStatusFilter(f.value)}
                   sx={{
                     height: 28,
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
+                    fontSize: "0.72rem",
+                    fontWeight: 750,
                     flexShrink: 0,
                     cursor: "pointer",
                     transition: "all 0.15s ease",
+                    color: statusFilter === f.value ? undefined : "primary.main",
+                    backgroundColor: (theme) =>
+                      statusFilter === f.value
+                        ? undefined
+                        : alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.1 : 0.04),
+                    borderColor: (theme) =>
+                      statusFilter === f.value
+                        ? "transparent"
+                        : alpha(theme.palette.primary.main, 0.24),
                   }}
                 />
               ))}
@@ -163,11 +179,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <Clock size={14} />
                 <Typography
                   variant="caption"
-                  sx={{ color: "text.secondary", fontSize: "0.75rem" }}
+                  sx={{
+                    color: (theme) => alpha(theme.palette.primary.main, 0.76),
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                  }}
                 >
-                  {lastUpdated
-                    ? `Updated ${lastUpdated.toLocaleTimeString()}`
-                    : "Loading..."}
+                  {`${filteredSpots.length} spots`}
+                  {availableFilteredCount > 0 ? ` • ${availableFilteredCount} open` : ""}
+                  {lastUpdated ? ` • ${lastUpdated.toLocaleTimeString()}` : ""}
                 </Typography>
               </Box>
               <RefreshControl
@@ -239,23 +259,31 @@ const TabButton: React.FC<{
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      gap: 0.75,
-      py: 1.25,
-      px: 2,
-      borderRadius: 2.5,
+      gap: 0.55,
+      py: 0.7,
+      px: 1.4,
+      borderRadius: "10px",
       cursor: "pointer",
       transition: "all 0.2s ease",
-      backgroundColor: active ? "background.paper" : "transparent",
+      backgroundColor: active
+        ? (theme) => alpha(theme.palette.background.paper, theme.palette.mode === "dark" ? 0.88 : 1)
+        : "transparent",
+      border: (theme) =>
+        `1px solid ${active ? alpha(theme.palette.primary.main, 0.14) : "transparent"}`,
       boxShadow: active
-        ? (theme) => `0 2px 8px ${alpha(theme.palette.common.black, 0.1)}`
+        ? (theme) =>
+            `0 8px 18px ${alpha(
+              theme.palette.common.black,
+              theme.palette.mode === "dark" ? 0.22 : 0.08
+            )}`
         : "none",
-      color: active ? "text.primary" : "text.secondary",
-      fontWeight: active ? 600 : 500,
-      fontSize: "0.8rem",
+      color: active ? "primary.main" : (theme) => alpha(theme.palette.primary.main, 0.68),
+      fontWeight: active ? 800 : 650,
+      fontSize: "0.78rem",
       "&:hover": {
         backgroundColor: active
-          ? "background.paper"
-          : (theme) => alpha(theme.palette.action.hover, 0.3),
+          ? (theme) => alpha(theme.palette.background.paper, theme.palette.mode === "dark" ? 0.88 : 1)
+          : (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
       },
     }}
   >

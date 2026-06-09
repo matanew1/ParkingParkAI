@@ -1,6 +1,6 @@
 import React from "react";
 import { useTimer } from "../../hooks/useTimer";
-import { Box, IconButton, alpha, Tooltip, CircularProgress } from "@mui/material";
+import { IconButton, alpha, Tooltip, CircularProgress } from "@mui/material";
 import { RefreshCw } from "lucide-react";
 
 interface RefreshControlProps {
@@ -36,13 +36,19 @@ const RefreshControl: React.FC<RefreshControlProps> = ({
         sx={{
           width: 32,
           height: 32,
-          backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+          borderRadius: "10px",
+          backgroundColor: (theme) =>
+            alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.18 : 0.1),
           color: "primary.main",
+          border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.16)}`,
           "&:hover": {
-            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+            backgroundColor: (theme) =>
+              alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.26 : 0.16),
           },
           "&:disabled": {
-            backgroundColor: (theme) => alpha(theme.palette.action.disabled, 0.1),
+            backgroundColor: (theme) =>
+              alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.12 : 0.06),
+            color: "primary.main",
           },
         }}
       >

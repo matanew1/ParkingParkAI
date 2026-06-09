@@ -1,12 +1,14 @@
 import React from "react";
 import { Sun, Moon } from "lucide-react";
-import { IconButton, Tooltip, alpha, useMediaQuery } from "@mui/material";
+import { IconButton, Tooltip, alpha, useMediaQuery, useTheme } from "@mui/material";
 import { useThemeStore } from "../../stores/themeStore";
 import { motion } from "framer-motion";
 
 const ThemeToggle: React.FC = () => {
   const { isDarkMode, toggleTheme } = useThemeStore();
   const isMobile = useMediaQuery("(max-width:768px)");
+  const theme = useTheme();
+  const iconColor = isDarkMode ? theme.palette.warning.main : theme.palette.primary.main;
 
   return (
     <Tooltip title={`Switch to ${isDarkMode ? "light" : "dark"} mode`} arrow>
@@ -14,17 +16,18 @@ const ThemeToggle: React.FC = () => {
         onClick={toggleTheme}
         aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
         sx={{
-          width: { xs: 36, sm: 40 },
-          height: { xs: 36, sm: 40 },
-          borderRadius: 2,
-          backgroundColor: (theme) =>
-            alpha(isDarkMode ? "#fbbf24" : "#3b82f6", 0.1),
-          color: isDarkMode ? "#fbbf24" : "#3b82f6",
+          width: { xs: 38, sm: 42 },
+          height: { xs: 38, sm: 42 },
+          borderRadius: "12px",
+          backgroundColor: alpha(iconColor, theme.palette.mode === "dark" ? 0.16 : 0.1),
+          color: iconColor,
+          border: `1px solid ${alpha(iconColor, theme.palette.mode === "dark" ? 0.26 : 0.16)}`,
           "&:hover": {
-            backgroundColor: (theme) =>
-              alpha(isDarkMode ? "#fbbf24" : "#3b82f6", 0.2),
+            backgroundColor: alpha(iconColor, theme.palette.mode === "dark" ? 0.24 : 0.16),
+            transform: "translateY(-1px)",
           },
-          transition: "all 0.2s ease-in-out",
+          transition:
+            "background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease",
         }}
       >
         <motion.div
@@ -35,9 +38,9 @@ const ThemeToggle: React.FC = () => {
           transition={{ duration: 0.3, type: "spring" }}
         >
           {isDarkMode ? (
-            <Sun size={isMobile ? 18 : 20} />
+            <Sun size={isMobile ? 17 : 20} />
           ) : (
-            <Moon size={isMobile ? 18 : 20} />
+            <Moon size={isMobile ? 17 : 20} />
           )}
         </motion.div>
       </IconButton>

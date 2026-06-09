@@ -28,6 +28,28 @@ export default defineConfig({
       transformMixedEsModules: true,
     },
     target: 'es2020',
-    minify: 'esbuild'
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        // Split the vendor bundle into cacheable chunks so a code change
+        // doesn't force users to re-download React/MUI/Leaflet every deploy.
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'mui-vendor': [
+            '@mui/material',
+            '@mui/icons-material',
+            '@emotion/react',
+            '@emotion/styled',
+          ],
+          'leaflet-vendor': [
+            'leaflet',
+            'react-leaflet',
+            'react-leaflet-cluster',
+            'leaflet-arrowheads',
+          ],
+          'utils-vendor': ['axios', 'proj4', 'zustand', 'framer-motion', 'lodash'],
+        },
+      },
+    },
   },
 });

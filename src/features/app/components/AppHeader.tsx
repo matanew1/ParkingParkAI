@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Car } from "lucide-react";
+import React, { useMemo } from "react";
+import { Car, Circle } from "lucide-react";
 import {
   AppBar,
   Toolbar,
@@ -10,68 +10,51 @@ import {
   useTheme,
 } from "@mui/material";
 import ThemeToggle from "../../../components/Theme/ThemeToggle";
-import OptionButton from "../../options/OptionButton";
-import { NotificationBadge, NotificationPanel } from "../../notifications";
-import { AppHeaderProps } from "../../../Types/app";
 import { motion } from "framer-motion";
 import { useParkingStore } from "../../../stores/parkingStore";
 
-const AppHeader: React.FC<AppHeaderProps> = ({
-  onOpenOptionPopup,
-  onNavigateToSpot,
-  onOpenNotifications,
-  notificationPanelOpen: externalPanelOpen,
-  onCloseNotifications,
-}) => {
-  const isMobile = useMediaQuery("(max-width:768px)");
+const AppHeader: React.FC = () => {
   const isSmallMobile = useMediaQuery("(max-width:480px)");
-  const [internalPanelOpen, setInternalPanelOpen] = useState(false);
-
-  // Support both controlled (from parent) and uncontrolled modes
-  const notificationPanelOpen = externalPanelOpen ?? internalPanelOpen;
-  const openNotificationPanel = () => {
-    onOpenNotifications ? onOpenNotifications() : setInternalPanelOpen(true);
-  };
-  const closeNotificationPanel = () => {
-    onCloseNotifications ? onCloseNotifications() : setInternalPanelOpen(false);
-  };
   const theme = useTheme();
 
   const parkingSpots = useParkingStore((s) => s.parkingSpots);
-  const availableCount = parkingSpots.filter(
-    (s) => s.status_chenyon === "פנוי"
-  ).length;
+  const availableCount = useMemo(
+    () => parkingSpots.filter((s) => s.status_chenyon === "פנוי").length,
+    [parkingSpots]
+  );
 
   const headerBg =
     theme.palette.mode === "dark"
-      ? alpha(theme.palette.background.paper, 0.85)
-      : alpha("#ffffff", 0.9);
-  const headerBorder = alpha(theme.palette.divider, 0.12);
+      ? alpha(theme.palette.background.paper, 0.88)
+      : alpha("#ffffff", 0.92);
+  const headerBorder = alpha(theme.palette.divider, 0.16);
   const textPrimary = theme.palette.text.primary;
-  const textSecondary = theme.palette.text.secondary;
 
   return (
     <AppBar
       position="fixed"
       elevation={0}
       sx={{
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+        backdropFilter: "blur(24px) saturate(1.12)",
+        WebkitBackdropFilter: "blur(24px) saturate(1.12)",
         backgroundColor: headerBg,
         borderBottom: `1px solid ${headerBorder}`,
+        boxShadow:
+          theme.palette.mode === "dark"
+            ? `0 18px 44px ${alpha(theme.palette.common.black, 0.28)}`
+            : `0 14px 34px ${alpha(theme.palette.common.black, 0.07)}`,
         zIndex: theme.zIndex.appBar,
         color: textPrimary,
       }}
     >
       <Toolbar
         sx={{
-          minHeight: { xs: 56, sm: 64 },
-          px: { xs: 1.5, sm: 2.5 },
-          gap: { xs: 1, sm: 1.5 },
+          minHeight: { xs: 58, sm: 68 },
+          px: { xs: 2, sm: 3 },
+          gap: { xs: 1.25, sm: 1.75 },
         }}
       >
-        {/* Logo & Brand */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.15, minWidth: 0 }}>
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -79,30 +62,30 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           >
             <Box
               sx={{
-                width: { xs: 36, sm: 40 },
-                height: { xs: 36, sm: 40 },
-                borderRadius: "10px",
-                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${alpha(theme.palette.primary.dark, 0.85)})`,
+                width: { xs: 40, sm: 46 },
+                height: { xs: 40, sm: 46 },
+                borderRadius: "12px",
+                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
+                boxShadow: `0 14px 30px ${alpha(theme.palette.primary.main, 0.28)}`,
                 flexShrink: 0,
               }}
             >
-              <Car size={isSmallMobile ? 18 : 22} color="#ffffff" strokeWidth={2.5} />
+              <Car size={isSmallMobile ? 19 : 23} color="#ffffff" strokeWidth={2.5} />
             </Box>
           </motion.div>
 
-          <Box sx={{ minWidth: 0 }}>
+          <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 0.4 }}>
             <Typography
               variant="h6"
               component="h1"
               sx={{
-                fontWeight: 800,
-                fontSize: { xs: "1rem", sm: "1.15rem" },
+                fontWeight: 850,
+                fontSize: { xs: "1.05rem", sm: "1.22rem" },
                 color: textPrimary,
-                letterSpacing: "-0.02em",
+                letterSpacing: 0,
                 lineHeight: 1.1,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
@@ -112,43 +95,41 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               {isSmallMobile ? "ParkAI" : "ParkAI"}
             </Typography>
             {availableCount > 0 ? (
-              <Typography
-                variant="caption"
+              <Box
                 sx={{
-                  color: theme.palette.success.main,
-                  fontSize: "0.68rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.02em",
-                  lineHeight: 1.2,
                   display: "flex",
                   alignItems: "center",
-                  gap: 0.5,
+                  gap: 0.65,
+                  color: theme.palette.success.main,
+                  fontSize: { xs: "0.74rem", sm: "0.8rem" },
+                  fontWeight: 800,
+                  lineHeight: 1,
                 }}
               >
                 <Box
-                  component="span"
                   sx={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    backgroundColor: "currentColor",
-                    display: "inline-block",
+                    width: 9,
+                    height: 9,
+                    display: "flex",
+                    color: "currentColor",
                     animation: "headerPulse 2s ease-in-out infinite",
                     "@keyframes headerPulse": {
                       "0%, 100%": { opacity: 1 },
                       "50%": { opacity: 0.4 },
                     },
                   }}
-                />
+                >
+                  <Circle size={9} fill="currentColor" strokeWidth={0} />
+                </Box>
                 {availableCount} available now
-              </Typography>
+              </Box>
             ) : (
               <Typography
                 variant="caption"
                 sx={{
-                  color: textSecondary,
-                  fontSize: "0.68rem",
-                  fontWeight: 500,
+                  color: "text.secondary",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
                   lineHeight: 1.2,
                 }}
               >
@@ -158,33 +139,18 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </Box>
         </Box>
 
-        {/* Spacer */}
         <Box sx={{ flexGrow: 1 }} />
 
-        {/* Action Buttons — keep this lean.
-            Notifications live in the mobile bottom-nav so they're hidden here
-            on mobile to avoid the duplicate bell that was on screen before. */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: { xs: 0.25, sm: 0.5 },
+            gap: 0.75,
           }}
         >
-          {!isMobile && (
-            <NotificationBadge onClick={openNotificationPanel} size="medium" />
-          )}
           <ThemeToggle />
-          <OptionButton onClick={onOpenOptionPopup} />
         </Box>
       </Toolbar>
-
-      {/* Notification Panel */}
-      <NotificationPanel
-        open={notificationPanelOpen}
-        onClose={closeNotificationPanel}
-        onNavigateToSpot={onNavigateToSpot}
-      />
     </AppBar>
   );
 };

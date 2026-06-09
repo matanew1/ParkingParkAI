@@ -113,7 +113,7 @@ const FavoritesList: React.FC<FavoritesListProps> = ({
         >
           <Star size={32} color={theme.palette.warning.main} strokeWidth={1.5} />
         </Box>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+        <Typography variant="h6" sx={{ fontWeight: 750, mb: 1, letterSpacing: 0 }}>
           No favorites yet
         </Typography>
         <Typography variant="body2" color="text.secondary">
@@ -134,7 +134,7 @@ const FavoritesList: React.FC<FavoritesListProps> = ({
         }}
       >
         <Star size={16} color={theme.palette.warning.main} fill={theme.palette.warning.main} />
-        <Typography variant="body2" sx={{ fontWeight: 600, color: "text.secondary" }}>
+        <Typography variant="body2" sx={{ fontWeight: 750, color: "text.secondary" }}>
           {favorites.length} saved spot{favorites.length !== 1 ? "s" : ""}
         </Typography>
       </Box>
@@ -152,16 +152,22 @@ const FavoritesList: React.FC<FavoritesListProps> = ({
               sx={{
                 p: 2,
                 cursor: "pointer",
-                borderRadius: 3,
-                border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-                backgroundColor: alpha(theme.palette.background.paper, 0.7),
-                backdropFilter: "blur(8px)",
+                borderRadius: "10px",
+                border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                backgroundColor: alpha(
+                  theme.palette.background.paper,
+                  theme.palette.mode === "dark" ? 0.72 : 0.86
+                ),
+                backdropFilter: "blur(12px)",
                 transition: "all 0.2s ease",
                 "&:hover": {
-                  backgroundColor: alpha(theme.palette.background.paper, 0.95),
-                  borderColor: alpha(theme.palette.warning.main, 0.25),
+                  backgroundColor: alpha(theme.palette.background.paper, theme.palette.mode === "dark" ? 0.86 : 1),
+                  borderColor: alpha(theme.palette.warning.main, 0.28),
                   transform: "translateY(-2px)",
-                  boxShadow: `0 8px 24px ${alpha(theme.palette.common.black, 0.1)}`,
+                  boxShadow: `0 14px 34px ${alpha(
+                    theme.palette.common.black,
+                    theme.palette.mode === "dark" ? 0.26 : 0.1
+                  )}`,
                 },
                 "&:active": { transform: "translateY(0)" },
               }}
@@ -172,8 +178,9 @@ const FavoritesList: React.FC<FavoritesListProps> = ({
                   sx={{
                     width: 40,
                     height: 40,
-                    borderRadius: 2.5,
+                    borderRadius: "10px",
                     backgroundColor: alpha(theme.palette.warning.main, 0.12),
+                    border: `1px solid ${alpha(theme.palette.warning.main, 0.18)}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -187,7 +194,7 @@ const FavoritesList: React.FC<FavoritesListProps> = ({
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography
                     variant="subtitle2"
-                    sx={{ fontWeight: 600, fontSize: "0.9rem", mb: 0.25, noWrap: true }}
+                    sx={{ fontWeight: 750, fontSize: "0.9rem", mb: 0.25, letterSpacing: 0 }}
                     noWrap
                   >
                     {displayName}
@@ -222,9 +229,10 @@ const FavoritesList: React.FC<FavoritesListProps> = ({
                     sx={{
                       height: 22,
                       fontSize: "0.7rem",
-                      fontWeight: 600,
+                      fontWeight: 750,
                       backgroundColor: alpha(statusStyle.color, 0.12),
                       color: statusStyle.color,
+                      border: `1px solid ${alpha(statusStyle.color, 0.16)}`,
                     }}
                   />
                 </Box>
@@ -238,8 +246,12 @@ const FavoritesList: React.FC<FavoritesListProps> = ({
                       sx={{
                         width: 30,
                         height: 30,
-                        backgroundColor: alpha("#00b8e6", 0.08),
-                        "&:hover": { backgroundColor: alpha("#00b8e6", 0.18) },
+                        borderRadius: "10px",
+                        backgroundColor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.18 : 0.1),
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.14)}`,
+                        "&:hover": {
+                          backgroundColor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.26 : 0.16),
+                        },
                       }}
                     >
                       <WazeIcon size={15} />
@@ -253,6 +265,7 @@ const FavoritesList: React.FC<FavoritesListProps> = ({
                       sx={{
                         width: 30,
                         height: 30,
+                        borderRadius: "10px",
                         color: "text.secondary",
                         "&:hover": { color: "primary.main", backgroundColor: alpha(theme.palette.primary.main, 0.08) },
                       }}
@@ -268,6 +281,7 @@ const FavoritesList: React.FC<FavoritesListProps> = ({
                       sx={{
                         width: 30,
                         height: 30,
+                        borderRadius: "10px",
                         color: "text.secondary",
                         "&:hover": { color: "error.main", backgroundColor: alpha(theme.palette.error.main, 0.08) },
                       }}

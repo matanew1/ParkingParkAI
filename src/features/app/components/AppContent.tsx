@@ -1,5 +1,5 @@
-import React, { lazy, Suspense, useCallback, useState } from "react";
-import { Map, List, Zap, Bell } from "lucide-react";
+import React, { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { List, MapPinned, Navigation2, ParkingCircle } from "lucide-react";
 import {
   Box,
   useMediaQuery,
@@ -9,20 +9,16 @@ import {
   alpha,
   Fab,
   Zoom,
-  useTheme,
   SwipeableDrawer,
   BottomNavigation,
   BottomNavigationAction,
-  Badge,
   Paper,
 } from "@mui/material";
 import { useThemeStore } from "../../../stores/themeStore";
 import { useParkingStore } from "../../../stores/parkingStore";
-import { useNotificationStore } from "../../../stores/notificationStore";
 import { lightTheme, darkTheme } from "../../../components/Theme/ThemeConfig";
 import AppHeader from "./AppHeader";
 import { Sidebar } from "../../sidebar";
-import { OptionDialog } from "../../options";
 import { LuckySpotWizard } from "../../wizard";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import type { ParkingSpotWithStatus } from "../../../Types/parking";
@@ -30,23 +26,23 @@ import type { ParkingSpotWithStatus } from "../../../Types/parking";
 const OptimizedParkingMap = lazy(() => import("../../map/OptimizedParkingMap"));
 
 // Mobile bottom nav items
-type MobileTab = "map" | "spots" | "lucky" | "alerts";
+type MobileTab = "map" | "spots" | "lucky";
 
 const AppContent: React.FC = () => {
-  const [isOptionPopupOpen, setIsOptionPopupOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 768);
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("map");
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
 
   const { isDarkMode } = useThemeStore();
   const theme = isDarkMode ? darkTheme : lightTheme;
 
+  useEffect(() => {
+    document.documentElement.dataset.theme = isDarkMode ? "dark" : "light";
+  }, [isDarkMode]);
+
   const isMobile = useMediaQuery("(max-width:768px)");
   const isTablet = useMediaQuery("(max-width:1024px)");
-
-  const { unreadCount } = useNotificationStore();
 
   const {
     parkingSpots,
@@ -68,9 +64,6 @@ const AppContent: React.FC = () => {
     setSelectedSpot(null);
     handleResetMap();
   }, [setSelectedSpot, handleResetMap]);
-
-  const handleOpenOptionPopup = useCallback(() => setIsOptionPopupOpen(true), []);
-  const handleCloseOptionPopup = useCallback(() => setIsOptionPopupOpen(false), []);
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen((prev) => !prev);
@@ -105,22 +98,6 @@ const AppContent: React.FC = () => {
     setSelectedSpotId(spotId);
   }, []);
 
-  const handleNavigateToSpot = useCallback(
-    (spotId: string) => {
-      const spot = parkingSpots.find((s) => s.code_achoza.toString() === spotId);
-      if (spot) {
-        setMapCenter([spot.lat, spot.lon]);
-        setSelectedSpotId(spotId);
-        setSelectedSpot(`${spot.lat},${spot.lon}`);
-        if (isMobile) {
-          setMobileTab("map");
-          setIsSidebarOpen(false);
-        }
-      }
-    },
-    [parkingSpots, setMapCenter, setSelectedSpot, isMobile]
-  );
-
   // Lucky Spot wizard handler — selects spot and opens route on map
   const handleWizardSpotSelected = useCallback(
     (spot: ParkingSpotWithStatus) => {
@@ -136,10 +113,6 @@ const AppContent: React.FC = () => {
         setWizardOpen(true);
         return;
       }
-      if (value === "alerts") {
-        setNotificationPanelOpen(true);
-        return;
-      }
       setMobileTab(value);
       if (value === "spots") {
         setIsSidebarOpen(true);
@@ -151,7 +124,7 @@ const AppContent: React.FC = () => {
   );
 
   // Bottom nav safe area padding (iOS home bar)
-  const BOTTOM_NAV_HEIGHT = 64;
+  const BOTTOM_NAV_HEIGHT = 58;
 
   return (
     <MuiThemeProvider theme={theme}>
@@ -166,24 +139,21 @@ const AppContent: React.FC = () => {
           backgroundColor: "background.default",
         }}
       >
-        <AppHeader
-          onOpenOptionPopup={handleOpenOptionPopup}
-          onNavigateToSpot={handleNavigateToSpot}
-          onOpenNotifications={() => setNotificationPanelOpen(true)}
-          notificationPanelOpen={notificationPanelOpen}
-          onCloseNotifications={() => setNotificationPanelOpen(false)}
-        />
+        <AppHeader />
 
         <Box
           component="main"
           sx={{
             flexGrow: 1,
-            pt: { xs: "56px", sm: "64px" },
+            pt: { xs: "58px", sm: "68px" },
             display: "flex",
             height: "100%",
             overflow: "hidden",
             position: "relative",
-            pb: isMobile ? `${BOTTOM_NAV_HEIGHT}px` : 0,
+            pb: isMobile
+              ? `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom) + 22px)`
+              : 0,
+            backgroundColor: "background.default",
           }}
         >
           {/* Desktop/Tablet Sidebar */}
@@ -198,11 +168,18 @@ const AppContent: React.FC = () => {
                 "& .MuiDrawer-paper": {
                   width: drawerWidth,
                   boxSizing: "border-box",
-                  top: { xs: "56px", sm: "64px" },
-                  height: { xs: "calc(100% - 56px)", sm: "calc(100% - 64px)" },
+                  top: { xs: "58px", sm: "68px" },
+                  height: { xs: "calc(100% - 58px)", sm: "calc(100% - 68px)" },
                   borderRight: (t) => `1px solid ${alpha(t.palette.divider, 0.08)}`,
-                  backgroundColor: (t) => alpha(t.palette.background.paper, 0.97),
-                  backdropFilter: "blur(20px)",
+                  backgroundColor: (t) =>
+                    alpha(t.palette.background.paper, t.palette.mode === "dark" ? 0.92 : 0.96),
+                  backdropFilter: "blur(22px) saturate(1.08)",
+                  WebkitBackdropFilter: "blur(22px) saturate(1.08)",
+                  boxShadow: (t) =>
+                    `18px 0 38px ${alpha(
+                      t.palette.common.black,
+                      t.palette.mode === "dark" ? 0.28 : 0.08
+                    )}`,
                   transition: "width 0.3s ease",
                 },
               }}
@@ -233,18 +210,33 @@ const AppContent: React.FC = () => {
               ModalProps={{ keepMounted: true }}
               PaperProps={{
                 sx: {
-                  height: "85vh",
-                  borderRadius: "24px 24px 0 0",
-                  backgroundColor: (t) => alpha(t.palette.background.paper, 0.98),
-                  backdropFilter: "blur(20px)",
+                  height: { xs: "76vh", sm: "72vh" },
+                  borderRadius: "12px 12px 0 0",
+                  backgroundColor: (t) =>
+                    alpha(t.palette.background.paper, t.palette.mode === "dark" ? 0.94 : 0.98),
+                  backdropFilter: "blur(22px) saturate(1.08)",
+                  WebkitBackdropFilter: "blur(22px) saturate(1.08)",
+                  borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.14)}`,
+                  boxShadow: (t) =>
+                    `0 -22px 50px ${alpha(
+                      t.palette.common.black,
+                      t.palette.mode === "dark" ? 0.38 : 0.16
+                    )}`,
                   overflow: "hidden",
-                  pb: `${BOTTOM_NAV_HEIGHT}px`,
+                  pb: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom) + 10px)`,
                 },
               }}
             >
               {/* Drag Handle */}
-              <Box sx={{ display: "flex", justifyContent: "center", pt: 1.5, pb: 1 }}>
-                <Box sx={{ width: 40, height: 4, borderRadius: 2, backgroundColor: "divider" }} />
+              <Box sx={{ display: "flex", justifyContent: "center", pt: 1, pb: 0.5 }}>
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 4,
+                    borderRadius: 999,
+                    backgroundColor: (t) => alpha(t.palette.primary.main, 0.22),
+                  }}
+                />
               </Box>
               <Sidebar
                 spots={parkingSpots}
@@ -262,13 +254,14 @@ const AppContent: React.FC = () => {
 
           {/* Map Container */}
           <Box
-            sx={{
-              flexGrow: 1,
-              position: "relative",
-              height: "100%",
-              transition: "margin 0.3s ease",
-            }}
-          >
+              sx={{
+                flexGrow: 1,
+                position: "relative",
+                height: "100%",
+                transition: "margin 0.3s ease",
+                backgroundColor: "background.default",
+              }}
+            >
             {/* Desktop Toggle Button */}
             {!isMobile && (
               <Zoom in={!isSidebarOpen}>
@@ -281,8 +274,19 @@ const AppContent: React.FC = () => {
                     left: 16,
                     top: 16,
                     zIndex: 1000,
+                    width: 48,
+                    height: 48,
+                    borderRadius: "12px",
+                    color: (t) => t.palette.primary.main,
+                    backgroundColor: (t) => alpha(t.palette.background.paper, 0.9),
+                    border: (t) => `1px solid ${alpha(t.palette.divider, 0.18)}`,
+                    backdropFilter: "blur(16px)",
+                    WebkitBackdropFilter: "blur(16px)",
                     boxShadow: (t) =>
-                      `0 0 20px ${alpha(t.palette.primary.main, 0.5)}, 0 4px 20px ${alpha(t.palette.primary.main, 0.3)}`,
+                      `0 14px 34px ${alpha(t.palette.common.black, t.palette.mode === "dark" ? 0.32 : 0.14)}`,
+                    "&:hover": {
+                      backgroundColor: (t) => alpha(t.palette.primary.main, 0.1),
+                    },
                   }}
                 >
                   <List size={22} />
@@ -298,7 +302,7 @@ const AppContent: React.FC = () => {
                     alignItems: "center",
                     justifyContent: "center",
                     height: "100%",
-                    backgroundColor: "background.default",
+              backgroundColor: "background.default",
                   }}
                 >
                   <LoadingSpinner message="Loading map..." />
@@ -328,14 +332,23 @@ const AppContent: React.FC = () => {
             elevation={0}
             sx={{
               position: "fixed",
-              bottom: 0,
-              left: 0,
-              right: 0,
+              bottom: "max(10px, env(safe-area-inset-bottom))",
+              left: "50%",
+              width: "min(340px, calc(100% - 32px))",
+              transform: "translateX(-50%)",
               zIndex: 1300,
-              borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.1)}`,
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
-              backgroundColor: (t) => alpha(t.palette.background.paper, 0.95),
+              border: (t) => `1px solid ${alpha(t.palette.divider, 0.16)}`,
+              borderRadius: "16px",
+              overflow: "visible",
+              backdropFilter: "blur(24px) saturate(1.12)",
+              WebkitBackdropFilter: "blur(24px) saturate(1.12)",
+              backgroundColor: (t) =>
+                alpha(t.palette.background.paper, t.palette.mode === "dark" ? 0.9 : 0.92),
+              boxShadow: (t) =>
+                `0 14px 34px ${alpha(
+                  t.palette.common.black,
+                  t.palette.mode === "dark" ? 0.34 : 0.16
+                )}`,
             }}
           >
             <BottomNavigation
@@ -344,72 +357,75 @@ const AppContent: React.FC = () => {
               sx={{
                 height: BOTTOM_NAV_HEIGHT,
                 backgroundColor: "transparent",
+                px: 0.65,
                 "& .MuiBottomNavigationAction-root": {
                   minWidth: 0,
-                  color: "text.secondary",
-                  transition: "all 0.2s ease",
+                  px: 0.5,
+                  color: (t) => alpha(t.palette.primary.main, 0.7),
+                  borderRadius: "12px",
+                  transition:
+                    "background-color 0.18s ease, color 0.18s ease, transform 0.18s ease",
                   "&.Mui-selected": {
                     color: "primary.main",
+                    backgroundColor: (t) => alpha(t.palette.primary.main, 0.09),
                   },
+                  "&:active": {
+                    transform: "scale(0.98)",
+                  },
+                },
+                "& .MuiBottomNavigationAction-label": {
+                  fontWeight: 750,
+                  fontSize: "0.66rem",
+                  mt: 0.2,
                 },
               }}
             >
               <BottomNavigationAction
                 value="map"
                 label="Map"
-                icon={<Map size={22} />}
+                icon={<MapPinned size={20} strokeWidth={2.2} />}
               />
-              <BottomNavigationAction
-                value="spots"
-                label="Spots"
-                icon={<List size={22} />}
-              />
-              {/* Lucky Spot — the unicorn feature with a glowing center button */}
               <BottomNavigationAction
                 value="lucky"
-                label="Lucky"
+                label="Best"
                 icon={
                   <Box
                     sx={{
-                      width: 48,
-                      height: 48,
+                      width: 44,
+                      height: 44,
                       borderRadius: "50%",
-                      background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+                      background: (t) =>
+                        `linear-gradient(135deg, ${t.palette.primary.main}, ${t.palette.secondary.main})`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      mt: -2,
-                      boxShadow: "0 0 20px rgba(124,58,237,0.6), 0 4px 16px rgba(236,72,153,0.4)",
+                      mt: -2.4,
+                      border: (t) => `3px solid ${alpha(t.palette.background.paper, 0.96)}`,
+                      boxShadow: (t) =>
+                        `0 12px 28px ${alpha(t.palette.primary.main, 0.34)}`,
                       transition: "all 0.2s ease",
                       "&:hover": {
-                        transform: "scale(1.1)",
-                        boxShadow: "0 0 28px rgba(124,58,237,0.8), 0 6px 20px rgba(236,72,153,0.6)",
+                        transform: "translateY(-1px) scale(1.04)",
+                        boxShadow: (t) =>
+                          `0 15px 32px ${alpha(t.palette.primary.main, 0.4)}`,
                       },
                     }}
                   >
-                    <Zap size={22} color="#ffffff" />
+                    <Navigation2 size={21} color="#ffffff" strokeWidth={2.6} />
                   </Box>
                 }
                 sx={{
                   "& .MuiBottomNavigationAction-label": {
-                    color: "#ec4899",
-                    fontWeight: 700,
-                    fontSize: "0.65rem !important",
+                    color: "primary.main",
+                    fontWeight: 800,
+                    fontSize: "0.62rem !important",
                   },
                 }}
               />
               <BottomNavigationAction
-                value="alerts"
-                label="Alerts"
-                icon={
-                  <Badge
-                    badgeContent={unreadCount}
-                    color="error"
-                    sx={{ "& .MuiBadge-badge": { fontSize: "0.6rem", height: 14, minWidth: 14 } }}
-                  >
-                    <Bell size={22} />
-                  </Badge>
-                }
+                value="spots"
+                label="Spots"
+                icon={<ParkingCircle size={20} strokeWidth={2.2} />}
               />
             </BottomNavigation>
           </Paper>
@@ -421,8 +437,6 @@ const AppContent: React.FC = () => {
           onClose={() => setWizardOpen(false)}
           onSpotSelected={handleWizardSpotSelected}
         />
-
-        <OptionDialog isOpen={isOptionPopupOpen} onClose={handleCloseOptionPopup} />
       </Box>
     </MuiThemeProvider>
   );

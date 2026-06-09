@@ -1,23 +1,9 @@
-import React, {
-  useState,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useMemo,
-} from "react";
-import ReactDOM from "react-dom";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  Polyline,
-  useMap,
-} from "react-leaflet";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
-import { Clock, RefreshCw, Navigation, Play, Pause } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import type { ParkingMapProps } from "../../Types/location";
+import type { ParkingSpotWithStatus } from "../../Types/parking";
 import {
   Box,
   Typography,
@@ -25,23 +11,12 @@ import {
   Alert,
   AlertTitle,
   Button,
-  Paper,
-  Chip,
   useTheme,
   useMediaQuery,
-  Fab,
-  Tooltip,
-  IconButton,
 } from "@mui/material";
 import { useParkingStore } from "../../stores/parkingStore";
 import { useThemeStore } from "../../stores/themeStore";
-import {
-  getMarkerIcon,
-  selectedMarkerIcon,
-  MapZoomController,
-  RouteZoomController,
-  routeIcons,
-} from "./utils/MarkerUtils";
+import { MapZoomController } from "./utils/MarkerUtils";
 import LocationMarker from "./LocationMarker";
 import MapController from "./MapController";
 import OptimizedMarker from "./OptimizedMarker";
@@ -51,7 +26,11 @@ import "leaflet/dist/leaflet.css";
 import "../../styles/markerClusters.css";
 import { Icon } from "leaflet";
 
-// Performance-optimized map component that uses viewport filtering and clustering
+// LocationMarker bubbles its position up via this callback, but the map itself
+// doesn't need it (the store owns user location), so we hand it a no-op.
+const noop = () => {};
+
+// Performance-optimized map: viewport filtering + marker clustering.
 const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
   parkingSpots,
   loading,
@@ -59,83 +38,26 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
   mapCenter,
   refreshing,
   onRefresh,
-  setMapCenter,
   selectedSpotId,
   onResetMap,
   onSpotClick,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery("(max-width:768px)");
   const isSmallMobile = useMediaQuery("(max-width:480px)");
   const { isDarkMode } = useThemeStore();
 
-  const [userLocation, setUserLocation] = useState(null);
-  const [navigationActive, setNavigationActive] = useState(false);
-  const [infoExpanded, setInfoExpanded] = useState(true);
-  const [distanceTraveled, setDistanceTraveled] = useState(0);
-  const [timeElapsed, setTimeElapsed] = useState(0);
-  const navigationStartTime = useRef(null);
-  const lastUpdateTime = useRef(null);
-  const animationFrameRef = useRef(null);
-  const [processedRoutes, setProcessedRoutes] = useState([]);
   const [shouldClosePopups, setShouldClosePopups] = useState(false);
 
-  const {
-    routes,
-    fetchUserLocation,
-    showLocationMarker,
-    setShowLocationMarker,
-    centerOnUserLocation,
-  } = useParkingStore();
+  const { showLocationMarker, setShowLocationMarker, centerOnUserLocation } =
+    useParkingStore();
 
-  // Process routes from context
-  useEffect(() => {
-    if (Array.isArray(routes) && routes.length > 0) {
-      const processed = routes
-        .map((route) => {
-          if (Array.isArray(route) && route.length > 0) {
-            return route
-              .map((coord) => {
-                if (Array.isArray(coord) && coord.length === 2) {
-                  return [coord[0], coord[1]];
-                }
-                return null;
-              })
-              .filter((coord) => coord !== null);
-          }
-          return [];
-        })
-        .filter((route) => route.length > 0);
-
-      setProcessedRoutes(processed);
-    } else {
-      setProcessedRoutes([]);
-    }
-  }, [routes]);
-
-  const updateUserLocation = useCallback((newLocation) => {
-    setUserLocation(newLocation);
-  }, []);
-
-  const handleGetUserLocation = useCallback(async () => {
-    try {
-      // Enable location marker
-      setShowLocationMarker(true);
-      // Center the map on user location
-      centerOnUserLocation();
-    } catch (error) {
-      console.error("Error getting user location:", error);
-    }
+  const handleGetUserLocation = useCallback(() => {
+    setShowLocationMarker(true);
+    centerOnUserLocation();
   }, [setShowLocationMarker, centerOnUserLocation]);
 
-  const handlePopupsClosed = useCallback(() => {
-    setShouldClosePopups(false);
-  }, []);
-
-  const handleMapClick = useCallback(() => {
-    setShouldClosePopups(true);
-  }, []);
-
+  const handlePopupsClosed = useCallback(() => setShouldClosePopups(false), []);
+  const handleMapClick = useCallback(() => setShouldClosePopups(true), []);
   const resetMap = useCallback(() => {
     setShouldClosePopups(true);
     onResetMap();
@@ -158,21 +80,8 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
     );
   }
 
-  const hasValidRouteData = () => {
-    return (
-      processedRoutes.length > 0 &&
-      Array.isArray(processedRoutes[0]) &&
-      processedRoutes[0].length > 1
-    );
-  };
-
   return (
-    <Box
-      position="relative"
-      height="100%"
-      width="100%"
-      sx={{ overflow: "hidden" }}
-    >
+    <Box position="relative" height="100%" width="100%" sx={{ overflow: "hidden" }}>
       {statusError && (
         <Alert
           severity="warning"
@@ -184,28 +93,24 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
               onClick={onRefresh}
               disabled={refreshing}
             >
-              {refreshing ? (
-                <CircularProgress size={12} />
-              ) : (
-                <RefreshCw size={12} />
-              )}
+              {refreshing ? <CircularProgress size={12} /> : <RefreshCw size={12} />}
             </Button>
           }
           sx={{
             position: "absolute",
             top: { xs: 8, sm: 12, md: 16 },
             left: { xs: 8, sm: 12, md: 16 },
-            right: { xs: 8, sm: 12, md: 16 },
+            // Leave room for the floating map controls on the right.
+            right: { xs: 70, sm: 80 },
             zIndex: 1000,
-            maxWidth: { xs: "calc(100% - 16px)", sm: "400px" },
-            fontSize: { xs: "0.75rem", sm: "0.875rem" },
+            maxWidth: { sm: "400px" },
             "& .MuiAlert-message": {
               fontSize: { xs: "0.75rem", sm: "0.875rem" },
             },
           }}
         >
           <AlertTitle sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}>
-            {isSmallMobile ? "Connection Issue" : "Connection Issue"}
+            Connection Issue
           </AlertTitle>
           {statusError}
         </Alert>
@@ -219,11 +124,7 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
         attributionControl={false}
       >
         <MapController center={mapCenter} />
-        <MapZoomController
-          selectedSpotId={selectedSpotId}
-          spots={parkingSpots}
-        />
-        <RouteZoomController routes={processedRoutes} />
+        <MapZoomController selectedSpotId={selectedSpotId} spots={parkingSpots} />
         <PopupController
           shouldClosePopups={shouldClosePopups}
           onPopupsClosed={handlePopupsClosed}
@@ -235,53 +136,22 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
           url={
             isDarkMode
               ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           }
           subdomains="abcd"
           maxZoom={20}
           minZoom={3}
         />
 
-        {showLocationMarker && (
-          <LocationMarker setUserLocation={updateUserLocation} />
-        )}
+        {showLocationMarker && <LocationMarker setUserLocation={noop} />}
 
-        {/* Component that handles viewport filtering and marker rendering */}
         <OptimizedMarkersLayer
           parkingSpots={parkingSpots}
           selectedSpotId={selectedSpotId}
           onSpotClick={onSpotClick}
         />
-
-        {/* Route lines */}
-        {hasValidRouteData() &&
-          processedRoutes.map((route, index) => (
-            <Polyline
-              key={`route-${index}`}
-              positions={route}
-              color="#2196F3"
-              weight={4}
-              opacity={0.8}
-            />
-          ))}
-
-        {/* Start and end markers for routes */}
-        {hasValidRouteData() && processedRoutes[0] && (
-          <>
-            <Marker position={processedRoutes[0][0]} icon={routeIcons.start}>
-              <Popup>Start Point</Popup>
-            </Marker>
-            <Marker
-              position={processedRoutes[0][processedRoutes[0].length - 1]}
-              icon={routeIcons.end}
-            >
-              <Popup>Destination</Popup>
-            </Marker>
-          </>
-        )}
       </MapContainer>
 
-      {/* Map Controls */}
       <MapControls
         onRefresh={onRefresh}
         onCenterUser={handleGetUserLocation}
@@ -294,65 +164,56 @@ const OptimizedParkingMapContent: React.FC<ParkingMapProps> = ({
   );
 };
 
-// Component that renders markers with viewport filtering - must be inside MapContainer
+// Renders markers with viewport filtering + clustering. Must live inside MapContainer.
 const OptimizedMarkersLayer: React.FC<{
-  parkingSpots: any[];
+  parkingSpots: ParkingSpotWithStatus[];
   selectedSpotId: string | null;
-  onSpotClick?: (spot: any) => void;
+  onSpotClick?: (spot: ParkingSpotWithStatus) => void;
 }> = ({ parkingSpots, selectedSpotId, onSpotClick }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { visibleSpots, zoomLevel } = useViewportFilter(parkingSpots, 0.1);
 
-  // Use viewport filtering for performance - now inside MapContainer context
-  const { visibleSpots, zoomLevel, totalSpots, visibleCount } =
-    useViewportFilter(parkingSpots, 0.1);
-
-  // Performance monitoring (reduced logging for smoother performance)
-  useEffect(() => {
-    // Only log significant changes to reduce console spam
-    if (visibleCount > 0 && Math.abs(zoomLevel - Math.round(zoomLevel)) < 0.1) {
-      console.log(
-        `Performance: Showing ${visibleCount} of ${totalSpots} parking spots at zoom level ${Math.round(
-          zoomLevel
-        )}`
-      );
-    }
-  }, [visibleCount, totalSpots, Math.round(zoomLevel)]);
-
-  // Memoize cluster options for performance and smooth transitions
   const clusterOptions = useMemo(
     () => ({
       chunkedLoading: true,
-      chunkInterval: 150, // Reduced for faster loading
-      chunkDelay: 30, // Reduced delay for smoother transitions
+      chunkInterval: 150,
+      chunkDelay: 30,
       maxClusterRadius:
-        zoomLevel > 15 ? (isMobile ? 25 : 35) : isMobile ? 50 : 70, // Slightly smaller for better performance
+        zoomLevel > 15 ? (isMobile ? 25 : 35) : isMobile ? 50 : 70,
       disableClusteringAtZoom: isMobile ? 16 : 17,
       spiderfyOnMaxZoom: true,
       showCoverageOnHover: false,
-      animate: true, // Enable smooth animations
-      animateAddingMarkers: false, // Disable to prevent lag during zoom
-      removeOutsideVisibleBounds: true, // Remove markers outside view for better performance
-      iconCreateFunction: (cluster) => {
+      animate: true,
+      animateAddingMarkers: false,
+      removeOutsideVisibleBounds: true,
+      iconCreateFunction: (cluster: { getChildCount: () => number }) => {
         const count = cluster.getChildCount();
-        let size = "small";
-        if (count > 10) size = "medium";
-        if (count > 50) size = "large";
-
         const iconSize = isMobile ? 36 : 40;
         const fontSize = isMobile ? 10 : 12;
+        const ringColor = theme.palette.mode === "dark" ? "#111315" : "#FFFFFF";
+        const primary = theme.palette.primary.main;
+        const secondary = theme.palette.secondary.main;
 
         return new Icon({
           iconUrl: `data:image/svg+xml;base64,${btoa(`
           <svg xmlns="http://www.w3.org/2000/svg" width="${iconSize}" height="${iconSize}" viewBox="0 0 ${iconSize} ${iconSize}">
+            <defs>
+              <linearGradient id="clusterGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="${primary}"/>
+                <stop offset="100%" stop-color="${secondary}"/>
+              </linearGradient>
+              <filter id="clusterShadow" x="-35%" y="-35%" width="170%" height="170%">
+                <feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="${primary}" flood-opacity="0.28"/>
+              </filter>
+            </defs>
+            <circle cx="${iconSize / 2}" cy="${iconSize / 2}" r="${iconSize / 2 - 1}" fill="${primary}" opacity="0.16"/>
             <circle cx="${iconSize / 2}" cy="${iconSize / 2}" r="${
-            iconSize / 2 - 2
-          }" fill="${
-            theme.palette.primary.main
-          }" stroke="white" stroke-width="2"/>
+            iconSize / 2 - 5
+          }" fill="url(#clusterGradient)" stroke="${ringColor}" stroke-width="2.5" filter="url(#clusterShadow)"/>
             <text x="${iconSize / 2}" y="${
             iconSize / 2 + 4
-          }" font-family="Arial, sans-serif" font-size="${fontSize}" fill="white" text-anchor="middle" font-weight="bold">${count}</text>
+          }" font-family="Arial, sans-serif" font-size="${fontSize}" fill="white" text-anchor="middle" font-weight="800">${count}</text>
           </svg>
         `)}`,
           iconSize: [iconSize, iconSize],
@@ -360,30 +221,32 @@ const OptimizedMarkersLayer: React.FC<{
         });
       },
     }),
-    [zoomLevel, theme.palette.primary.main, isMobile]
+    [
+      zoomLevel,
+      theme.palette.mode,
+      theme.palette.primary.main,
+      theme.palette.secondary.main,
+      isMobile,
+    ]
   );
 
   return (
-    <>
-      {/* Use clustering for better performance */}
-      <MarkerClusterGroup {...clusterOptions}>
-        {visibleSpots.map((spot) => (
-          <OptimizedMarker
-            key={spot.UniqueId || `${spot.code_achoza}_${spot.oid_hof}`}
-            spot={spot}
-            isSelected={spot.code_achoza.toString() === selectedSpotId}
-            onSpotClick={onSpotClick}
-            zoomLevel={zoomLevel}
-            showDetails={zoomLevel >= (isMobile ? 13 : 14)} // Show popup details at lower zoom on mobile
-            forceShowPopup={spot.code_achoza.toString() === selectedSpotId} // Force popup for selected spots
-          />
-        ))}
-      </MarkerClusterGroup>
-    </>
+    <MarkerClusterGroup {...clusterOptions}>
+      {visibleSpots.map((spot) => (
+        <OptimizedMarker
+          key={spot.UniqueId || `${spot.code_achoza}_${spot.oid_hof}`}
+          spot={spot}
+          isSelected={spot.code_achoza.toString() === selectedSpotId}
+          onSpotClick={onSpotClick}
+          showDetails={zoomLevel >= (isMobile ? 13 : 14)}
+          forceShowPopup={spot.code_achoza.toString() === selectedSpotId}
+        />
+      ))}
+    </MarkerClusterGroup>
   );
 };
 
-// PopupController component
+// Closes any open popup when asked (e.g. after a map click or reset).
 const PopupController: React.FC<{
   shouldClosePopups: boolean;
   onPopupsClosed: () => void;
@@ -400,31 +263,26 @@ const PopupController: React.FC<{
   return null;
 };
 
-// MapClickHandler component to close popups when clicking on map
-const MapClickHandler: React.FC<{
-  onMapClick: () => void;
-}> = ({ onMapClick }) => {
+// Closes popups when clicking the map background (not markers/popups).
+const MapClickHandler: React.FC<{ onMapClick: () => void }> = ({ onMapClick }) => {
   const map = useMap();
 
   useEffect(() => {
-    const handleMapClick = (e: any) => {
-      // Only close popup if clicking on the map itself, not on markers or popups
+    const handleClick = (e: { originalEvent?: MouseEvent }) => {
+      const target = e.originalEvent?.target as HTMLElement | undefined;
       if (
-        e.originalEvent &&
-        e.originalEvent.target &&
-        e.originalEvent.target.tagName !== "path" && // SVG marker paths
-        !e.originalEvent.target.closest(".leaflet-marker-icon") && // Marker icons
-        !e.originalEvent.target.closest(".leaflet-popup")
+        target &&
+        target.tagName !== "path" &&
+        !target.closest(".leaflet-marker-icon") &&
+        !target.closest(".leaflet-popup")
       ) {
-        // Popup content
         onMapClick();
       }
     };
 
-    map.on("click", handleMapClick);
-
+    map.on("click", handleClick);
     return () => {
-      map.off("click", handleMapClick);
+      map.off("click", handleClick);
     };
   }, [map, onMapClick]);
 

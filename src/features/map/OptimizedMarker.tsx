@@ -7,14 +7,11 @@ import {
   useMediaQuery,
   useTheme,
   Button,
-  IconButton,
   alpha,
-  Divider,
 } from "@mui/material";
-import { Clock, MapPin, Navigation, ExternalLink, DollarSign } from "lucide-react";
+import { Clock, MapPin, Navigation, DollarSign } from "lucide-react";
 import { ParkingSpotWithStatus } from "../../Types/parking";
 import { getMarkerIcon, selectedMarkerIcon } from "./utils/MarkerUtils";
-import { getStatusColor } from "../../utils/colorUtils";
 import { useAutoPopup } from "../../hooks/useAutoPopup";
 import FavoriteToggleButton from "../favorites/FavoriteToggleButton";
 
@@ -33,13 +30,12 @@ interface OptimizedMarkerProps {
   spot: ParkingSpotWithStatus;
   isSelected: boolean;
   onSpotClick?: (spot: ParkingSpotWithStatus) => void;
-  zoomLevel: number;
   showDetails: boolean;
   forceShowPopup?: boolean;
 }
 
 const OptimizedMarker = memo<OptimizedMarkerProps>(
-  ({ spot, isSelected, onSpotClick, zoomLevel, showDetails, forceShowPopup = false }) => {
+  ({ spot, isSelected, onSpotClick, showDetails, forceShowPopup = false }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const markerRef = useRef<any>(null);
@@ -67,7 +63,7 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(
       lng,
       isSelected,
       showDetails || forceShowPopup,
-      spot.shem_chenyon || spot.Name || "Parking Spot"
+      spot.shem_chenyon || "Parking Spot"
     );
 
     if (isNaN(lat) || isNaN(lng)) return null;
@@ -114,7 +110,7 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(
                 sx={{
                   p: 2,
                   pb: 1.5,
-                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.14)}`,
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
@@ -122,8 +118,9 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(
                     sx={{
                       width: 40,
                       height: 40,
-                      borderRadius: 2,
-                      backgroundColor: alpha(statusStyles.bg, 0.15),
+                      borderRadius: "10px",
+                      backgroundColor: alpha(statusStyles.bg, theme.palette.mode === "dark" ? 0.18 : 0.12),
+                      border: `1px solid ${alpha(statusStyles.bg, 0.18)}`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -140,6 +137,7 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(
                         fontSize: "0.95rem",
                         lineHeight: 1.3,
                         color: theme.palette.text.primary,
+                        letterSpacing: 0,
                         mb: 0.25,
                       }}
                     >
@@ -168,9 +166,10 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(
                     size="small"
                     sx={{
                       height: 26,
-                      backgroundColor: alpha(statusStyles.bg, 0.15),
+                      backgroundColor: alpha(statusStyles.bg, theme.palette.mode === "dark" ? 0.18 : 0.12),
                       color: statusStyles.bg,
-                      fontWeight: 600,
+                      border: `1px solid ${alpha(statusStyles.bg, 0.18)}`,
+                      fontWeight: 750,
                       fontSize: "0.75rem",
                     }}
                   />
@@ -192,8 +191,12 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(
                   <Box
                     sx={{
                       p: 1.5,
-                      borderRadius: 2,
-                      backgroundColor: alpha(theme.palette.background.default, 0.5),
+                      borderRadius: "10px",
+                      backgroundColor: alpha(
+                        theme.palette.background.default,
+                        theme.palette.mode === "dark" ? 0.42 : 0.72
+                      ),
+                      border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
                       mb: 1.5,
                     }}
                   >
@@ -232,13 +235,15 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(
                   onClick={handleWazeNavigation}
                   sx={{
                     py: 1.25,
-                    borderRadius: 2,
-                    fontWeight: 600,
+                    borderRadius: "10px",
+                    fontWeight: 750,
                     fontSize: "0.85rem",
                     textTransform: "none",
-                    backgroundColor: "#33ccff",
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                    boxShadow: `0 12px 26px ${alpha(theme.palette.primary.main, 0.26)}`,
                     "&:hover": {
-                      backgroundColor: "#00b8e6",
+                      background: `linear-gradient(135deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})`,
+                      boxShadow: `0 16px 32px ${alpha(theme.palette.primary.main, 0.32)}`,
                     },
                   }}
                 >
@@ -251,10 +256,11 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(
                   onClick={handleGoogleMaps}
                   sx={{
                     py: 1.25,
-                    borderRadius: 2,
-                    fontWeight: 600,
+                    borderRadius: "10px",
+                    fontWeight: 750,
                     fontSize: "0.85rem",
                     textTransform: "none",
+                    borderColor: alpha(theme.palette.primary.main, 0.24),
                   }}
                 >
                   Maps
