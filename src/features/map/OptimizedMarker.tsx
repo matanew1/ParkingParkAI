@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { Clock, MapPin, Navigation, DollarSign } from "lucide-react";
 import { ParkingSpotWithStatus } from "../../Types/parking";
-import { getMarkerIcon, selectedMarkerIcon } from "./utils/MarkerUtils";
+import { getMarkerIcon, getSelectedMarkerIcon } from "./utils/MarkerUtils";
 import { useAutoPopup } from "../../hooks/useAutoPopup";
 import FavoriteToggleButton from "../favorites/FavoriteToggleButton";
 
@@ -84,12 +84,13 @@ const OptimizedMarker = memo<OptimizedMarkerProps>(
     };
 
     const statusStyles = getStatusStyles(spot.status_chenyon);
+    const isDarkMode = theme.palette.mode === "dark";
 
     return (
       <Marker
         ref={markerRef}
         position={[lat, lng]}
-        icon={isSelected ? selectedMarkerIcon : getMarkerIcon(spot.status_chenyon)}
+        icon={isSelected ? getSelectedMarkerIcon(isDarkMode) : getMarkerIcon(spot.status_chenyon, isDarkMode)}
         eventHandlers={{
           click: () => onSpotClick?.(spot),
         }}

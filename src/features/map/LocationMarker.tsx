@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Marker, Popup, useMap, Circle } from "react-leaflet";
-import { Typography } from "@mui/material";
-import { userLocationIcon } from "./utils/MarkerUtils";
+import { Typography, useTheme } from "@mui/material";
+import { getUserLocationIcon } from "./utils/MarkerUtils";
 import type { LocationMarkerProps } from "../../Types/location";
 import type { Coordinates } from "../../Services/routeService";
 
@@ -12,7 +12,9 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ setUserLocation }) => {
   const [position, setPosition] = useState<Coordinates | null>(null);
   const [accuracy, setAccuracy] = useState<number>(0);
   const map = useMap();
+  const theme = useTheme();
   const hasInitiallyPositioned = useRef(false);
+  const isDarkMode = theme.palette.mode === "dark";
 
   const handlePositionUpdate = useCallback(
     (coords: GeolocationCoordinates) => {
@@ -67,11 +69,11 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ setUserLocation }) => {
         navigator.geolocation.clearWatch(watchId);
       }
     };
-  }, [handlePositionUpdate]);
+  }, [handlePositionUpdate, isDarkMode]);
 
   return position === null || position.some(isNaN) ? null : (
     <>
-      <Marker position={position} icon={userLocationIcon}>
+      <Marker position={position} icon={getUserLocationIcon(isDarkMode)}>
         <Popup>
           <Typography variant="body1">You are here</Typography>
           <Typography variant="caption" color="textSecondary">
@@ -84,11 +86,11 @@ const LocationMarker: React.FC<LocationMarkerProps> = ({ setUserLocation }) => {
         center={position}
         radius={accuracy}
         pathOptions={{ 
-          color: "#2563EB", 
-          fillColor: "#2563EB", 
-          fillOpacity: 0.12,
+          color: isDarkMode ? "#1D4ED8" : "#2563EB", 
+          fillColor: isDarkMode ? "#1D4ED8" : "#2563EB", 
+          fillOpacity: isDarkMode ? 0.08 : 0.12,
           weight: 2,
-          opacity: 0.55 
+          opacity: isDarkMode ? 0.35 : 0.55
         }}
       />
     </>

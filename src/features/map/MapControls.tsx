@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, IconButton, Tooltip, alpha, Theme } from "@mui/material";
+import { Box, IconButton, Tooltip, alpha } from "@mui/material";
 import { RefreshCw, Navigation, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -12,8 +12,6 @@ interface MapControlsProps {
   isMobile: boolean;
 }
 
-type Accent = "primary" | "secondary" | "neutral";
-
 const MapControls: React.FC<MapControlsProps> = ({
   onRefresh,
   onCenterUser,
@@ -22,41 +20,30 @@ const MapControls: React.FC<MapControlsProps> = ({
   showLocationMarker,
   isMobile,
 }) => {
-  const iconSize = isMobile ? 19 : 20;
-
-  // Resolve the accent color for a control from the active theme.
-  const accentColor = (theme: Theme, accent: Accent): string =>
-    accent === "primary"
-      ? theme.palette.primary.main
-      : accent === "secondary"
-      ? theme.palette.secondary.main
-      : theme.palette.text.primary;
+  const iconSize = isMobile ? 18 : 19;
 
   const controls = [
     {
       key: "refresh",
       icon: (
-        <RefreshCw size={iconSize} className={refreshing ? "animate-spin" : ""} />
+        <RefreshCw size={iconSize} strokeWidth={2.4} className={refreshing ? "animate-spin" : ""} />
       ),
       tooltip: "Refresh parking data",
       onClick: onRefresh,
-      accent: "primary" as Accent,
       active: refreshing,
     },
     {
       key: "locate",
-      icon: <Navigation size={iconSize} />,
+      icon: <Navigation size={iconSize} strokeWidth={2.4} />,
       tooltip: "Center on my location",
       onClick: onCenterUser,
-      accent: "secondary" as Accent,
       active: showLocationMarker,
     },
     {
       key: "reset",
-      icon: <RotateCcw size={iconSize} />,
+      icon: <RotateCcw size={iconSize} strokeWidth={2.4} />,
       tooltip: "Reset map view",
       onClick: onResetMap,
-      accent: "neutral" as Accent,
       active: false,
     },
   ];
@@ -65,8 +52,8 @@ const MapControls: React.FC<MapControlsProps> = ({
     <Box
       sx={{
         position: "absolute",
-        top: { xs: 12, sm: 16 },
-        right: { xs: 12, sm: 16 },
+        top: { xs: 14, sm: 18 },
+        right: { xs: 14, sm: 18 },
         zIndex: 1000,
         display: "flex",
         flexDirection: "column",
@@ -80,82 +67,69 @@ const MapControls: React.FC<MapControlsProps> = ({
           key={control.key}
           component={motion.div}
           style={{ pointerEvents: "auto" }}
-          initial={{ opacity: 0, scale: 0.5, x: 16 }}
+          initial={{ opacity: 0, scale: 0.3, x: 20 }}
           animate={{ opacity: 1, scale: 1, x: 0 }}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.92 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.88 }}
           transition={{
             delay: index * 0.08,
             type: "spring",
-            stiffness: 340,
-            damping: 24,
+            stiffness: 360,
+            damping: 20,
           }}
         >
           <Tooltip title={control.tooltip} placement="left" arrow>
             <IconButton
               aria-label={control.tooltip}
               onClick={control.onClick}
-              sx={{
-                width: { xs: 52, sm: 56 },
-                height: { xs: 52, sm: 56 },
-                borderRadius: "16px",
-                color: (theme) =>
+              sx={(theme) => ({
+                width: { xs: 44, sm: 48 },
+                height: { xs: 44, sm: 48 },
+                borderRadius: "14px",
+                color: theme.palette.primary.main,
+                backgroundColor: control.active
+                  ? alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.18 : 0.12)
+                  : alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.08 : 0.06),
+                backdropFilter: "blur(20px) saturate(1.2)",
+                WebkitBackdropFilter: "blur(20px) saturate(1.2)",
+                border: `1.4px solid ${
                   control.active
-                    ? accentColor(theme, control.accent)
-                    : theme.palette.text.secondary,
-                backgroundColor: (theme) =>
-                  control.active
-                    ? alpha(
-                        accentColor(theme, control.accent),
-                        theme.palette.mode === "dark" ? 0.18 : 0.11
-                      )
-                    : alpha(
-                        theme.palette.background.paper,
-                        theme.palette.mode === "dark" ? 0.86 : 0.92
-                      ),
-                backdropFilter: "blur(20px) saturate(1.15)",
-                WebkitBackdropFilter: "blur(20px) saturate(1.15)",
-                border: (theme) =>
-                  `1.5px solid ${
-                    control.active
-                      ? alpha(accentColor(theme, control.accent), 0.48)
-                      : alpha(
-                          theme.palette.divider,
-                          theme.palette.mode === "dark" ? 0.38 : 0.68
-                        )
-                  }`,
-                boxShadow: (theme) =>
-                  control.active
-                    ? `0 16px 40px ${alpha(
-                        accentColor(theme, control.accent),
-                        theme.palette.mode === "dark" ? 0.3 : 0.26
-                      )}, 0 0 1px ${alpha(accentColor(theme, control.accent), 0.2)}`
-                    : `0 14px 36px ${alpha(
-                        theme.palette.common.black,
-                        theme.palette.mode === "dark" ? 0.32 : 0.14
-                      )}, 0 0 1px ${alpha(theme.palette.divider, 0.1)}`,
-                transition:
-                  "background-color 0.24s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.24s ease, box-shadow 0.24s ease, transform 0.24s ease",
-                "&:hover": {
-                  color: (theme) => accentColor(theme, control.accent),
-                  backgroundColor: (theme) =>
-                    alpha(
-                      accentColor(theme, control.accent),
-                      theme.palette.mode === "dark" ? 0.26 : 0.14
-                    ),
-                  borderColor: (theme) =>
-                    alpha(accentColor(theme, control.accent), 0.6),
-                  transform: "translateY(-2px) scale(1.04)",
-                  boxShadow: (theme) =>
-                    `0 18px 44px ${alpha(
-                      accentColor(theme, control.accent),
-                      theme.palette.mode === "dark" ? 0.36 : 0.28
+                    ? alpha(theme.palette.primary.main, 0.48)
+                    : alpha(theme.palette.primary.main, 0.24)
+                }`,
+                boxShadow: control.active
+                  ? `0 12px 32px ${alpha(
+                      theme.palette.primary.main,
+                      theme.palette.mode === "dark" ? 0.24 : 0.2
+                    )}, 0 0 1px ${alpha(theme.palette.primary.main, 0.2)}, inset 0 1px 2px ${alpha(
+                      "#ffffff",
+                      theme.palette.mode === "dark" ? 0.04 : 0.1
+                    )}`
+                  : `0 10px 28px ${alpha(
+                      theme.palette.primary.main,
+                      theme.palette.mode === "dark" ? 0.16 : 0.12
+                    )}, 0 0 1px ${alpha(theme.palette.primary.main, 0.1)}, inset 0 1px 2px ${alpha(
+                      "#ffffff",
+                      theme.palette.mode === "dark" ? 0.02 : 0.06
                     )}`,
+                transition: "all 0.24s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                "&:hover": {
+                  color: theme.palette.primary.main,
+                  backgroundColor: alpha(
+                    theme.palette.primary.main,
+                    theme.palette.mode === "dark" ? 0.28 : 0.16
+                  ),
+                  borderColor: alpha(theme.palette.primary.main, 0.64),
+                  transform: "translateY(-2px) scale(1.06)",
+                  boxShadow: `0 14px 36px ${alpha(
+                    theme.palette.primary.main,
+                    theme.palette.mode === "dark" ? 0.32 : 0.24
+                  )}, 0 0 1px ${alpha(theme.palette.primary.main, 0.24)}`,
                 },
                 "&:active": {
-                  transform: "scale(0.98)",
+                  transform: "scale(0.94)",
                 },
-              }}
+              })}
             >
               {control.icon}
             </IconButton>
